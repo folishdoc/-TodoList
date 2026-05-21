@@ -1,0 +1,129 @@
+/* 暗色主题样式 */
+
+:root {
+  --bg-color: #ffffff;
+  --text-color: #303133;
+  --border-color: #dcdfe6;
+  --hover-bg: #f5f7fa;
+}
+
+.dark-theme {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --border-color: #434343;
+  --hover-bg: #2c2c2c;
+}
+
+/* 全局样式 */
+.dark-theme body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.dark-theme .el-card {
+  background-color: #2d2d2d;
+  border-color: var(--border-color);
+}
+
+.dark-theme .el-card__header {
+  border-bottom-color: var(--border-color);
+}
+
+.dark-theme .el-menu {
+  background-color: #2d2d2d;
+}
+
+.dark-theme .el-menu-item {
+  color: var(--text-color);
+}
+
+.dark-theme .el-menu-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.dark-theme .el-input__wrapper {
+  background-color: #2d2d2d;
+  box-shadow: 0 0 0 1px var(--border-color) inset;
+}
+
+.dark-theme .el-input__inner {
+  color: var(--text-color);
+}
+
+.dark-theme .el-button--default {
+  background-color: #2d2d2d;
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.dark-theme .el-table {
+  background-color: #2d2d2d;
+  color: var(--text-color);
+}
+
+.dark-theme .el-table th {
+  background-color: #363636;
+  color: var(--text-color);
+}
+
+.dark-theme .el-table td {
+  border-bottom-color: var(--border-color);
+}
+
+.dark-theme .el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: #333333;
+}
+
+.dark-theme .el-dialog {
+  background-color: #2d2d2d;
+}
+
+.dark-theme .el-dialog__title {
+  color: var(--text-color);
+}
+
+.dark-theme .el-form-item__label {
+  color: var(--text-color);
+}
+
+.dark-theme .el-select-dropdown {
+  background-color: #2d2d2d;
+  border-color: var(--border-color);
+}
+
+.dark-theme .el-select-dropdown__item {
+  color: var(--text-color);
+}
+
+.dark-theme .el-select-dropdown__item.hover,
+.dark-theme .el-select-dropdown__item:hover {
+  background-color: var(--hover-bg);
+}
+
+.dark-theme .el-pagination button {
+  background-color: #2d2d2d;
+  color: var(--text-color);
+}
+
+.dark-theme .el-pagination.is-background .el-pager li:not(.is-disabled) {
+  background-color: #363636;
+  color: var(--text-color);
+}
+
+.dark-theme .el-tag {
+  background-color: #363636;
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.dark-theme .el-statistic__head {
+  color: #909399;
+}
+
+.dark-theme .el-statistic__content {
+  color: var(--text-color);
+}
+
+.dark-theme .el-progress-bar__outer {
+  background-color: #363636;
+}
