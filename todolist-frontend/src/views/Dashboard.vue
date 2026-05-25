@@ -331,18 +331,75 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
+            <!-- 标签 -->
+            <el-popover trigger="click" placement="bottom" :width="280">
+              <template #reference>
+                <el-tag size="default" class="meta-tag clickable" type="info">
+                  <el-icon><PriceTag /></el-icon>
+                  {{ taskTags.length > 0 ? `${taskTags.length}个标签` : '标签' }}
+                </el-tag>
+              </template>
+              <el-select
+                v-model="selectedTagIds"
+                multiple
+                filterable
+                placeholder="选择标签"
+                style="width: 100%"
+                @change="handleTagChange"
+                @visible-change="loadAllTags"
+              >
+                <el-option
+                  v-for="tag in allTags"
+                  :key="tag.id"
+                  :label="tag.name"
+                  :value="tag.id"
+                >
+                  <span :style="{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: tag.color, marginRight: '8px', verticalAlign: 'middle' }"></span>
+                  {{ tag.name }}
+                </el-option>
+              </el-select>
+            </el-popover>
           </div>
-          
+
+          <!-- 已选标签展示 -->
+          <div v-if="taskTags.length > 0" class="task-tags-row">
+            <el-tag
+              v-for="tag in taskTags"
+              :key="tag.id"
+              :color="tag.color"
+              :style="{ backgroundColor: tag.color, borderColor: tag.color, color: '#fff', marginRight: '6px', marginBottom: '4px' }"
+              size="small"
+              closable
+              @close="handleRemoveTag(tag.id)"
+            >
+              {{ tag.name }}
+            </el-tag>
+          </div>
+
           <!-- 描述区域 -->
           <div class="memo-description">
-            <h4 class="section-title">描述</h4>
+            <div class="section-header">
+              <h4 class="section-title">描述</h4>
+              <el-switch
+                v-model="descriptionPreview"
+                size="small"
+                active-text="预览"
+                inactive-text="编辑"
+              />
+            </div>
             <el-input
+              v-if="!descriptionPreview"
               v-model="taskForm.description"
               type="textarea"
               :rows="8"
-              placeholder="添加详细描述..."
+              placeholder="添加详细描述...（支持 Markdown）"
               class="memo-textarea"
               @blur="autoSave"
+            />
+            <div
+              v-else
+              class="markdown-preview"
+              v-html="renderMarkdown(taskForm.description)"
             />
           </div>
           
@@ -369,6 +426,37 @@
               <el-icon><Plus /></el-icon>
               添加子任务
             </el-button>
+          </div>
+
+          <!-- 附件区域 -->
+          <div class="memo-attachments">
+            <h4 class="section-title">附件</h4>
+            <div class="attachment-upload">
+              <input
+                ref="fileInputRef"
+                type="file"
+                style="display: none"
+                @change="handleFileSelect"
+              />
+              <el-button size="small" @click="triggerFileUpload" :loading="attachmentUploading">
+                <el-icon><Upload /></el-icon>
+                上传文件
+              </el-button>
+              <span class="upload-hint">最大 10MB</span>
+            </div>
+            <div v-if="taskAttachments.length > 0" class="attachment-list">
+              <div v-for="att in taskAttachments" :key="att.id" class="attachment-item">
+                <span class="attachment-name">{{ att.fileName }}</span>
+                <span class="attachment-size">{{ formatFileSize(att.fileSize) }}</span>
+                <el-button size="small" type="primary" link @click="downloadAttachment(att)">
+                  <el-icon><Download /></el-icon>
+                </el-button>
+                <el-button size="small" type="danger" link @click="handleDeleteAttachment(att)">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </div>
+            <el-empty v-else description="暂无附件" :image-size="40" />
           </div>
         </div>
       </aside>
@@ -431,6 +519,21 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="重复">
+          <el-select v-model="repeatForm.type" placeholder="不重复" clearable style="width: 100%" @change="onRepeatTypeChange">
+            <el-option label="不重复" :value="null" />
+            <el-option label="每天" value="DAILY" />
+            <el-option label="每周" value="WEEKLY" />
+            <el-option label="每月" value="MONTHLY" />
+            <el-option label="每年" value="YEARLY" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="repeatForm.type" label="间隔">
+          <el-input-number v-model="repeatForm.interval" :min="1" :max="365" style="width: 100%" />
+          <div style="color: #909399; font-size: 12px; margin-top: 4px">
+            每 {{ repeatForm.interval }} {{ getRepeatTypeText() }}
+          </div>
+        </el-form-item>
       </el-form>
       
       <template #footer>
@@ -458,17 +561,22 @@
         </el-button>
       </template>
     </el-dialog>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { List, Calendar, Clock, Plus, Folder, Delete, DataAnalysis, PriceTag, TrendCharts, Flag, Bell } from '@element-plus/icons-vue'
+import { List, Calendar, Clock, Plus, Folder, Delete, DataAnalysis, PriceTag, TrendCharts, Flag, Bell, Upload, Download } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
+import { marked } from 'marked'
 import * as taskApi from '../api/task'
 import * as batchApi from '../api/batch'
 import * as listApi from '../api/list'
+import * as tagApi from '../api/tag'
+import * as attachmentApi from '../api/attachment'
+import * as repeatApi from '../api/repeat'
 import * as anniversaryApi from '../api/anniversary'
 import { formatLocalDateTime } from '../utils/date'
 import StatisticsView from '../components/StatisticsView.vue'
@@ -497,6 +605,11 @@ const selectedTaskIds = ref<Set<number>>(new Set())
 
 const tasks = ref<any[]>([])
 const taskLists = ref<any[]>([])
+const allTags = ref<any[]>([])
+const taskTags = ref<any[]>([])
+const taskAttachments = ref<any[]>([])
+const attachmentUploading = ref(false)
+const descriptionPreview = ref(false)
 
 // 纪念日提醒
 const reminders = ref<any[]>([])
@@ -542,6 +655,11 @@ const taskForm = reactive({
 const listForm = reactive({
   name: '',
   color: '#409EFF'
+})
+
+const repeatForm = reactive({
+  type: null as string | null,
+  interval: 1
 })
 
 // 防抖定时器
@@ -721,17 +839,47 @@ const handleSearch = () => {
   loadTasks()
 }
 
+// 撤销通知
+const showUndo = (label: string, callback: () => void) => {
+  const notification = ElMessage({
+    message: label,
+    type: 'success',
+    duration: 4000,
+    showClose: false,
+    customClass: 'undo-message',
+    onClose: () => { /* undo expired */ }
+  })
+  // 利用 setTimeout 追加撤销按钮到消息DOM
+  setTimeout(() => {
+    const messages = document.querySelectorAll('.el-message--success')
+    messages.forEach(el => {
+      if (el.textContent?.includes(label) && !el.querySelector('.undo-link')) {
+        const btn = document.createElement('span')
+        btn.textContent = '撤销'
+        btn.className = 'undo-link'
+        btn.style.cssText = 'margin-left:12px;color:#e6a23c;cursor:pointer;font-weight:500;text-decoration:underline'
+        btn.onclick = () => {
+          callback()
+          el.remove()
+        }
+        el.appendChild(btn)
+      }
+    })
+  }, 50)
+}
+
 // 完成任务
 const handleCompleteTask = async (task: any) => {
   try {
     if (task.status === 1) {
-      // 取消完成
       await taskApi.uncompleteTask(task.id)
       ElMessage.success('已取消完成')
     } else {
-      // 完成任务
       await taskApi.completeTask(task.id)
-      ElMessage.success('任务已完成')
+      showUndo('任务已完成', async () => {
+        await taskApi.uncompleteTask(task.id)
+        loadTasks()
+      })
     }
     loadTasks()
   } catch (error) {
@@ -765,6 +913,19 @@ const handleEditTask = async (task: any) => {
     console.error('加载子任务失败:', error)
     taskForm.subtasks = []
   }
+
+  // 加载任务标签
+  try {
+    const res = await tagApi.getTaskTags(task.id)
+    taskTags.value = res.data || []
+    selectedTagIds.value = taskTags.value.map((t: any) => t.id)
+  } catch { taskTags.value = []; selectedTagIds.value = [] }
+
+  // 加载任务附件
+  try {
+    const res = await attachmentApi.getTaskAttachments(task.id)
+    taskAttachments.value = res.data || []
+  } catch { taskAttachments.value = [] }
 }
 
 // 点击主内容区（用于关闭编辑面板）
@@ -1012,6 +1173,124 @@ const getSelectedListName = () => {
   return list ? list.name : '无清单'
 }
 
+// ===== 标签相关 =====
+const selectedTagIds = ref<number[]>([])
+
+const loadAllTags = async () => {
+  if (allTags.value.length > 0) return
+  try {
+    const res = await tagApi.getTags()
+    allTags.value = res.data || []
+  } catch { /* 静默失败 */ }
+}
+
+const handleTagChange = async (tagIds: number[]) => {
+  if (!editingTask.value) return
+  const taskId = editingTask.value.id
+  // 找出新增的标签
+  const currentIds = new Set(taskTags.value.map((t: any) => t.id))
+  const newIds = new Set(tagIds)
+  for (const id of tagIds) {
+    if (!currentIds.has(id)) {
+      try { await tagApi.addTagToTask(taskId, id) } catch { /* skip */ }
+    }
+  }
+  // 找出移除的标签
+  for (const id of currentIds) {
+    if (!newIds.has(id)) {
+      try { await tagApi.removeTagFromTask(taskId, id) } catch { /* skip */ }
+    }
+  }
+  // 重新加载
+  try {
+    const res = await tagApi.getTaskTags(taskId)
+    taskTags.value = res.data || []
+    selectedTagIds.value = taskTags.value.map((t: any) => t.id)
+  } catch { /* skip */ }
+}
+
+const handleRemoveTag = async (tagId: number) => {
+  if (!editingTask.value) return
+  try {
+    await tagApi.removeTagFromTask(editingTask.value.id, tagId)
+    taskTags.value = taskTags.value.filter((t: any) => t.id !== tagId)
+    selectedTagIds.value = selectedTagIds.value.filter(id => id !== tagId)
+  } catch { /* skip */ }
+}
+
+// ===== 附件相关 =====
+const fileInputRef = ref<HTMLInputElement>()
+
+const triggerFileUpload = () => {
+  fileInputRef.value?.click()
+}
+
+const handleFileSelect = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files || input.files.length === 0 || !editingTask.value) return
+  const file = input.files[0]
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.warning('文件大小不能超过 10MB')
+    return
+  }
+  attachmentUploading.value = true
+  try {
+    await attachmentApi.uploadFile(editingTask.value.id, file)
+    ElMessage.success('上传成功')
+    const res = await attachmentApi.getTaskAttachments(editingTask.value.id)
+    taskAttachments.value = res.data || []
+  } catch {
+    ElMessage.error('上传失败')
+  } finally {
+    attachmentUploading.value = false
+    input.value = '' // 清空 input，允许重复上传同一文件
+  }
+}
+
+const downloadAttachment = (att: any) => {
+  const url = `http://localhost:8080/api/attachments/${encodeURIComponent(att.fileName)}`
+  const a = document.createElement('a')
+  a.href = url
+  a.download = att.fileName
+  a.target = '_blank'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
+const handleDeleteAttachment = async (att: any) => {
+  if (!editingTask.value) return
+  try {
+    await ElMessageBox.confirm('确定要删除这个附件吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await attachmentApi.deleteAttachment(att.id)
+    taskAttachments.value = taskAttachments.value.filter((a: any) => a.id !== att.id)
+    ElMessage.success('附件已删除')
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除附件失败:', error)
+    }
+  }
+}
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+const renderMarkdown = (text: string) => {
+  if (!text) return ''
+  try {
+    return marked(text, { breaks: true, gfm: true }) as string
+  } catch {
+    return text
+  }
+}
+
 // 格式化短日期
 // 判断日期字符串是否有具体时间（非 00:00）
 const hasTimeValue = (dateStr: string) => {
@@ -1046,9 +1325,22 @@ const handleDeleteTask = async (task: any) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
+    // 保存删除前的任务数据用于撤销
+    const deletedTask = { ...task }
     await taskApi.deleteTask(task.id)
-    ElMessage.success('删除成功')
+    showUndo('任务已删除', async () => {
+      await taskApi.createTask({
+        title: deletedTask.title,
+        description: deletedTask.description,
+        priority: deletedTask.priority,
+        startDate: deletedTask.startDate,
+        dueDate: deletedTask.dueDate,
+        listId: deletedTask.listId,
+        parentId: deletedTask.parentId
+      })
+      loadTasks()
+    })
     loadTasks()
   } catch (error) {
     if (error !== 'cancel') {
@@ -1123,9 +1415,19 @@ const handleSubmitTask = async () => {
           ElMessage.success('更新成功')
           closeEditPanel()
         } else {
-          await taskApi.createTask(taskForm)
+          const res = await taskApi.createTask(taskForm)
+          // 如果设置了重复规则，创建后立即设置
+          if (repeatForm.type && res.data?.id) {
+            try {
+              await repeatApi.setRepeatRule(res.data.id, {
+                type: repeatForm.type,
+                interval: repeatForm.interval
+              })
+            } catch { /* 静默失败 */ }
+          }
           ElMessage.success('创建成功')
-          showCreateTaskDialog.value = false // 新建完成后关闭对话框
+          showCreateTaskDialog.value = false
+          resetRepeatForm()
         }
         resetTaskForm()
         loadTasks()
@@ -1194,11 +1496,31 @@ const resetTaskForm = () => {
   taskForm.startDate = ''
   taskForm.dueDate = ''
   taskForm.listId = null
+  taskForm.subtasks = []
+  taskTags.value = []
+  taskAttachments.value = []
+  selectedTagIds.value = []
 }
 
 const resetListForm = () => {
   listForm.name = ''
   listForm.color = '#409EFF'
+}
+
+const resetRepeatForm = () => {
+  repeatForm.type = null
+  repeatForm.interval = 1
+}
+
+const onRepeatTypeChange = () => {
+  if (repeatForm.type) {
+    repeatForm.interval = 1
+  }
+}
+
+const getRepeatTypeText = () => {
+  const texts: any = { DAILY: '天', WEEKLY: '周', MONTHLY: '月', YEARLY: '年' }
+  return texts[repeatForm.type || ''] || ''
 }
 
 // 获取优先级类型
@@ -1758,12 +2080,44 @@ onUnmounted(() => {
   margin-bottom: 20px;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .section-title {
   font-size: 14px;
   font-weight: 600;
   color: #303133;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
+
+.section-header .section-title {
+  margin-bottom: 0;
+}
+
+.markdown-preview {
+  min-height: 120px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #303133;
+}
+
+.markdown-preview :deep(h1) { font-size: 1.5em; margin: 0.5em 0; }
+.markdown-preview :deep(h2) { font-size: 1.3em; margin: 0.5em 0; }
+.markdown-preview :deep(h3) { font-size: 1.1em; margin: 0.4em 0; }
+.markdown-preview :deep(p) { margin: 0.5em 0; }
+.markdown-preview :deep(ul), .markdown-preview :deep(ol) { padding-left: 1.5em; margin: 0.5em 0; }
+.markdown-preview :deep(code) { background: #eee; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+.markdown-preview :deep(pre) { background: #f0f0f0; padding: 12px; border-radius: 4px; overflow-x: auto; }
+.markdown-preview :deep(pre code) { background: none; padding: 0; }
+.markdown-preview :deep(blockquote) { border-left: 3px solid #ddd; padding-left: 12px; color: #666; margin: 0.5em 0; }
+.markdown-preview :deep(a) { color: #409EFF; }
 
 .memo-textarea :deep(.el-textarea__inner) {
   border: none;
@@ -1833,4 +2187,66 @@ onUnmounted(() => {
   text-decoration: line-through;
   color: #c0c4cc;
 }
+
+/* 标签行 */
+.task-tags-row {
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* 附件区域 */
+.memo-attachments {
+  border-top: 1px solid #e8e8e8;
+  padding-top: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.attachment-upload {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+}
+
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.attachment-item:hover {
+  background: #ecf5ff;
+}
+
+.attachment-name {
+  flex: 1;
+  font-size: 13px;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-size {
+  font-size: 12px;
+  color: #909399;
+}
+
 </style>

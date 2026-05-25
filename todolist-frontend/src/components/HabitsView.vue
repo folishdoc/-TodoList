@@ -3,10 +3,43 @@
     <!-- 工具栏 -->
     <div class="habits-toolbar">
       <h2>习惯追踪</h2>
-      <el-button type="primary" @click="showCreateDialog = true">
-        <el-icon><Plus /></el-icon>
-        新建习惯
-      </el-button>
+      <div class="toolbar-actions">
+        <el-button @click="showTrend = !showTrend">
+          <el-icon><DataAnalysis /></el-icon>
+          {{ showTrend ? '隐藏统计' : '统计' }}
+        </el-button>
+        <el-button type="primary" @click="showCreateDialog = true">
+          <el-icon><Plus /></el-icon>
+          新建习惯
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 趋势统计图 -->
+    <div v-if="showTrend" class="trend-section">
+      <div class="trend-header">
+        <h3>打卡趋势</h3>
+        <el-radio-group v-model="trendDays" size="small" @change="loadTrendData">
+          <el-radio-button :value="7">近7天</el-radio-button>
+          <el-radio-button :value="30">近30天</el-radio-button>
+        </el-radio-group>
+      </div>
+      <div v-loading="trendLoading" class="trend-chart">
+        <el-empty v-if="trendData.length === 0" description="暂无打卡数据" :image-size="60" />
+        <div v-else class="chart-bars">
+          <div v-for="item in trendData" :key="item.date" class="chart-bar-group">
+            <div class="bar-container">
+              <div
+                class="bar"
+                :style="{ height: getBarHeight(item.count) + 'px', background: getBarColor(item.count) }"
+                :title="`${item.date}: ${item.count}次打卡`"
+              />
+            </div>
+            <div class="bar-label">{{ formatTrendDate(item.date) }}</div>
+            <div class="bar-value">{{ item.count }}</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 习惯列表 -->
@@ -177,7 +210,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, MoreFilled, DataAnalysis } from '@element-plus/icons-vue'
 import * as habitApi from '../api/habit'
 import { formatLocalDate } from '../utils/date'
 
@@ -352,6 +385,65 @@ const resetForm = () => {
   habitForm.timePeriod = 'all_day'
 }
 
+// ===== 趋势统计 =====
+const showTrend = ref(false)
+const trendDays = ref(7)
+const trendLoading = ref(false)
+const trendData = ref<Array<{ date: string; count: number }>>([])
+
+const loadTrendData = async () => {
+  trendLoading.value = true
+  try {
+    const today = new Date()
+    const startDate = new Date(today)
+    startDate.setDate(startDate.getDate() - trendDays.value + 1)
+    const startStr = formatLocalDate(startDate)
+    const endStr = formatLocalDate(today)
+
+    // 汇总所有习惯的记录
+    const allRecords: any[] = []
+    for (const habit of habits.value) {
+      try {
+        const res = await habitApi.getRecordsByRange(habit.id, startStr, endStr)
+        if (res.data) {
+          allRecords.push(...(Array.isArray(res.data) ? res.data : []))
+        }
+      } catch { /* skip */ }
+    }
+
+    // 按日期聚合
+    const dateMap = new Map<string, number>()
+    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+      dateMap.set(formatLocalDate(d), 0)
+    }
+    for (const r of allRecords) {
+      const d = r.checkDate
+      dateMap.set(d, (dateMap.get(d) || 0) + 1)
+    }
+
+    trendData.value = Array.from(dateMap.entries()).map(([date, count]) => ({ date, count }))
+  } catch { /* skip */ } finally {
+    trendLoading.value = false
+  }
+}
+
+const getBarHeight = (count: number) => {
+  const max = Math.max(...trendData.value.map(d => d.count), 1)
+  return Math.max(4, (count / max) * 120)
+}
+
+const getBarColor = (count: number) => {
+  if (count === 0) return '#e0e0e0'
+  if (count <= 2) return '#a0cfff'
+  if (count <= 5) return '#409EFF'
+  return '#337ecc'
+}
+
+const formatTrendDate = (dateStr: string) => {
+  const parts = dateStr.split('-')
+  return parts[1] + '/' + parts[2]
+}
+
 onMounted(() => {
   loadHabits()
   loadTodayRecords()
@@ -451,5 +543,81 @@ onMounted(() => {
   color: #909399;
   margin-top: 8px;
   text-align: center;
+}
+
+/* 工具栏 */
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 趋势统计 */
+.trend-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #e8e8e8;
+}
+
+.trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.trend-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.trend-chart {
+  min-height: 160px;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 160px;
+  padding: 0 8px;
+}
+
+.chart-bar-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.bar-container {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bar {
+  width: 100%;
+  max-width: 24px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s;
+  min-height: 2px;
+}
+
+.bar-label {
+  font-size: 10px;
+  color: #909399;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.bar-value {
+  font-size: 11px;
+  color: #606266;
+  font-weight: 500;
 }
 </style>
