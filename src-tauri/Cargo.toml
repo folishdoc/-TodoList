@@ -1,0 +1,15 @@
+[package]
+name = "todolist"
+version = "1.0.0"
+description = "Todolist - 个人待办事项管理"
+authors = ["folishdoc"]
+edition = "2021"
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

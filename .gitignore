@@ -73,3 +73,10 @@ SKILLS-GUIDE.md
 skills-lock.json
 todolist-frontend/skills-lock.json
 todolist-frontend/docs/
+
+### Desktop build artifacts ###
+src/main/resources/static/
+data/
+src-tauri/target/
+src-tauri/jre/
+src-tauri/backend.jar

@@ -70,6 +70,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/system/**").authenticated()
                 // Swagger文档公开
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // H2 Console（开发调试）
+                .requestMatchers("/h2-console/**").permitAll()
+                // 前端静态资源（桌面版托管 Vue 编译产物）
+                .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
+                .requestMatchers("/assets/**").permitAll()
                 // OPTIONS请求公开（CORS预检）
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 // 其他接口需要认证

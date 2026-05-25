@@ -1248,7 +1248,7 @@ const handleFileSelect = async (event: Event) => {
 }
 
 const downloadAttachment = (att: any) => {
-  const url = `http://localhost:8080/api/attachments/${encodeURIComponent(att.fileName)}`
+  const url = `http://localhost:18080/api/attachments/${encodeURIComponent(att.fileName)}`
   const a = document.createElement('a')
   a.href = url
   a.download = att.fileName
