@@ -2,6 +2,7 @@ package com.liuzeyu.todolist.module.task.controller;
 
 import com.liuzeyu.todolist.common.result.Result;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
+import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskWithSubtasks;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.service.TaskService;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -54,6 +56,14 @@ public class TaskController {
                                    @PathVariable Long id,
                                    @Valid @RequestBody TaskRequest request) {
         return Result.success("更新成功", taskService.updateTask(userId, id, request));
+    }
+
+    @PatchMapping("/{id}/time")
+    @Operation(summary = "更新任务时间（拖拽修改开始/截止时间）")
+    public Result<Task> updateTaskTime(@AuthenticationPrincipal Long userId,
+                                        @PathVariable Long id,
+                                        @RequestBody TaskTimeRequest request) {
+        return Result.success("时间更新成功", taskService.updateTaskTime(userId, id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -112,5 +122,15 @@ public class TaskController {
                                                                @RequestParam(defaultValue = "0") int page,
                                                                @RequestParam(defaultValue = "20") int size) {
         return Result.success(taskService.getTasksWithSubtasks(userId, page, size));
+    }
+
+    @GetMapping("/range")
+    @Operation(summary = "获取日期范围内的任务（日历视图用）")
+    public Result<List<Task>> getTasksByDateRange(@AuthenticationPrincipal Long userId,
+                                                   @RequestParam String start,
+                                                   @RequestParam String end) {
+        LocalDateTime rangeStart = LocalDateTime.parse(start);
+        LocalDateTime rangeEnd = LocalDateTime.parse(end);
+        return Result.success(taskService.getTasksByDateRange(userId, rangeStart, rangeEnd));
     }
 }

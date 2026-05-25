@@ -75,6 +75,7 @@
 import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as repeatApi from '../api/repeat'
+import { formatLocalDateTime } from '../utils/date'
 
 const props = defineProps<{
   modelValue: boolean
@@ -123,7 +124,7 @@ const handleSubmit = async () => {
     }
     
     if (endType.value === 'date' && ruleForm.endDate) {
-      rule.endDate = new Date(ruleForm.endDate).toISOString()
+      rule.endDate = formatLocalDateTime(new Date(ruleForm.endDate))
     } else if (endType.value === 'count') {
       rule.count = ruleForm.count
     }

@@ -102,7 +102,7 @@ public class HabitService {
         Habit habit = getHabit(userId, habitId);
         
         // 检查是否已经打卡
-        if (!isMakeup && habitRecordRepository.findByHabitIdAndCheckDate(habitId, checkDate).isPresent()) {
+        if (!Boolean.TRUE.equals(isMakeup) && habitRecordRepository.findByHabitIdAndCheckDate(habitId, checkDate).isPresent()) {
             throw new BusinessException("今天已经打卡过了");
         }
         

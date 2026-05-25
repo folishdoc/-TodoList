@@ -100,3 +100,21 @@ export const getTasksWithSubtasks = (params: any) => {
     params
   })
 }
+
+// 更新时间（拖拽修改开始/截止时间）
+export const updateTaskTime = (id: number, data: any) => {
+  return request({
+    url: `/tasks/${id}/time`,
+    method: 'patch',
+    data
+  })
+}
+
+// 获取日期范围内的任务（日历视图用）
+export const getTasksByDateRange = (start: string, end: string) => {
+  return request({
+    url: '/tasks/range',
+    method: 'get',
+    params: { start, end }
+  })
+}

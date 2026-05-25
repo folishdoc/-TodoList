@@ -179,6 +179,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, MoreFilled } from '@element-plus/icons-vue'
 import * as habitApi from '../api/habit'
+import { formatLocalDate } from '../utils/date'
 
 const loading = ref(false)
 const habits = ref<any[]>([])
@@ -230,7 +231,7 @@ const loadTodayRecords = async () => {
 
 // 获取今日进度
 const getTodayProgress = (habit: any) => {
-  const today = new Date().toISOString().split('T')[0]
+  const today = formatLocalDate(new Date())
   const completed = todayRecords.value.some((r: any) => 
     r.habitId === habit.id && r.checkDate === today
   )
@@ -270,7 +271,7 @@ const submitCheckIn = async () => {
     }
     
     if (checkInForm.isMakeup) {
-      params.checkDate = checkInForm.checkDate.toISOString().split('T')[0]
+      params.checkDate = formatLocalDate(new Date(checkInForm.checkDate))
     }
     
     await habitApi.checkIn(checkingHabit.value.id, params)

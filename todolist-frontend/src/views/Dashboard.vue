@@ -28,14 +28,33 @@
           >
             <el-icon :size="24"><TrendCharts /></el-icon>
           </div>
-          <div 
-            class="nav-item" 
+          <div
+            class="nav-item"
             :class="{ active: currentModule === 'anniversaries' }"
             @click="currentModule = 'anniversaries'"
             title="纪念日"
           >
             <el-icon :size="24"><Clock /></el-icon>
           </div>
+          <el-popover placement="right" :width="300" trigger="click" @show="loadReminders">
+            <template #reference>
+              <div class="nav-item bell-btn">
+                <el-badge :value="unreadReminderCount" :hidden="unreadReminderCount === 0">
+                  <el-icon :size="24"><Bell /></el-icon>
+                </el-badge>
+              </div>
+            </template>
+            <div class="reminder-popover">
+              <h4>纪念日提醒</h4>
+              <el-empty v-if="reminders.length === 0" description="暂无提醒" :image-size="40" />
+              <div v-else class="reminder-list">
+                <div v-for="r in reminders" :key="r.id" class="reminder-item" @click="handleReminderClick(r)">
+                  <div class="reminder-name">{{ getReminderName(r.anniversaryId) }}</div>
+                  <div class="reminder-time">{{ formatReminderTime(r.remindDatetime) }}</div>
+                </div>
+              </div>
+            </div>
+          </el-popover>
         </div>
       </el-aside>
 
@@ -111,10 +130,24 @@
           <div v-if="!['statistics', 'tags'].includes(activeMenu)">
           <div class="content-header">
             <h2>{{ pageTitle }}</h2>
-            <el-button type="primary" @click="showCreateTaskDialog = true">
-              <el-icon><Plus /></el-icon>
-              新建任务
-            </el-button>
+            <div class="content-header-actions">
+              <template v-if="batchMode">
+                <el-button type="danger" :disabled="selectedTaskIds.size === 0" @click="handleBatchDelete">
+                  <el-icon><Delete /></el-icon>
+                  删除选中 ({{ selectedTaskIds.size }})
+                </el-button>
+                <el-button @click="handleSelectAll">全选</el-button>
+                <el-button @click="selectedTaskIds.clear()">取消选择</el-button>
+                <el-button @click="exitBatchMode">退出批量模式</el-button>
+              </template>
+              <template v-else>
+                <el-button @click="enterBatchMode">批量操作</el-button>
+                <el-button type="primary" @click="showCreateTaskDialog = true">
+                  <el-icon><Plus /></el-icon>
+                  新建任务
+                </el-button>
+              </template>
+            </div>
           </div>
 
           <!-- 搜索框 -->
@@ -137,14 +170,22 @@
                 v-for="task in tasks"
                 :key="task.id"
                 class="task-item"
-                :class="{ 
+                :class="{
                   'completed': task.status === 1,
-                  'subtask': task.parentId != null
+                  'subtask': task.parentId != null,
+                  'batch-selected': batchMode && selectedTaskIds.has(task.id)
                 }"
                 :style="{ paddingLeft: (20 + (task.level || 0) * 30) + 'px' }"
-                @click.stop="handleEditTask(task)"
+                @click.stop="batchMode ? toggleTaskSelection(task.id) : handleEditTask(task)"
               >
                 <el-checkbox
+                  v-if="batchMode"
+                  :model-value="selectedTaskIds.has(task.id)"
+                  @click.stop
+                  @change="toggleTaskSelection(task.id)"
+                />
+                <el-checkbox
+                  v-else
                   :model-value="task.status === 1"
                   @click.stop
                   @change="handleCompleteTask(task)"
@@ -153,11 +194,14 @@
                 <div class="task-content">
                   <div class="task-title">{{ task.title }}</div>
                 </div>
-                <div class="task-actions">
+                <div v-if="!batchMode" class="task-actions">
                   <!-- 时间提示 -->
                   <span :class="['time-status', getTimeStatusClass(task)]" :style="{ visibility: getTimeStatus(task) ? 'visible' : 'hidden' }">
                     {{ getTimeStatus(task) || ' ' }}
                   </span>
+                  <el-button v-if="isOverdue(task)" size="small" type="warning" text @click.stop="handlePostponeTask(task)" title="顺延至今天">
+                    顺延
+                  </el-button>
                   <el-button size="small" @click.stop="handleDeleteTask(task)">
                     <el-icon><Delete /></el-icon>
                   </el-button>
@@ -181,7 +225,7 @@
         
         <!-- 日历模块 -->
         <div v-else-if="currentModule === 'calendar'" class="calendar-module">
-          <CalendarView />
+          <CalendarView @task-click="handleCalendarTaskClick" />
         </div>
         
         <!-- 习惯模块（占位） -->
@@ -189,9 +233,9 @@
           <HabitsView />
         </div>
         
-        <!-- 纪念日模块（占位） -->
-        <div v-else-if="currentModule === 'anniversaries'" class="placeholder-module">
-          <el-empty description="纪念日功能开发中..." />
+        <!-- 纪念日模块 -->
+        <div v-else-if="currentModule === 'anniversaries'" class="anniversaries-module">
+          <AnniversaryList />
         </div>
       </el-main>
       
@@ -242,13 +286,13 @@
                 v-model="taskForm.startDate"
                 type="datetime"
                 placeholder="选择开始时间"
-                format="YYYY-MM-DD HH:mm"
+                :format="datePickerFormat"
                 value-format="YYYY-MM-DDTHH:mm:ss"
                 style="width: 100%"
                 @change="autoSave"
               />
             </el-popover>
-            
+
             <!-- 截止日期 -->
             <el-popover trigger="click" placement="bottom" :width="300">
               <template #reference>
@@ -261,7 +305,7 @@
                 v-model="taskForm.dueDate"
                 type="datetime"
                 placeholder="选择截止时间"
-                format="YYYY-MM-DD HH:mm"
+                :format="datePickerFormat"
                 value-format="YYYY-MM-DDTHH:mm:ss"
                 style="width: 100%"
                 @change="autoSave"
@@ -362,7 +406,7 @@
             v-model="taskForm.startDate"
             type="datetime"
             placeholder="任务开始时间（选填）"
-            format="YYYY-MM-DD HH:mm:ss"
+            :format="datePickerFormat"
             value-format="YYYY-MM-DDTHH:mm:ss"
             style="width: 100%"
           />
@@ -372,7 +416,7 @@
             v-model="taskForm.dueDate"
             type="datetime"
             placeholder="选择截止日期（选填）"
-            format="YYYY-MM-DD HH:mm:ss"
+            :format="datePickerFormat"
             value-format="YYYY-MM-DDTHH:mm:ss"
             style="width: 100%"
           />
@@ -418,16 +462,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { List, Calendar, Clock, Plus, Folder, Delete, DataAnalysis, PriceTag, TrendCharts, Flag } from '@element-plus/icons-vue'
+import { List, Calendar, Clock, Plus, Folder, Delete, DataAnalysis, PriceTag, TrendCharts, Flag, Bell } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
 import * as taskApi from '../api/task'
+import * as batchApi from '../api/batch'
 import * as listApi from '../api/list'
+import * as anniversaryApi from '../api/anniversary'
+import { formatLocalDateTime } from '../utils/date'
 import StatisticsView from '../components/StatisticsView.vue'
 import TagsView from '../components/TagsView.vue'
 import CalendarView from '../components/CalendarView.vue'
 import HabitsView from '../components/HabitsView.vue'
+import AnniversaryList from '../components/AnniversaryList.vue'
 
 const currentModule = ref('tasks') // 当前模块: tasks, calendar, habits, anniversaries
 const activeMenu = ref('all')
@@ -443,8 +491,43 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 
+// 批量选择
+const batchMode = ref(false)
+const selectedTaskIds = ref<Set<number>>(new Set())
+
 const tasks = ref<any[]>([])
 const taskLists = ref<any[]>([])
+
+// 纪念日提醒
+const reminders = ref<any[]>([])
+const unreadReminderCount = ref(0)
+let reminderTimer: any = null
+
+const loadReminders = async () => {
+  try {
+    const res = await anniversaryApi.getPendingReminders()
+    reminders.value = res.data || []
+    unreadReminderCount.value = reminders.value.filter((r: any) => !r.isRead).length
+  } catch { /* 静默失败 */ }
+}
+
+const getReminderName = (anniversaryId: number) => {
+  return `纪念日 #${anniversaryId}`
+}
+
+const formatReminderTime = (time: string) => {
+  if (!time) return ''
+  const d = new Date(time)
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+}
+
+const handleReminderClick = async (r: any) => {
+  if (!r.isRead) {
+    await anniversaryApi.markReminderRead(r.id)
+    await loadReminders()
+  }
+  currentModule.value = 'anniversaries'
+}
 
 const taskForm = reactive({
   title: '',
@@ -468,6 +551,34 @@ const isSaving = ref(false)
 const taskRules = {
   title: [
     { required: true, message: '请输入任务标题', trigger: 'blur' }
+  ],
+  dueDate: [
+    {
+      validator: (_rule: any, value: string, callback: any) => {
+        if (value && taskForm.startDate) {
+          if (new Date(value) < new Date(taskForm.startDate)) {
+            callback(new Error('结束时间不能早于开始时间'))
+            return
+          }
+        }
+        callback()
+      },
+      trigger: 'change'
+    }
+  ],
+  startDate: [
+    {
+      validator: (_rule: any, value: string, callback: any) => {
+        if (value && taskForm.dueDate) {
+          if (new Date(value) > new Date(taskForm.dueDate)) {
+            callback(new Error('开始时间不能晚于结束时间'))
+            return
+          }
+        }
+        callback()
+      },
+      trigger: 'change'
+    }
   ]
 }
 
@@ -498,101 +609,87 @@ const loadTasks = async () => {
   loading.value = true
   try {
     let res
-    if (activeMenu.value === 'all' && !searchKeyword.value) {
-      res = await taskApi.getTasksWithSubtasks({ page: currentPage.value - 1, size: pageSize.value })
-      
-      // 将所有任务提取出来
-      const allWrappers = res.data.content
-      const allTasksMap = new Map() // id -> task
-      
-      // 第一步：收集所有任务
-      allWrappers.forEach((wrapper: any) => {
-        const task = wrapper.task
-        task.level = 0 // 默认层级
-        allTasksMap.set(task.id, task)
-        
-        // 也添加子任务到map中
-        if (wrapper.subtasks && wrapper.subtasks.length > 0) {
-          wrapper.subtasks.forEach((subtask: any) => {
-            subtask.level = 0 // 稍后计算
-            allTasksMap.set(subtask.id, subtask)
-          })
-        }
-      })
-      
-      // 第二步：计算每个任务的层级
-      const calculateLevel = (taskId: number): number => {
-        const task = allTasksMap.get(taskId)
-        if (!task || !task.parentId) {
-          return 0 // 顶级任务
-        }
-        
-        // 递归计算父任务的层级
-        const parentLevel = calculateLevel(task.parentId)
-        return parentLevel + 1
-      }
-      
-      // 为所有任务计算层级
-      allTasksMap.forEach((task) => {
-        task.level = calculateLevel(task.id)
-      })
-      
-      // 第三步：构建树形结构并展平
-      const result: any[] = []
-      
-      // 找到所有顶级任务（parentId为null）
-      const rootTasks = Array.from(allTasksMap.values()).filter((t: any) => !t.parentId)
-      
-      // 递归添加任务及其子任务
-      const addTaskAndChildren = (task: any) => {
-        result.push(task)
-        
-        // 找到该任务的所有直接子任务
-        const children = Array.from(allTasksMap.values()).filter((t: any) => t.parentId === task.id)
-        // 按创建时间排序（旧的在前）
-        children.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-        
-        // 递归添加子任务
-        children.forEach(child => {
-          addTaskAndChildren(child)
-        })
-      }
-      
-      // 按创建时间排序顶级任务（新的在前）
-      rootTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      
-      // 从顶级任务开始构建
-      rootTasks.forEach(task => {
-        addTaskAndChildren(task)
-      })
-      
-      console.log('任务列表:', result.map(t => ({
-        id: t.id,
-        title: t.title,
-        level: t.level,
-        parentId: t.parentId
-      })))
-      
-      tasks.value = result
-      total.value = res.data.totalElements
-    } else if (activeMenu.value === 'today') {
-      res = await taskApi.getTodayTasks()
-      tasks.value = res.data
-      total.value = res.data.length
-    } else if (activeMenu.value === 'upcoming') {
-      res = await taskApi.getUpcomingTasks()
-      tasks.value = res.data
-      total.value = res.data.length
-    } else if (searchKeyword.value) {
+    if (searchKeyword.value) {
       res = await taskApi.searchTasks({ keyword: searchKeyword.value, page: currentPage.value - 1, size: pageSize.value })
       tasks.value = res.data.content
       total.value = res.data.totalElements
-    } else if (activeMenu.value.startsWith('list-')) {
-      const listId = parseInt(activeMenu.value.split('-')[1])
-      res = await taskApi.getTasks({ page: currentPage.value - 1, size: pageSize.value })
-      // 修复：严格过滤 listId，使用 == 而非 === 以兼容数字和字符串类型
-      tasks.value = res.data.content.filter((t: any) => t.listId == listId)
-      total.value = tasks.value.length
+    } else {
+      // 统一：加载全部任务（扁平列表）再构建树结构
+      res = await taskApi.getTasks({ page: 0, size: 1000 })
+      const allFlat: any[] = res.data.content || []
+
+      // 构建映射
+      const taskMap = new Map<number, any>()
+      allFlat.forEach(t => taskMap.set(t.id, { ...t, level: 0 }))
+
+      // 递归计算层级
+      const calcLevel = (id: number): number => {
+        const t = taskMap.get(id)
+        if (!t || !t.parentId) return 0
+        return calcLevel(t.parentId) + 1
+      }
+      taskMap.forEach(t => { t.level = calcLevel(t.id) })
+
+      // 构建展平的树
+      const buildFlatTree = (roots: any[]) => {
+        const result: any[] = []
+        const addChildren = (task: any) => {
+          result.push(task)
+          const children = Array.from(taskMap.values()).filter((t: any) => t.parentId === task.id)
+          children.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          children.forEach(addChildren)
+        }
+        roots.forEach(addChildren)
+        return result
+      }
+
+      // 筛选逻辑
+      if (activeMenu.value === 'today') {
+        const today = new Date().toDateString()
+        const todayRoots = Array.from(taskMap.values()).filter((t: any) => {
+          if (t.parentId) return false
+          if (t.status === 1) return false
+          if (t.dueDate && new Date(t.dueDate).toDateString() === today) return true
+          if (t.startDate && new Date(t.startDate).toDateString() === today) return true
+          if (t.startDate && t.dueDate) {
+            const now = new Date(); now.setHours(0,0,0,0)
+            const s = new Date(t.startDate); s.setHours(0,0,0,0)
+            const e = new Date(t.dueDate); e.setHours(0,0,0,0)
+            return now >= s && now <= e
+          }
+          return false
+        })
+        todayRoots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        tasks.value = buildFlatTree(todayRoots)
+        total.value = tasks.value.length
+      } else if (activeMenu.value === 'upcoming') {
+        const now = new Date(); now.setHours(0,0,0,0)
+        const upcomingRoots = Array.from(taskMap.values()).filter((t: any) => {
+          if (t.parentId) return false
+          if (t.status === 1) return false
+          if (t.startDate && new Date(t.startDate) > now) return true
+          if (t.dueDate && new Date(t.dueDate) > now) return true
+          return false
+        })
+        upcomingRoots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        tasks.value = buildFlatTree(upcomingRoots)
+        total.value = tasks.value.length
+      } else if (activeMenu.value.startsWith('list-')) {
+        const listId = parseInt(activeMenu.value.split('-')[1])
+        const listRoots = Array.from(taskMap.values()).filter((t: any) => {
+          if (t.parentId) return false
+          return t.listId == listId
+        })
+        listRoots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        tasks.value = buildFlatTree(listRoots)
+        total.value = tasks.value.length
+      } else {
+        // 'all' — 展示完整树
+        const allRoots = Array.from(taskMap.values()).filter((t: any) => !t.parentId)
+        allRoots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        tasks.value = buildFlatTree(allRoots)
+        total.value = tasks.value.length
+      }
     }
   } catch (error) {
     console.error('加载任务失败:', error)
@@ -640,6 +737,11 @@ const handleCompleteTask = async (task: any) => {
   } catch (error) {
     console.error('操作失败:', error)
   }
+}
+
+// 日历中点击任务 → 打开同一个编辑面板
+const handleCalendarTaskClick = (task: any) => {
+  handleEditTask(task)
 }
 
 // 编辑任务
@@ -728,7 +830,8 @@ const doSave = async () => {
     priority: taskForm.priority,
     startDate: taskForm.startDate,
     dueDate: taskForm.dueDate,
-    listId: taskForm.listId
+    listId: taskForm.listId,
+    parentId: editingTask.value.parentId // 保持父任务关系不变
   }
   const subtasksSnapshot: Array<{ id?: number; title: string; completed: boolean }> = []
   if (taskForm.subtasks) {
@@ -758,12 +861,10 @@ const doSave = async () => {
     const existingSubtasks = existingSubtasksRes.data || []
     console.log('数据库中现有子任务:', existingSubtasks)
 
-    // 构建数据库子任务映射（同时按 id 和 title）
+    // 构建数据库子任务映射（仅按 id）
     const dbSubtaskById = new Map<number, any>()
-    const dbSubtaskByTitle = new Map<string, any>()
     existingSubtasks.forEach((st: any) => {
       dbSubtaskById.set(st.id, st)
-      dbSubtaskByTitle.set(st.title, st)
     })
 
     // 收集前端有 id 的子任务
@@ -782,13 +883,10 @@ const doSave = async () => {
 
     // 2. 更新或创建子任务（遍历快照而非 taskForm.subtasks）
     for (const subtask of subtasksSnapshot) {
-      // 优先按 id 匹配，fallback 到 title
-      let dbSubtask = null
-      if (subtask.id && dbSubtaskById.has(subtask.id)) {
-        dbSubtask = dbSubtaskById.get(subtask.id)
-      } else {
-        dbSubtask = dbSubtaskByTitle.get(subtask.title)
-      }
+      // 仅按 id 匹配，允许同名子任务
+      const dbSubtask = (subtask.id && dbSubtaskById.has(subtask.id))
+        ? dbSubtaskById.get(subtask.id)
+        : null
 
       if (dbSubtask) {
         // 更新现有子任务（保留 parentId，防止被提升为顶级任务）
@@ -798,11 +896,6 @@ const doSave = async () => {
           status: subtask.completed ? 1 : 0,
           parentId: taskId
         })
-        // 回填 id 到原始 reactive 对象，使后续操作能按 id 匹配
-        const originalSubtask = taskForm.subtasks?.find(
-          (st: any) => st.title && st.title.trim() === subtask.title && !st.id
-        )
-        if (originalSubtask) originalSubtask.id = dbSubtask.id
       } else {
         // 创建新子任务
         console.log('创建新子任务:', subtask.title, 'parentId:', taskId)
@@ -920,15 +1013,30 @@ const getSelectedListName = () => {
 }
 
 // 格式化短日期
+// 判断日期字符串是否有具体时间（非 00:00）
+const hasTimeValue = (dateStr: string) => {
+  if (!dateStr) return false
+  const d = new Date(dateStr)
+  return d.getHours() !== 0 || d.getMinutes() !== 0
+}
+
 const formatDateShort = (dateStr: string) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   const month = date.getMonth() + 1
   const day = date.getDate()
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${month}月${day}日 ${hours}:${minutes}`
+  if (hasTimeValue(dateStr)) {
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${month}月${day}日 ${hours}:${minutes}`
+  }
+  return `${month}月${day}日`
 }
+
+const datePickerFormat = computed(() => {
+  const val = taskForm.dueDate || taskForm.startDate
+  return hasTimeValue(val) ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD'
+})
 
 // 删除任务
 const handleDeleteTask = async (task: any) => {
@@ -945,6 +1053,59 @@ const handleDeleteTask = async (task: any) => {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除任务失败:', error)
+    }
+  }
+}
+
+// 批量操作
+const enterBatchMode = () => {
+  batchMode.value = true
+  selectedTaskIds.value.clear()
+}
+
+const exitBatchMode = () => {
+  batchMode.value = false
+  selectedTaskIds.value.clear()
+}
+
+const toggleTaskSelection = (taskId: number) => {
+  const newSet = new Set(selectedTaskIds.value)
+  if (newSet.has(taskId)) {
+    newSet.delete(taskId)
+  } else {
+    newSet.add(taskId)
+  }
+  selectedTaskIds.value = newSet
+}
+
+const handleSelectAll = () => {
+  const visibleIds = new Set(tasks.value.map(t => t.id))
+  // Skip child tasks whose parent is also visible (parent cascade will delete them)
+  const filtered = tasks.value
+    .filter(t => !t.parentId || !visibleIds.has(t.parentId))
+    .map(t => t.id)
+  selectedTaskIds.value = new Set(filtered)
+}
+
+const handleBatchDelete = async () => {
+  if (selectedTaskIds.value.size === 0) {
+    ElMessage.warning('请先选择要删除的任务')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedTaskIds.value.size} 个任务吗？此操作不可恢复。`,
+      '批量删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    await batchApi.batchDelete(Array.from(selectedTaskIds.value))
+    ElMessage.success(`已删除 ${selectedTaskIds.value.size} 个任务`)
+    exitBatchMode()
+    loadTasks()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('批量删除失败:', error)
+      ElMessage.error('批量删除失败')
     }
   }
 }
@@ -1053,73 +1214,117 @@ const getPriorityText = (priority: number) => {
 }
 
 // 获取时间状态文本
+// 规则：无具体时间不显示；跨天只显示天数；同日有时间才显示小时分钟
 const getTimeStatus = (task: any) => {
   if (!task.startDate && !task.dueDate) return ''
-  
+  if (task.status === 1) return ''
+
   const now = new Date()
   const startDate = task.startDate ? new Date(task.startDate) : null
   const dueDate = task.dueDate ? new Date(task.dueDate) : null
-  
-  // 如果已完成，不显示
-  if (task.status === 1) return ''
-  
+
+  const dueHasTime = dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0)
+  const startHasTime = startDate && (startDate.getHours() !== 0 || startDate.getMinutes() !== 0)
+  const isCrossDay = startDate && dueDate && startDate.toDateString() !== dueDate.toDateString()
+
+  // 无具体时间 → 不显示
+  if (!dueHasTime && !startHasTime) return ''
+
   // 还没到开始日期
   if (startDate && now < startDate) {
     const diff = startDate.getTime() - now.getTime()
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
     return `${days}天后开始`
   }
-  
-  // 在任务期间或已过期
+
   if (dueDate) {
-    if (now > dueDate) {
-      // 已过期
-      const diff = now.getTime() - dueDate.getTime()
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-      return `过期${days}天`
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const dueDay = new Date(dueDate); dueDay.setHours(0, 0, 0, 0)
+    const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    // 跨天或仅有日期（无时间）→ 只显示天数
+    if (isCrossDay || !dueHasTime) {
+      if (diffDays === 0) return '今天'
+      if (diffDays > 0) return `${diffDays}天后结束`
+      return `过期${Math.abs(diffDays)}天`
+    }
+
+    // 同日 + 有具体时间 → 精确到小时分钟
+    const diffMs = now.getTime() - dueDate.getTime()
+    const absMs = Math.abs(diffMs)
+    const days = Math.floor(absMs / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((absMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const mins = Math.floor((absMs % (1000 * 60 * 60)) / (1000 * 60))
+    if (diffMs > 0) {
+      if (days > 0) return `过期${days}天${hours}小时`
+      if (hours > 0) return `过期${hours}小时${mins}分钟`
+      return `过期${mins}分钟`
     } else {
-      // 任务期间
-      const diff = dueDate.getTime() - now.getTime()
-      const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-      return `${days}天后结束`
+      if (days > 0) return `${days}天后结束`
+      if (hours > 0) return `${hours}小时${mins}分钟后`
+      return `${mins}分钟后`
     }
   }
-  
+
   return ''
 }
 
 // 获取时间状态样式类
 const getTimeStatusClass = (task: any) => {
-  if (!task.startDate && !task.dueDate) return ''
-  
+  if (!getTimeStatus(task)) return ''
+
   const now = new Date()
   const startDate = task.startDate ? new Date(task.startDate) : null
   const dueDate = task.dueDate ? new Date(task.dueDate) : null
-  
-  // 如果已完成，不显示
-  if (task.status === 1) return ''
-  
-  // 还没到开始日期 - 蓝色
-  if (startDate && now < startDate) {
-    return 'time-status-upcoming'
+
+  if (startDate && now < startDate) return 'time-status-upcoming'
+
+  if (dueDate) {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const dueDay = new Date(dueDate); dueDay.setHours(0, 0, 0, 0)
+    if (dueDay < today) return 'time-status-overdue'
+    if (dueDay > today) return 'time-status-active'
+    return 'time-status-today'
   }
-  
-  // 在任务期间 - 蓝色
-  if (dueDate && now <= dueDate) {
-    return 'time-status-active'
-  }
-  
-  // 已过期 - 红色
-  if (dueDate && now > dueDate) {
-    return 'time-status-overdue'
-  }
-  
+
   return ''
+}
+
+// 判断是否过期（仅限严格过期：截止日期 < 今天，当天不算）
+const isOverdue = (task: any) => {
+  if (task.status === 1) return false
+  if (!task.dueDate) return false
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const dueDay = new Date(task.dueDate); dueDay.setHours(0, 0, 0, 0)
+  return dueDay < today
+}
+
+// 顺延过期任务到今日（使用本地时间格式化，避免 toISOString 的 UTC 时区偏移）
+const handlePostponeTask = async (task: any) => {
+  try {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    await taskApi.updateTaskTime(task.id, { dueDate: formatLocalDateTime(today) })
+    ElMessage.success('已顺延至今天')
+    loadTasks()
+  } catch {
+    ElMessage.error('顺延失败')
+  }
 }
 
 onMounted(() => {
   loadLists()
   loadTasks()
+  loadReminders()
+  reminderTimer = setInterval(loadReminders, 60000) // 每分钟轮询提醒
+})
+
+// 切换模块时退出批量模式
+watch(currentModule, () => {
+  if (batchMode.value) exitBatchMode()
+})
+
+onUnmounted(() => {
+  if (reminderTimer) clearInterval(reminderTimer)
 })
 </script>
 
@@ -1249,6 +1454,12 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.content-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .content-header h2 {
   margin: 0;
   font-size: 20px;
@@ -1308,6 +1519,11 @@ onMounted(() => {
   background-color: #f9f9f9;
 }
 
+.task-item.batch-selected {
+  background-color: #ecf5ff;
+  outline: 1px solid #409EFF;
+}
+
 .task-item.completed .task-title {
   text-decoration: line-through;
   color: #999;
@@ -1360,6 +1576,10 @@ onMounted(() => {
 
 .time-status-overdue {
   color: #F56C6C;
+}
+
+.time-status-today {
+  color: #E6A23C;
 }
 
 .task-actions {
@@ -1445,6 +1665,22 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
+
+/* 纪念日模块 */
+.anniversaries-module {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.bell-btn { position: relative; }
+
+.reminder-popover h4 { margin: 0 0 12px 0; font-size: 14px; color: #303133; }
+.reminder-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+.reminder-item { padding: 10px; border-radius: 6px; background: #f5f7fa; cursor: pointer; transition: background 0.2s; }
+.reminder-item:hover { background: #ecf5ff; }
+.reminder-name { font-weight: 500; font-size: 14px; color: #303133; }
+.reminder-time { font-size: 12px; color: #909399; margin-top: 4px; }
 
 /* 占位模块 */
 .placeholder-module {

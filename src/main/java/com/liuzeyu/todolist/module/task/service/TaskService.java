@@ -3,6 +3,7 @@ package com.liuzeyu.todolist.module.task.service;
 import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
+import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskWithSubtasks;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
@@ -26,10 +27,18 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
 
+    private void validateDateRange(TaskRequest request) {
+        if (request.getStartDate() != null && request.getDueDate() != null
+                && request.getDueDate().isBefore(request.getStartDate())) {
+            throw new BusinessException("结束时间不能早于开始时间");
+        }
+    }
+
     /**
      * 创建任务
      */
     public Task createTask(Long userId, TaskRequest request) {
+        validateDateRange(request);
         Task task = new Task();
         task.setUserId(userId);
         task.setTitle(request.getTitle());
@@ -75,12 +84,15 @@ public class TaskService {
      * 更新任务
      */
     public Task updateTask(Long userId, Long taskId, TaskRequest request) {
+        validateDateRange(request);
         Task task = getTask(userId, taskId);
 
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
         task.setListId(request.getListId());
-        task.setParentId(request.getParentId()); // 设置父任务ID
+        if (request.getParentId() != null) {
+            task.setParentId(request.getParentId());
+        }
         if (request.getPriority() != null) {
             task.setPriority(request.getPriority());
         }
@@ -98,6 +110,29 @@ public class TaskService {
         task.setStartDate(request.getStartDate()); // 设置预定日期
         task.setReminderTime(request.getReminderTime());
         task.setRepeatRule(request.getRepeatRule());
+
+        return taskRepository.save(task);
+    }
+
+    /**
+     * 更新任务时间（仅更新开始/截止时间，用于拖拽修改）
+     */
+    public Task updateTaskTime(Long userId, Long taskId, TaskTimeRequest request) {
+        Task task = getTask(userId, taskId);
+
+        LocalDateTime newStart = request.getStartDate() != null ? request.getStartDate() : task.getStartDate();
+        LocalDateTime newDue = request.getDueDate() != null ? request.getDueDate() : task.getDueDate();
+
+        if (newStart != null && newDue != null && newDue.isBefore(newStart)) {
+            throw new BusinessException("结束时间不能早于开始时间");
+        }
+
+        if (request.getStartDate() != null) {
+            task.setStartDate(request.getStartDate());
+        }
+        if (request.getDueDate() != null) {
+            task.setDueDate(request.getDueDate());
+        }
 
         return taskRepository.save(task);
     }
@@ -211,6 +246,13 @@ public class TaskService {
         }
     }
     
+    /**
+     * 获取日期范围内的任务（日历视图用）
+     */
+    public List<Task> getTasksByDateRange(Long userId, LocalDateTime rangeStart, LocalDateTime rangeEnd) {
+        return taskRepository.findByDateRange(userId, rangeStart, rangeEnd);
+    }
+
     /**
      * 获取带子任务的任务列表（分页）
      * 返回所有任务，前端自行构建层级

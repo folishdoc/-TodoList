@@ -30,4 +30,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     
     @Query("SELECT t FROM Task t WHERE t.userId = :userId AND (:keyword IS NULL OR t.title LIKE %:keyword% OR t.description LIKE %:keyword%) ORDER BY t.createdAt DESC")
     Page<Task> searchTasks(@Param("userId") Long userId, @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT t FROM Task t WHERE t.userId = :userId AND "
+        + "((t.startDate >= :rangeStart AND t.startDate < :rangeEnd) OR "
+        + " (t.dueDate >= :rangeStart AND t.dueDate < :rangeEnd) OR "
+        + " (t.startDate <= :rangeStart AND t.dueDate >= :rangeEnd)) "
+        + "ORDER BY t.priority DESC, t.sortOrder ASC")
+    List<Task> findByDateRange(@Param("userId") Long userId,
+                               @Param("rangeStart") LocalDateTime rangeStart,
+                               @Param("rangeEnd") LocalDateTime rangeEnd);
 }
