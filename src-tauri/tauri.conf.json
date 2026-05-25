@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/nicehash/tauri-apps-config-schema/refs/heads/master/tauri.conf.json",
   "productName": "Todolist",
   "version": "1.0.0",
   "identifier": "com.todolist.app",
@@ -19,9 +18,7 @@
         "minWidth": 900,
         "minHeight": 600,
         "center": true,
-        "resizable": true,
-        "decorations": true,
-        "closeBehavior": "minimize"
+        "resizable": true
       }
     ],
     "security": {
@@ -43,13 +40,12 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "../jre/**",
-      "../backend.jar"
+      "backend.jar"
     ],
-    "nsis": {
-      "installMode": "currentUser",
-      "installerIcon": "icons/icon.ico",
-      "shortcutName": "Todolist"
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
     }
   }
 }
