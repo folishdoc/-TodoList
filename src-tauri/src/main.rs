@@ -50,7 +50,17 @@ fn start_backend() -> Option<Child> {
         .ok()
 }
 
+fn clear_webview_cache() {
+    // 清除 WebView2 缓存（包括 Service Worker），避免旧版本资源被缓存
+    let local_app_data = env::var("LOCALAPPDATA").unwrap_or_default();
+    let data_dir = PathBuf::from(&local_app_data).join("com.todolist.app");
+    if data_dir.exists() {
+        let _ = std::fs::remove_dir_all(&data_dir);
+    }
+}
+
 fn main() {
+    clear_webview_cache();
     let backend = start_backend();
 
     tauri::Builder::default()

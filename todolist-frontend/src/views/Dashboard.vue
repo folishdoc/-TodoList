@@ -1654,6 +1654,7 @@ onUnmounted(() => {
 .dashboard-container {
   height: calc(100vh - var(--titlebar-height, 0px));
   overflow: hidden;
+  flex: 1;
 }
 
 /* 图标导航栏 */

@@ -21,7 +21,7 @@ onMounted(async () => {
 
 <template>
   <TitleBar />
-  <div v-if="backendReady" style="flex:1;display:flex;overflow:hidden">
+  <div v-if="backendReady" style="flex:1;overflow:hidden">
     <router-view />
   </div>
   <div v-else class="app-loader">

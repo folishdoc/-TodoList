@@ -12,27 +12,13 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
-    <script type="module">
-      // 开发环境不注册Service Worker，避免缓存问题
-      // 生产环境可以启用
-      if ('serviceWorker' in navigator && import.meta.env.PROD) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered:', registration)
-            })
-            .catch((error) => {
-              console.log('SW registration failed:', error)
-            })
-        })
-      }
-      
-      // 如果已经注册了SW，在开发环境unregister
-      if ('serviceWorker' in navigator && import.meta.env.DEV) {
+    <script>
+      // 桌面应用不需要 Service Worker，清除已注册的 SW
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) {
             registration.unregister();
-            console.log('SW unregistered for development');
+            console.log('SW unregistered');
           }
         });
       }
