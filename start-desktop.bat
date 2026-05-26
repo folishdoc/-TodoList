@@ -6,9 +6,13 @@ set ROOT=%~dp0
 echo 正在启动 Todolist...
 echo.
 
-:: 检查 Java
-where java >nul 2>&1
-if %ERRORLEVEL% neq 0 (
+:: 查找 Java（优先 JAVA_HOME）
+if defined JAVA_HOME (
+    set JAVA_EXE=%JAVA_HOME%\bin\javaw.exe
+) else (
+    set JAVA_EXE=javaw
+)
+if not exist "%JAVA_EXE%" (
     echo 错误：未找到 Java，请安装 JDK 17+
     pause
     exit /b 1
@@ -16,13 +20,13 @@ if %ERRORLEVEL% neq 0 (
 
 :: 启动后端
 echo 启动后端服务...
-start "Todolist-Backend" /MIN javaw -jar "%ROOT%target\todolist-0.0.1-SNAPSHOT.jar"
+start "Todolist-Backend" /MIN "%JAVA_EXE%" -jar "%ROOT%target\todolist-0.0.1-SNAPSHOT.jar"
 
 :: 等待后端就绪
 echo 等待服务就绪...
 :wait
 timeout /t 1 /nobreak >nul
-curl -s http://localhost:18080/api/tasks >nul 2>&1
+curl -s http://localhost:18080/ >nul 2>&1
 if %ERRORLEVEL% neq 0 goto wait
 
 :: 打开前端

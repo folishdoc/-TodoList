@@ -64,19 +64,9 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 授权规则
             .authorizeHttpRequests(auth -> auth
-                // 公开接口
-                .requestMatchers("/api/auth/**").permitAll()
-                // 系统管理接口需要认证
-                .requestMatchers("/api/system/**").authenticated()
-                // Swagger文档公开
-                .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                // H2 Console（开发调试）
-                .requestMatchers("/h2-console/**").permitAll()
-                // 桌面版：除 API 外全部公开（前端静态资源 + 健康检查）
-                .requestMatchers("/api/**").authenticated()
-                // OPTIONS请求公开（CORS预检）
+                .requestMatchers("/api/auth/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/h2-console/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                // 其他路径公开
+                .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )
             // 添加JWT过滤器
