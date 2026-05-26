@@ -1652,7 +1652,7 @@ onUnmounted(() => {
 
 <style scoped>
 .dashboard-container {
-  height: 100vh;
+  height: calc(100vh - var(--titlebar-height, 0px));
   overflow: hidden;
 }
 

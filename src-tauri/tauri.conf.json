@@ -18,11 +18,12 @@
         "minWidth": 900,
         "minHeight": 600,
         "center": true,
-        "resizable": true
+        "resizable": true,
+        "decorations": false
       }
     ],
     "security": {
-      "csp": "default-src 'self' http://localhost:18080; script-src 'self' http://localhost:18080; style-src 'self' 'unsafe-inline' http://localhost:18080; img-src 'self' data: http://localhost:18080; connect-src http://localhost:18080"
+      "csp": "default-src 'self' http://localhost:18080; script-src 'self' http://localhost:18080; style-src 'self' 'unsafe-inline' http://localhost:18080; img-src 'self' data: http://localhost:18080; connect-src http://localhost:18080 ipc:"
     },
     "trayIcon": {
       "iconPath": "icons/icon.png",

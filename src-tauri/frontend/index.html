@@ -7,8 +7,17 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            display: flex; align-items: center; justify-content: center;
-            height: 100vh; background: #f5f7fa; font-family: 'Microsoft YaHei', sans-serif;
+            display: flex; flex-direction: column; height: 100vh;
+            background: #f5f7fa; font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .bootstrap-titlebar {
+            height: 32px; background: #1a1a2e;
+            display: flex; align-items: center; flex-shrink: 0;
+            padding-left: 14px; color: #e0e0e0; font-size: 13px; font-weight: 500;
+            user-select: none; -webkit-app-region: drag;
+        }
+        .loader-wrapper {
+            flex: 1; display: flex; align-items: center; justify-content: center;
         }
         .loader { text-align: center; color: #606266; }
         .loader h2 { margin-bottom: 16px; color: #667eea; }
@@ -20,10 +29,13 @@
     </style>
 </head>
 <body>
-    <div class="loader">
-        <h2>Todolist</h2>
-        <p>正在启动服务<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
-        <p id="error-msg" style="display:none; color: #f56c6c; margin-top: 12px;"></p>
+    <div class="bootstrap-titlebar">📝 Todolist</div>
+    <div class="loader-wrapper">
+        <div class="loader">
+            <h2>Todolist</h2>
+            <p>正在启动服务<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
+            <p id="error-msg" style="display:none; color: #f56c6c; margin-top: 12px;"></p>
+        </div>
     </div>
     <script src="loader.js"></script>
 </body>
