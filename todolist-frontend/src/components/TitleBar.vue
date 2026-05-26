@@ -17,9 +17,11 @@ onMounted(async () => {
     isMaximized.value = await appWindow.isMaximized()
 
     unlisten = await appWindow.onResized(async () => {
-      try { isMaximized.value = await appWindow.isMaximized() } catch {}
+      try { isMaximized.value = await appWindow.isMaximized() } catch { /* 窗口可能已关闭 */ }
     })
-  } catch {}
+  } catch (e) {
+    console.error('TitleBar: Tauri 窗口 API 加载失败', e)
+  }
 })
 
 onUnmounted(() => {
