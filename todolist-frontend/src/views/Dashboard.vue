@@ -841,7 +841,7 @@ const handleSearch = () => {
 
 // 撤销通知
 const showUndo = (label: string, callback: () => void) => {
-  const notification = ElMessage({
+  ElMessage({
     message: label,
     type: 'success',
     duration: 4000,

@@ -72,13 +72,12 @@ public class SecurityConfig {
                 .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 // H2 Console（开发调试）
                 .requestMatchers("/h2-console/**").permitAll()
-                // 前端静态资源（桌面版托管 Vue 编译产物）
-                .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
-                .requestMatchers("/assets/**").permitAll()
+                // 桌面版：除 API 外全部公开（前端静态资源 + 健康检查）
+                .requestMatchers("/api/**").authenticated()
                 // OPTIONS请求公开（CORS预检）
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                // 其他接口需要认证
-                .anyRequest().authenticated()
+                // 其他路径公开
+                .anyRequest().permitAll()
             )
             // 添加JWT过滤器
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

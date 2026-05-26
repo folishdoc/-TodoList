@@ -23,17 +23,8 @@
     <div class="loader">
         <h2>Todolist</h2>
         <p>正在启动服务<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
+        <p id="error-msg" style="display:none; color: #f56c6c; margin-top: 12px;"></p>
     </div>
-    <script>
-        // 轮询后端直到就绪，然后跳转
-        async function check() {
-            try {
-                const r = await fetch('http://localhost:18080/api/tasks');
-                if (r.ok) { window.location.href = 'http://localhost:18080'; return; }
-            } catch(e) {}
-            setTimeout(check, 1000);
-        }
-        check();
-    </script>
+    <script src="loader.js"></script>
 </body>
 </html>
