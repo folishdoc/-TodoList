@@ -48,7 +48,7 @@ public class Task {
     @Column(name = "reminder_time")
     private LocalDateTime reminderTime;
 
-    @Column(name = "repeat_rule", length = 50)
+    @Column(name = "repeat_rule", length = 500)
     private String repeatRule;
 
     @Column(name = "completed_at")

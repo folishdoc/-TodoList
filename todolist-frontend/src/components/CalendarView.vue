@@ -740,8 +740,8 @@ const handleDayClick = (day: any) => { newTaskForm.value.dueDate = new Date(day.
 const handleTaskClick = (task: any) => emit('task-click', task)
 const handleCompleteTask = async (task: any) => {
   try {
-    if (task.status === 1) { await taskApi.uncompleteTask(task.id); ElMessage.success('已取消完成') }
-    else { await taskApi.completeTask(task.id); ElMessage.success('任务已完成') }
+    if (task.status === 1) { await taskApi.uncompleteTask(task.id) }
+    else { await taskApi.completeTask(task.id) }
     await loadTasks()
   } catch (err) { console.error('操作失败:', err) }
 }

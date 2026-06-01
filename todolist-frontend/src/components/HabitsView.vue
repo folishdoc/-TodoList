@@ -27,12 +27,18 @@
       <div v-loading="trendLoading" class="trend-chart">
         <el-empty v-if="trendData.length === 0" description="暂无打卡数据" :image-size="60" />
         <div v-else class="chart-bars">
-          <div v-for="item in trendData" :key="item.date" class="chart-bar-group">
+          <div
+            v-for="item in trendData"
+            :key="item.date"
+            class="chart-bar-group"
+            :class="{ clickable: item.count === 0 && item.date !== formatLocalDate(new Date()) }"
+            @click="handleTrendMakeup(item)"
+          >
             <div class="bar-container">
               <div
                 class="bar"
                 :style="{ height: getBarHeight(item.count) + 'px', background: getBarColor(item.count) }"
-                :title="`${item.date}: ${item.count}次打卡`"
+                :title="item.count === 0 && item.date !== formatLocalDate(new Date()) ? `${item.date}: 未打卡，点击补签` : `${item.date}: ${item.count}次打卡`"
               />
             </div>
             <div class="bar-label">{{ formatTrendDate(item.date) }}</div>
@@ -117,7 +123,15 @@
         </el-form-item>
         
         <el-form-item label="图标">
-          <el-input v-model="habitForm.icon" placeholder="输入emoji或图标" maxlength="2" />
+          <div class="icon-picker">
+            <div
+              v-for="icon in iconOptions"
+              :key="icon"
+              class="icon-option"
+              :class="{ selected: habitForm.icon === icon }"
+              @click="habitForm.icon = icon"
+            >{{ icon }}</div>
+          </div>
         </el-form-item>
         
         <el-form-item label="颜色">
@@ -164,6 +178,12 @@
     <!-- 打卡对话框 -->
     <el-dialog v-model="showCheckInDialog" title="打卡" width="400px">
       <el-form v-if="checkingHabit" label-width="80px">
+        <el-form-item v-if="habits.length > 1" label="习惯">
+          <el-select v-model="checkingHabit" style="width: 100%" value-key="id">
+            <el-option v-for="h in habits" :key="h.id" :label="h.name" :value="h" />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="完成值">
           <el-input-number
             v-model="checkInForm.completionValue"
@@ -232,6 +252,8 @@ const habitForm = reactive({
   timePeriod: 'all_day'
 })
 
+const iconOptions = ['🎯','📚','💪','🏃','🧘','💧','🍎','😴','⏰','📝','💻','🎨','🎵','🚶','🏊','🚴','📖','✍️','🧹','🌱','💊','☕','🍽️','🛏️','🎮','📱','💼','🗂️','🐾','🌟']
+
 const checkInForm = reactive({
   completionValue: 1,
   note: '',
@@ -282,36 +304,67 @@ const getTargetText = (habit: any) => {
   return `${habit.targetValue} ${units[habit.targetType as keyof typeof units] || '次'}`
 }
 
-// 打卡
-const handleCheckIn = (habit: any) => {
-  checkingHabit.value = habit
-  checkInForm.completionValue = habit.targetValue
+// 周期校验：今天是否可以打卡
+const canCheckInToday = (habit: any) => {
+  const freq = habit.frequency
+  if (freq === 'daily' || freq === 'weekly') return true
+  const dow = new Date().getDay() // 0=Sun 1-5=Mon-Fri 6=Sat
+  if (freq === 'weekdays') return dow >= 1 && dow <= 5
+  if (freq === 'weekends') return dow === 0 || dow === 6
+  return true
+}
+
+// 一键打卡
+const handleCheckIn = async (habit: any) => {
+  if (!canCheckInToday(habit)) {
+    const label = habit.frequency === 'weekdays' ? '工作日' : '周末'
+    ElMessage.warning(`今天不是${label}，不能打卡`)
+    return
+  }
+  try {
+    await habitApi.checkIn(habit.id, {
+      completionValue: habit.targetValue,
+      note: '',
+      isMakeup: false
+    })
+    ElMessage.success('打卡成功')
+    await loadHabits()
+    await loadTodayRecords()
+  } catch (error) {
+    console.error('打卡失败:', error)
+  }
+}
+
+// 趋势图点击补签
+const handleTrendMakeup = (item: { date: string; count: number }) => {
+  const today = formatLocalDate(new Date())
+  if (item.count > 0 || item.date === today) return
+  if (habits.value.length === 0) { ElMessage.warning('没有可补签的习惯'); return }
+  checkingHabit.value = habits.value[0]
+  checkInForm.completionValue = habits.value[0].targetValue
   checkInForm.note = ''
-  checkInForm.isMakeup = false
-  checkInForm.checkDate = new Date()
+  checkInForm.isMakeup = true
+  checkInForm.checkDate = new Date(item.date)
   showCheckInDialog.value = true
 }
 
-// 提交打卡
+// 提交打卡（补卡用，保留对话框）
 const submitCheckIn = async () => {
   if (!checkingHabit.value) return
-  
   try {
     const params: any = {
       completionValue: checkInForm.completionValue,
       note: checkInForm.note,
       isMakeup: checkInForm.isMakeup
     }
-    
     if (checkInForm.isMakeup) {
       params.checkDate = formatLocalDate(new Date(checkInForm.checkDate))
     }
-    
     await habitApi.checkIn(checkingHabit.value.id, params)
     ElMessage.success('打卡成功')
     showCheckInDialog.value = false
     await loadHabits()
-    await loadTodayRecords() // 刷新今日记录
+    await loadTodayRecords()
   } catch (error) {
     console.error('打卡失败:', error)
   }
@@ -619,5 +672,47 @@ onMounted(() => {
   font-size: 11px;
   color: #606266;
   font-weight: 500;
+}
+
+/* 图标选择器 */
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.icon-option {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.15s;
+}
+
+.icon-option:hover {
+  background: #f0f2f5;
+  transform: scale(1.15);
+}
+
+.icon-option.selected {
+  border-color: #409EFF;
+  background: #ecf5ff;
+}
+
+/* 趋势补签 */
+.chart-bar-group.clickable {
+  cursor: pointer;
+}
+.chart-bar-group.clickable:hover .bar {
+  filter: brightness(1.3);
+  outline: 2px dashed #E6A23C;
+  outline-offset: 2px;
 }
 </style>

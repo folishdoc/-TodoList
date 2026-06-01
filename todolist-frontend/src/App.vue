@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import TitleBar from './components/TitleBar.vue'
 
+const route = useRoute()
+const isWidget = computed(() => route.path === '/widget')
 const isTauri = '__TAURI_INTERNALS__' in window
-const backendReady = ref(!isTauri)
+const backendReady = ref(!isTauri || isWidget.value)
 const backendError = ref(false)
 
 onMounted(async () => {
-  if (!isTauri) return
+  if (!isTauri || isWidget.value) return
   for (let i = 0; i < 30; i++) {
     try {
       const r = await fetch('http://localhost:18080/')
@@ -20,15 +23,20 @@ onMounted(async () => {
 </script>
 
 <template>
-  <TitleBar />
-  <div v-if="backendReady" style="flex:1;overflow:hidden">
+  <template v-if="isWidget">
     <router-view />
-  </div>
-  <div v-else class="app-loader">
-    <h2>📝 Todolist</h2>
-    <p v-if="!backendError">正在启动服务<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
-    <p v-else style="color: #f56c6c">后端启动超时，请确认 Java 17+ 已安装并重试</p>
-  </div>
+  </template>
+  <template v-else>
+    <TitleBar />
+    <div v-if="backendReady" style="flex:1;overflow:hidden">
+      <router-view />
+    </div>
+    <div v-else class="app-loader">
+      <h2>📝 Todolist</h2>
+      <p v-if="!backendError">正在启动服务<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
+      <p v-else style="color: #f56c6c">后端启动超时，请确认 Java 17+ 已安装并重试</p>
+    </div>
+  </template>
 </template>
 
 <style>

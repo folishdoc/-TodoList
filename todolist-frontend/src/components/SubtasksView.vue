@@ -109,7 +109,6 @@ const handleCompleteSubtask = async (subtask: any) => {
     if (subtask.status === 1) {
       // 取消完成
       await taskApi.uncompleteTask(subtask.id)
-      ElMessage.success('已取消完成')
     } else {
       // 完成任务
       await taskApi.completeTask(subtask.id)

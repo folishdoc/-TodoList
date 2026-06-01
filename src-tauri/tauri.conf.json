@@ -20,15 +20,25 @@
         "center": true,
         "resizable": true,
         "decorations": false
+      },
+      {
+        "label": "widget",
+        "title": "待办小组件",
+        "url": "index.html#/widget",
+        "width": 320,
+        "height": 450,
+        "minWidth": 260,
+        "minHeight": 300,
+        "center": false,
+        "resizable": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false
       }
     ],
     "security": {
       "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src http://localhost:18080 http://ipc.localhost ipc:"
-    },
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true,
-      "menuOnLeftClick": false
     }
   },
   "bundle": {

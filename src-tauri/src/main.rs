@@ -5,6 +5,8 @@ use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
+use tauri::menu::{MenuBuilder, MenuItemBuilder};
+use tauri::tray::TrayIconBuilder;
 
 struct Backend(Mutex<Option<Child>>);
 
@@ -51,7 +53,6 @@ fn start_backend() -> Option<Child> {
 }
 
 fn clear_webview_cache() {
-    // 清除 WebView2 缓存（包括 Service Worker），避免旧版本资源被缓存
     let local_app_data = env::var("LOCALAPPDATA").unwrap_or_default();
     let data_dir = PathBuf::from(&local_app_data).join("com.todolist.app");
     if data_dir.exists() {
@@ -66,21 +67,58 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(Backend(Mutex::new(backend)))
+        .setup(|app| {
+            let show_item = MenuItemBuilder::with_id("show", "打开清单").build(app)?;
+            let widget_item = MenuItemBuilder::with_id("widget", "打开小组件").build(app)?;
+            let quit_item = MenuItemBuilder::with_id("quit", "退出").build(app)?;
+            let menu = MenuBuilder::new(app)
+                .item(&show_item)
+                .item(&widget_item)
+                .item(&quit_item)
+                .build()?;
+
+            let icon = app.default_window_icon().cloned().unwrap();
+            let _tray = TrayIconBuilder::new()
+                .icon(icon)
+                .menu(&menu)
+                .on_menu_event(|app, event| {
+                    match event.id().as_ref() {
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                        "widget" => {
+                            if let Some(w) = app.get_webview_window("widget") {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
+                        }
+                        "quit" => {
+                            if let Ok(mut guard) = app.state::<Backend>().0.lock() {
+                                if let Some(ref mut child) = *guard {
+                                    let _ = child.kill();
+                                }
+                            }
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .build(app)?;
+
+            Ok(())
+        })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
-                let _ = window.hide();
+                let label = window.label().to_string();
+                if label == "main" || label == "widget" {
+                    let _ = window.hide();
+                }
             }
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|app, event| {
-            if let tauri::RunEvent::ExitRequested { .. } = event {
-                if let Ok(mut guard) = app.state::<Backend>().0.lock() {
-                    if let Some(ref mut child) = *guard {
-                        let _ = child.kill();
-                    }
-                }
-                app.exit(0);
-            }
-        });
+        .run(|_app, _event| {});
 }

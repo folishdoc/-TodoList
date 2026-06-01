@@ -23,7 +23,8 @@ import java.util.List;
 public class RepeatTaskService {
 
     private final TaskRepository taskRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
 
     /**
      * 每天凌晨检查并生成重复任务
@@ -42,20 +43,23 @@ public class RepeatTaskService {
             if (task.getRepeatRule() != null && !task.getRepeatRule().isEmpty()) {
                 try {
                     RepeatRule rule = objectMapper.readValue(task.getRepeatRule(), RepeatRule.class);
-                    
+
                     if (shouldGenerateNewTask(task, rule, now)) {
                         Task newTask = createRepeatedTask(task, rule);
                         taskRepository.save(newTask);
                         generatedCount++;
-                        
+
                         log.info("生成重复任务: {} -> {}", task.getTitle(), newTask.getTitle());
                     }
+
+                    // 检查循环结束日期是否临近（7天内）
+                    checkEndDateApproaching(task, rule, now);
                 } catch (JsonProcessingException e) {
                     log.error("解析重复规则失败: taskId={}", task.getId(), e);
                 }
             }
         }
-        
+
         log.info("重复任务生成完成，共生成 {} 个新任务", generatedCount);
     }
 
@@ -75,6 +79,21 @@ public class RepeatTaskService {
         
         // 简单实现：每次完成后都生成新任务（不限制次数）
         return true;
+    }
+
+    /**
+     * 检查循环结束日期是否临近（7天内），如果是则记录提醒
+     */
+    private void checkEndDateApproaching(Task task, RepeatRule rule, LocalDateTime now) {
+        if (rule.getEndDate() == null) return;
+
+        LocalDateTime endDate = rule.getEndDate();
+        long daysUntilEnd = java.time.Duration.between(now, endDate).toDays();
+
+        if (daysUntilEnd >= 0 && daysUntilEnd <= 7) {
+            log.info("循环即将结束: taskId={}, title={}, 剩余{}天, endDate={}",
+                task.getId(), task.getTitle(), daysUntilEnd, endDate);
+        }
     }
 
     /**

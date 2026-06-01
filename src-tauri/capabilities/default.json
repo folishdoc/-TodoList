@@ -1,7 +1,7 @@
 {
   "identifier": "default",
   "description": "默认权限 — 允许窗口操作、HTTP请求等",
-  "windows": ["main"],
+  "windows": ["main", "widget"],
   "permissions": [
     "core:window:default",
     "core:window:allow-minimize",
@@ -27,6 +27,7 @@
     "core:window:allow-set-fullscreen",
     "core:window:allow-is-resizable",
     "core:window:allow-set-resizable",
-    "core:event:default"
+    "core:event:default",
+    "core:tray:default"
   ]
 }
