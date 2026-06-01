@@ -564,25 +564,57 @@
             <el-option label="高" :value="3" />
           </el-select>
         </el-form-item>
-        <el-form-item label="预定日期" prop="startDate">
-          <el-date-picker
-            v-model="taskForm.startDate"
-            type="datetime"
-            placeholder="任务开始时间（选填）"
-            :format="datePickerFormat"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="截至日期" prop="dueDate">
-          <el-date-picker
-            v-model="taskForm.dueDate"
-            type="datetime"
-            placeholder="选择截止日期（选填）"
-            :format="datePickerFormat"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-            style="width: 100%"
-          />
+        <el-form-item label="时间设置">
+          <el-popover trigger="click" placement="bottom" :width="380" @hide="showRepeatForm = false">
+            <template #reference>
+              <el-tag size="default" :type="(taskForm.startDate || taskForm.dueDate || repeatForm.type) ? 'warning' : 'info'" style="cursor: pointer">
+                <el-icon><Calendar /></el-icon>
+                {{ getCreateTimeSummary() }}
+              </el-tag>
+            </template>
+            <div style="padding: 4px 0">
+              <el-form label-width="70px" size="small">
+                <el-form-item label="开始时间">
+                  <el-date-picker v-model="taskForm.startDate" type="datetime" placeholder="未设置"
+                    :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
+                </el-form-item>
+                <el-form-item label="截止时间">
+                  <el-date-picker v-model="taskForm.dueDate" type="datetime" placeholder="未设置"
+                    :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
+                </el-form-item>
+              </el-form>
+              <el-divider style="margin: 8px 0">循环</el-divider>
+              <div v-if="!repeatForm.type" style="text-align: center">
+                <el-button size="small" @click="repeatForm.type = 'DAILY'; onRepeatTypeChange()">+ 设置循环</el-button>
+              </div>
+              <div v-else>
+                <el-form label-width="70px" size="small">
+                  <el-form-item label="类型">
+                    <el-select v-model="repeatForm.type" style="width: 100%" :teleported="false" @change="onRepeatTypeChange">
+                      <el-option label="每天" value="DAILY" /><el-option label="每周" value="WEEKLY" /><el-option label="每月" value="MONTHLY" /><el-option label="每年" value="YEARLY" />
+                    </el-select>
+                    <el-button size="small" type="danger" text style="margin-left: 4px" @click="repeatForm.type = ''; resetRepeatForm()">取消循环</el-button>
+                  </el-form-item>
+                  <el-form-item v-if="repeatForm.type" label="间隔">
+                    <el-input-number v-model="repeatForm.interval" :min="1" :max="365" style="width: 100%" size="small" />
+                  </el-form-item>
+                  <el-form-item v-if="repeatForm.type === 'WEEKLY'" label="星期">
+                    <el-checkbox-group v-model="repeatForm.weekDays" size="small">
+                      <el-checkbox :value="1">一</el-checkbox><el-checkbox :value="2">二</el-checkbox><el-checkbox :value="3">三</el-checkbox>
+                      <el-checkbox :value="4">四</el-checkbox><el-checkbox :value="5">五</el-checkbox><el-checkbox :value="6">六</el-checkbox><el-checkbox :value="7">日</el-checkbox>
+                    </el-checkbox-group>
+                  </el-form-item>
+                  <el-form-item v-if="repeatForm.type === 'MONTHLY'" label="日期">
+                    <el-input-number v-model="repeatForm.dayOfMonth" :min="1" :max="31" style="width: 100%" size="small" />
+                  </el-form-item>
+                  <el-form-item v-if="repeatForm.type" label="结束日期">
+                    <el-date-picker v-model="repeatForm.endDate" type="datetime" placeholder="永不结束"
+                      :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
+                  </el-form-item>
+                </el-form>
+              </div>
+            </div>
+          </el-popover>
         </el-form-item>
         <el-form-item label="清单" prop="listId">
           <el-select v-model="taskForm.listId" placeholder="选择清单" clearable>
@@ -593,51 +625,6 @@
               :value="list.id"
             />
           </el-select>
-        </el-form-item>
-        <el-form-item label="重复">
-          <el-select v-model="repeatForm.type" placeholder="不重复" clearable style="width: 100%" @change="onRepeatTypeChange">
-            <el-option label="不重复" value="" />
-            <el-option label="每天" value="DAILY" />
-            <el-option label="每周" value="WEEKLY" />
-            <el-option label="每月" value="MONTHLY" />
-            <el-option label="每年" value="YEARLY" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="repeatForm.type" label="间隔">
-          <el-input-number v-model="repeatForm.interval" :min="1" :max="365" style="width: 100%" />
-          <div style="color: #909399; font-size: 12px; margin-top: 4px">
-            每 {{ repeatForm.interval }} {{ getRepeatTypeText() }}
-          </div>
-        </el-form-item>
-        <el-form-item v-if="repeatForm.type === 'WEEKLY'" label="星期">
-          <el-checkbox-group v-model="repeatForm.weekDays">
-            <el-checkbox :value="1">一</el-checkbox>
-            <el-checkbox :value="2">二</el-checkbox>
-            <el-checkbox :value="3">三</el-checkbox>
-            <el-checkbox :value="4">四</el-checkbox>
-            <el-checkbox :value="5">五</el-checkbox>
-            <el-checkbox :value="6">六</el-checkbox>
-            <el-checkbox :value="7">日</el-checkbox>
-          </el-checkbox-group>
-        </el-form-item>
-        <el-form-item v-if="repeatForm.type === 'MONTHLY'" label="日期">
-          <el-input-number v-model="repeatForm.dayOfMonth" :min="1" :max="31" style="width: 100%" />
-          <div style="color: #909399; font-size: 12px; margin-top: 4px">
-            每月第 {{ repeatForm.dayOfMonth }} 天
-          </div>
-        </el-form-item>
-        <el-form-item v-if="repeatForm.type" label="结束日期">
-          <el-date-picker
-            v-model="repeatForm.endDate"
-            type="datetime"
-            placeholder="永不结束"
-            :format="datePickerFormat"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-            style="width: 100%"
-          />
-          <div style="color: #909399; font-size: 12px; margin-top: 4px">
-            留空表示无限循环
-          </div>
         </el-form-item>
       </el-form>
       
@@ -685,7 +672,7 @@ import * as repeatApi from '../api/repeat'
 import * as anniversaryApi from '../api/anniversary'
 import { formatLocalDateTime } from '../utils/date'
 import { isOverdue, formatDateShort, hasTimeValue } from '../composables/useDateUtils'
-import { getRepeatLabel, getRepeatTypeText as getRepeatTypeTextRaw } from '../composables/useRepeatRule'
+import { getRepeatLabel } from '../composables/useRepeatRule'
 import { getPriorityType, getPriorityText } from '../composables/usePriority'
 import { useTaskSync } from '../composables/useTaskSync'
 import StatisticsView from '../components/StatisticsView.vue'
@@ -1616,8 +1603,6 @@ const resetTaskForm = () => {
   selectedTagIds.value = []
 }
 
-const getRepeatTypeText = () => getRepeatTypeTextRaw(repeatForm.type)
-
 const resetListForm = () => {
   listForm.name = ''
   listForm.color = '#409EFF'
@@ -1688,6 +1673,27 @@ const getTimeSummary = () => {
   }
 
   return summary || '时间'
+}
+
+const getCreateTimeSummary = () => {
+  const hasStart = taskForm.startDate
+  const hasDue = taskForm.dueDate
+  const hasRepeat = repeatForm.type
+
+  if (!hasStart && !hasDue && !hasRepeat) return '设置时间'
+
+  const parts: string[] = []
+  if (hasStart) parts.push(formatDateShort(taskForm.startDate))
+  if (hasDue) parts.push(formatDateShort(taskForm.dueDate))
+  let summary = parts.join(' ~ ')
+
+  if (hasRepeat) {
+    const labels: any = { DAILY: '每天', WEEKLY: '每周', MONTHLY: '每月', YEARLY: '每年' }
+    const label = labels[repeatForm.type] || repeatForm.type
+    summary = summary ? `${summary} · ${label}` : label
+  }
+
+  return summary || '设置时间'
 }
 
 // 为现有任务添加循环规则（详情面板内，不重载任务列表）
