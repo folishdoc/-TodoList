@@ -612,6 +612,9 @@
                       :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
                   </el-form-item>
                 </el-form>
+                <div style="text-align: right; margin-top: 8px">
+                  <el-button size="small" @click="repeatForm.type = ''; resetRepeatForm()">取消</el-button>
+                </div>
               </div>
             </div>
           </el-popover>

@@ -25,7 +25,8 @@ public class RepeatTaskService {
     private final TaskRepository taskRepository;
     private final ObjectMapper objectMapper = new ObjectMapper()
         .setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+        .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     /**
      * 每天凌晨检查并生成重复任务
