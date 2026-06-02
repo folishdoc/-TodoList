@@ -1,82 +1,31 @@
-HELP.md
+node_modules/
 target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+build/
+dist/
+out/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+# IDE
+.idea/
+.vscode/
 *.iml
 *.ipr
+*.iws
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
-.vscode/
-
-### Logs ###
-*.log
-backend.log
-frontend.log
-
-### OS ###
+# OS
 .DS_Store
 Thumbs.db
 
-### Uploads ###
-uploads/
+# Logs
+*.log
+logs/
 
-### Environment Variables ###
+# Test output
+coverage/
+playwright-report/
+test-results/
+*.lcov
+
+# Env
 .env
-!.env.example
-
-### Node ###
-node_modules/
-package-lock.json
-
-### Misc ###
-todo.txt
-.lingma/
-.claude/settings.local.json
-
-### Test results ###
-todolist-frontend/test-results/
-.gstack/
-
-### Agent/Config ###
-.agents/
-.claude/
-playwright-mcp/
-todolist-frontend/.agents/
-todolist-frontend/.playwright-mcp/
-.mcp.json
-.playwright-mcp/
-SKILLS-GUIDE.md
-skills-lock.json
-todolist-frontend/skills-lock.json
-todolist-frontend/docs/
-
-### Desktop build artifacts ###
-src/main/resources/static/
-data/
-src-tauri/target/
-src-tauri/jre/
-src-tauri/backend.jar
+.env.local
+.env.*.local
