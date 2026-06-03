@@ -577,49 +577,70 @@
               </el-tag>
             </template>
             <div style="padding: 4px 0">
-              <el-form label-width="70px" size="small">
-                <el-form-item label="开始时间">
-                  <el-date-picker v-model="taskForm.startDate" type="datetime" placeholder="未设置"
-                    :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
-                </el-form-item>
-                <el-form-item label="截止时间">
-                  <el-date-picker v-model="taskForm.dueDate" type="datetime" placeholder="未设置"
-                    :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
-                </el-form-item>
-              </el-form>
-              <el-divider style="margin: 8px 0">循环</el-divider>
-              <div v-if="!repeatForm.type" style="text-align: center">
-                <el-button size="small" @click="repeatForm.type = 'DAILY'; onRepeatTypeChange()">+ 设置循环</el-button>
-              </div>
-              <div v-else>
-                <el-form label-width="70px" size="small">
-                  <el-form-item label="类型">
-                    <el-select v-model="repeatForm.type" style="width: 100%" :teleported="false" @change="onRepeatTypeChange">
-                      <el-option label="每天" value="DAILY" /><el-option label="每周" value="WEEKLY" /><el-option label="每月" value="MONTHLY" /><el-option label="每年" value="YEARLY" />
-                    </el-select>
-                    <el-button size="small" type="danger" text style="margin-left: 4px" @click="repeatForm.type = ''; resetRepeatForm()">取消循环</el-button>
+              <el-radio-group v-model="taskTimeMode" size="small" style="margin-bottom: 12px" @change="onModeChange">
+                <el-radio-button label="normal">🕒 普通任务</el-radio-button>
+                <el-radio-button label="repeat">🔄 循环任务</el-radio-button>
+              </el-radio-group>
+
+              <!-- 普通模式：开始 + 截止 -->
+              <template v-if="taskTimeMode === 'normal'">
+                <el-form label-width="80px" size="small">
+                  <el-form-item label="开始时间">
+                    <el-date-picker v-model="taskForm.startDate" type="datetime" placeholder="未设置"
+                      :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
                   </el-form-item>
-                  <el-form-item v-if="repeatForm.type" label="间隔">
-                    <el-input-number v-model="repeatForm.interval" :min="1" :max="365" style="width: 100%" size="small" />
-                  </el-form-item>
-                  <el-form-item v-if="repeatForm.type === 'WEEKLY'" label="星期">
-                    <el-checkbox-group v-model="repeatForm.weekDays" size="small">
-                      <el-checkbox :value="1">一</el-checkbox><el-checkbox :value="2">二</el-checkbox><el-checkbox :value="3">三</el-checkbox>
-                      <el-checkbox :value="4">四</el-checkbox><el-checkbox :value="5">五</el-checkbox><el-checkbox :value="6">六</el-checkbox><el-checkbox :value="7">日</el-checkbox>
-                    </el-checkbox-group>
-                  </el-form-item>
-                  <el-form-item v-if="repeatForm.type === 'MONTHLY'" label="日期">
-                    <el-input-number v-model="repeatForm.dayOfMonth" :min="1" :max="31" style="width: 100%" size="small" />
-                  </el-form-item>
-                  <el-form-item v-if="repeatForm.type" label="结束日期">
-                    <el-date-picker v-model="repeatForm.endDate" type="datetime" placeholder="永不结束"
+                  <el-form-item label="截止时间">
+                    <el-date-picker v-model="taskForm.dueDate" type="datetime" placeholder="未设置"
                       :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
                   </el-form-item>
                 </el-form>
-                <div style="text-align: right; margin-top: 8px">
-                  <el-button size="small" @click="repeatForm.type = ''; resetRepeatForm()">取消</el-button>
+              </template>
+
+              <!-- 循环模式：周期基准 + 循环规则 -->
+              <template v-else>
+                <el-form label-width="90px" size="small">
+                  <el-form-item label="周期基准">
+                    <el-date-picker v-model="taskForm.dueDate" type="datetime" placeholder="未设置"
+                      :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
+                    <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">首次发生时间，下次循环以此为基准</div>
+                  </el-form-item>
+                </el-form>
+                <el-divider style="margin: 8px 0">循环规则</el-divider>
+                <div v-if="!repeatForm.type" style="text-align: center">
+                  <el-button size="small" @click="repeatForm.type = 'DAILY'; onRepeatTypeChange()">+ 设置循环</el-button>
                 </div>
-              </div>
+                <div v-else>
+                  <el-form label-width="90px" size="small">
+                    <el-form-item label="类型">
+                      <el-select v-model="repeatForm.type" style="width: 100%" :teleported="false" @change="onRepeatTypeChange">
+                        <el-option label="每天" value="DAILY" /><el-option label="每周" value="WEEKLY" /><el-option label="每月" value="MONTHLY" /><el-option label="每年" value="YEARLY" />
+                      </el-select>
+                      <el-button size="small" type="danger" text style="margin-left: 4px" @click="repeatForm.type = ''; resetRepeatForm()">取消循环</el-button>
+                    </el-form-item>
+                    <el-form-item v-if="repeatForm.type" label="间隔">
+                      <el-input-number v-model="repeatForm.interval" :min="1" :max="365" style="width: 100%" size="small" />
+                    </el-form-item>
+                    <el-form-item v-if="repeatForm.type === 'WEEKLY'" label="星期">
+                      <el-checkbox-group v-model="repeatForm.weekDays" size="small">
+                        <el-checkbox :value="1">一</el-checkbox><el-checkbox :value="2">二</el-checkbox><el-checkbox :value="3">三</el-checkbox>
+                        <el-checkbox :value="4">四</el-checkbox><el-checkbox :value="5">五</el-checkbox><el-checkbox :value="6">六</el-checkbox><el-checkbox :value="7">日</el-checkbox>
+                      </el-checkbox-group>
+                    </el-form-item>
+                    <el-form-item v-if="repeatForm.type === 'MONTHLY'" label="日期">
+                      <el-input-number v-model="repeatForm.dayOfMonth" :min="1" :max="31" style="width: 100%" size="small" />
+                    </el-form-item>
+                    <el-form-item v-if="repeatForm.type" label="循环结束">
+                      <el-date-picker v-model="repeatForm.endDate" type="datetime" placeholder="永不结束"
+                        :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
+                      <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">该日期之后不再生成新循环任务</div>
+                    </el-form-item>
+                  </el-form>
+                  <div style="text-align: right; margin-top: 8px">
+                    <el-button size="small" @click="repeatForm.type = ''; resetRepeatForm()">取消</el-button>
+                    <el-button size="small" type="primary" @click="handleSubmitTask" :loading="submitLoading">确定</el-button>
+                  </div>
+                </div>
+              </template>
             </div>
           </el-popover>
         </el-form-item>
@@ -681,6 +702,7 @@ import { formatLocalDateTime } from '../utils/date'
 import { isOverdue, formatDateShort, hasTimeValue } from '../composables/useDateUtils'
 import { getRepeatLabel } from '../composables/useRepeatRule'
 import { getPriorityType, getPriorityText } from '../composables/usePriority'
+import { useTaskTimeMode } from '../composables/useTaskTimeMode'
 import { useTaskSync } from '../composables/useTaskSync'
 import StatisticsView from '../components/StatisticsView.vue'
 import TagsView from '../components/TagsView.vue'
@@ -696,6 +718,7 @@ const showCreateTaskDialog = ref(false)
 const openCreateTaskDialog = () => {
   resetRepeatForm()
   showRepeatForm.value = false
+  taskTimeMode.value = 'normal'
   showCreateTaskDialog.value = true
 }
 const showCreateListDialog = ref(false)
@@ -775,6 +798,18 @@ const repeatForm = reactive({
 
 const editRepeatEndDate = ref('')
 const showRepeatForm = ref(false)
+
+// 时间模式：普通任务 / 循环任务（互斥）
+const { mode: taskTimeMode, switchToRepeat, switchToNormal } = useTaskTimeMode(editingTask)
+
+const onModeChange = async (newMode: 'normal' | 'repeat') => {
+  const ctx = { taskForm, showRepeatForm, repeatForm, editRepeatEndDate }
+  if (newMode === 'repeat') {
+    await switchToRepeat(ctx)
+  } else {
+    await switchToNormal(ctx)
+  }
+}
 
 // 防抖定时器
 let autoSaveTimer: any = null
@@ -1509,7 +1544,7 @@ const handleBatchDelete = async () => {
 // 提交任务
 const handleSubmitTask = async () => {
   if (!taskFormRef.value) return
-  
+
   await taskFormRef.value.validate(async (valid) => {
     if (valid) {
       submitLoading.value = true
@@ -1519,7 +1554,12 @@ const handleSubmitTask = async () => {
           ElMessage.success('更新成功')
           closeEditPanel()
         } else {
-          const res = await taskApi.createTask(taskForm)
+          // 循环模式：startDate 同步为 dueDate（循环任务没有开始时间）
+          const submitForm = { ...taskForm }
+          if (taskTimeMode.value === 'repeat') {
+            submitForm.startDate = submitForm.dueDate
+          }
+          const res = await taskApi.createTask(submitForm)
           // 如果设置了重复规则，创建后立即设置
           if (repeatForm.type && res.data?.id) {
             try {
@@ -1608,6 +1648,7 @@ const resetTaskForm = () => {
   taskTags.value = []
   taskAttachments.value = []
   selectedTagIds.value = []
+  taskTimeMode.value = 'normal'
 }
 
 const resetListForm = () => {
@@ -1732,6 +1773,18 @@ const handleAddRepeatInPanel = async () => {
 const getTimeStatus = (task: any) => {
   if (!task.startDate && !task.dueDate) return ''
   if (task.status === 1) return ''
+
+  // 循环任务：startDate = dueDate（周期基准日期），仅基于 dueDate 显示循环进度
+  if (task.repeatRule) {
+    if (!task.dueDate) return ''
+    const dueDate = new Date(task.dueDate)
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const dueDay = new Date(dueDate); dueDay.setHours(0, 0, 0, 0)
+    const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    if (diffDays < 0) return '循环 · 过期'
+    if (diffDays === 0) return '循环 · 今天'
+    return `循环 · 还剩 ${diffDays} 天`
+  }
 
   const now = new Date()
   const startDate = task.startDate ? new Date(task.startDate) : null
