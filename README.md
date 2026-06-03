@@ -1,5 +1,7 @@
 # 📝 Todolist - 个人待办事项管理
 
+[![CI](https://github.com/anomalyco/todolist/actions/workflows/ci.yml/badge.svg)](https://github.com/anomalyco/todolist/actions/workflows/ci.yml)
+
 一个功能完善的个人待办事项管理应用，采用前后端分离架构。
 
 **特点**: 无需登录，打开即用！支持PWA离线使用。
