@@ -1,0 +1,17 @@
+- generic [ref=e151]:
+  - generic [ref=e152]:
+    - generic [ref=e153] [cursor=pointer]:
+      - generic [ref=e154]: 今日任务
+      - generic [ref=e155]: ▾
+    - generic [ref=e156]:
+      - button "⚙" [ref=e157] [cursor=pointer]:
+        - generic [ref=e158]: ⚙
+      - button "关闭" [ref=e159] [cursor=pointer]:
+        - img [ref=e160]
+  - generic [ref=e164] [cursor=pointer]:
+    - generic [ref=e165]: ○
+    - generic [ref=e166]:
+      - generic [ref=e167]: "123"
+      - generic [ref=e169]: 中
+    - button "×" [ref=e170]
+  - textbox "快速添加..." [ref=e172]

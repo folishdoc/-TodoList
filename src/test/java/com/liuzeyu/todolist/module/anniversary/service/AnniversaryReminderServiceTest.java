@@ -5,6 +5,7 @@ import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
 import com.liuzeyu.todolist.module.anniversary.repository.AnniversaryRepository;
 import com.liuzeyu.todolist.module.anniversary.repository.ReminderLogRepository;
 import com.liuzeyu.todolist.support.BaseUnitTest;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -151,6 +152,10 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("检查提醒 - 提醒时间为 null 时使用默认 09:00")
     void nullRemindTime_usesDefault() {
+        Assumptions.assumeTrue(
+            LocalTime.now().isAfter(LocalTime.of(9, 0)),
+            "此测试需在 09:00 之后运行（默认提醒时间为 09:00）"
+        );
         Anniversary a = pastReminderAnniversary(1L);
         a.setRemindTime(null);
         when(anniversaryRepository.findAll()).thenReturn(List.of(a));
