@@ -1,0 +1,13 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: 📋 今日待办
+    - button "关闭小组件" [ref=e6] [cursor=pointer]:
+      - img [ref=e7]
+  - generic [ref=e10]:
+    - generic [ref=e17] [cursor=pointer]:
+      - generic [ref=e18]: ○
+      - generic [ref=e19]: 测试新增小组件任务
+    - generic [ref=e14] [cursor=pointer]:
+      - generic [ref=e15]: ○
+      - generic [ref=e16]: "123234"
+  - textbox "快速添加..." [ref=e13]
