@@ -12,16 +12,36 @@ Personal todolist application — Spring Boot 4.0.6 (Java 17, JPA/Hibernate, MyS
 ```bash
 ./mvnw spring-boot:run          # Start backend on :8080
 ./mvnw compile                   # Compile only
-./mvnw test                      # Run tests
+./mvnw test                      # Run unit tests (< 2 min)
+./mvnw verify                    # Full build + integration tests (needs Docker)
 ```
 
 **Frontend** (run from `todolist-frontend/`):
 ```bash
 npm run dev                      # Vite dev server on :5173
 npm run build                    # Type-check + production build
+npm test                         # Vitest (291 unit tests)
+npm run test:coverage            # + coverage report
+npm run test:e2e                 # Playwright (57 e2e tests)
+npm run lint                     # ESLint
+npm run lint:fix                 # ESLint with --fix
+npm run format                   # Prettier
 ```
 
-No linting or formatting tools are configured.
+## Testing
+
+**548+ tests** across 65 files (see `TESTING.md` for full details):
+
+| Layer | Framework | Count |
+|-------|-----------|-------|
+| Backend unit | JUnit 5 + Mockito | 197 |
+| Backend integration | Testcontainers MySQL | 9 (in 3 classes) |
+| Frontend unit | Vitest + Vue Test Utils | 291 |
+| E2E | Playwright | 57 |
+
+**Coverage**: Backend Service layer 80% line coverage (JaCoCo). Frontend: lines 70% / functions 70% / branches 60% / statements 70% (Vitest v8).
+
+CI: `.github/workflows/ci.yml` runs all tests on every push/PR.
 
 ## Architecture
 
@@ -44,7 +64,7 @@ No linting or formatting tools are configured.
 ### Frontend (`todolist-frontend/src/`)
 
 - **Single-page app**: `App.vue` is just `<router-view/>`. The only route is `/` → `Dashboard.vue`
-- **`Dashboard.vue`** (~1600 lines) — The entire application shell. Contains task list views (today/upcoming/list-X/calendar/statistics/habits/anniversaries tabs), task edit panel, subtask rendering. Loads tasks flat via `getTasks({size:1000})` and builds tree in frontend
+- **`Dashboard.vue`** (~2432 lines) — The entire application shell. Contains task list views (today/upcoming/list-X/calendar/statistics/habits/anniversaries tabs), task edit panel, subtask rendering. Loads tasks flat via `getTasks({size:1000})` and builds tree in frontend
 - **`components/CalendarView.vue`** (~800 lines) — Multi-mode calendar: month, week, daybar, bar. Uses pointer events for drag-based time editing. Custom grid layout
 - **`components/AnniversaryList.vue`** — Anniversary CRUD with countdown display
 - **`components/HabitsView.vue`** — Habit tracking UI
@@ -57,10 +77,24 @@ No linting or formatting tools are configured.
 - **`utils/theme.ts`** — Light/dark theme toggle via CSS class on `<html>`
 - **`styles/dark-theme.css`** — Dark theme CSS variable overrides
 
-### Key patterns
+## Spring 7 / Vitest 4 适配要点
+
+- **`@MockBean` 已移除** → `org.springframework.test.context.bean.override.mockito.MockitoBean`
+- **`@WebMvcTest` 默认 deny-all SecurityFilterChain** → `src/test/java/.../support/TestSecurityConfig.java` 覆盖
+- **`MockHttpServletRequestBuilder.andExpect()` 移除** → 用 `BaseControllerTest.doGet/Post/Put/Delete/Patch(...)` 返回 `ResultActions`
+- **前端 `vi.fn()` 记录 reactive 引用被 mutate** → 用 `mockImplementation` 在调用时快照 `{...data}` 而非 `mock.calls`
+
+## Key patterns
 
 - Backend API returns `Result<T>` wrapper; frontend axios interceptor unwraps it — API functions return the `T` data directly
 - Task hierarchy: stored flat with `parentId`, loaded in bulk and assembled into tree client-side
 - Calendar drag operations use `setPointerCapture` + `pointermove`/`pointerup` with `@pointerdown.prevent.stop` to block click generation
 - Task edit panel in Dashboard opens inline (not a route/modal), click on `el-main` closes it unless click is on the panel itself
 - Subtask nesting fix: `doSave` must include `parentId: editingTask.value.parentId` in `mainTaskData` to prevent backend from setting `parentId=null` on update
+
+## Playwright E2E 关键约束
+
+- 端口 5180（5173 被其他项目占用）
+- `page.route('http://localhost:18080/api/**', ...)` 必须用**绝对 URL**
+- `el-radio-button` input 被内层 span 拦截，用 `click({ force: true })`
+- `el-checkbox` input 隐藏，click 容器 + `force: true`

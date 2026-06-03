@@ -88,6 +88,14 @@ npm run dev
 **后端**: Spring Boot 4.0.6 + Java 17 + MySQL + JPA + JWT  
 **前端**: Vue 3 + TypeScript + Vite + Element Plus + Pinia
 
+## ✅ 测试
+
+- 后端单元测试：197 个（`./mvnw test`）
+- 前端单元测试：291 个（`npm test`）
+- E2E 测试：57 个（`npm run test:e2e`）
+- 集成测试（Testcontainers MySQL）：9 个（`./mvnw verify`，需 Docker）
+- 详情见 [TESTING.md](TESTING.md)
+
 ---
 
 ## 📁 项目结构
