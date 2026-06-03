@@ -482,4 +482,77 @@ describe('Dashboard.vue', () => {
     await setupState.handleBatchDelete()
     expect(ElMessage.warning).toHaveBeenCalled()
   })
+
+  describe('getDueDaysBadge / getDueDaysClass', () => {
+    const buildDate = (offsetDays: number, hour = 12) => {
+      const d = new Date()
+      d.setDate(d.getDate() + offsetDays)
+      d.setHours(hour, 0, 0, 0)
+      return d
+    }
+
+    it('无 dueDate 时返回空', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      expect(setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate: null })).toEqual({ text: '', type: 'empty' })
+      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate: null })).toBe('')
+    })
+
+    it('已完成任务不显示', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const future = buildDate(3)
+      expect(setupState.getDueDaysBadge({ status: 1, startDate: null, dueDate: future })).toEqual({ text: '', type: 'empty' })
+      expect(setupState.getDueDaysClass({ status: 1, startDate: null, dueDate: future })).toBe('')
+    })
+
+    it('未到开始日期时不显示（保留 time-status 的开始提示）', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const startDate = buildDate(3)
+      const dueDate = buildDate(5)
+      expect(setupState.getDueDaysBadge({ status: 0, startDate, dueDate })).toEqual({ text: '', type: 'empty' })
+      expect(setupState.getDueDaysClass({ status: 0, startDate, dueDate })).toBe('')
+    })
+
+    it('截止日期已过显示已过期 N 天', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const dueDate = buildDate(-2)
+      const badge = setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate })
+      expect(badge.type).toBe('overdue')
+      expect(badge.text).toBe('已过期 2 天')
+      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe('due-days-badge-overdue')
+    })
+
+    it('截止日期是今天显示今天到期', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const dueDate = buildDate(0)
+      const badge = setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate })
+      expect(badge.type).toBe('today')
+      expect(badge.text).toBe('今天到期')
+      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe('due-days-badge-today')
+    })
+
+    it('截止日期在将来显示还剩 N 天', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const dueDate = buildDate(7)
+      const badge = setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate })
+      expect(badge.type).toBe('upcoming')
+      expect(badge.text).toBe('还剩 7 天')
+      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe('due-days-badge-upcoming')
+    })
+
+    it('开始日期已过、截止日期在未来时正常显示结束天数', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const startDate = buildDate(-1)
+      const dueDate = buildDate(2)
+      const badge = setupState.getDueDaysBadge({ status: 0, startDate, dueDate })
+      expect(badge.type).toBe('upcoming')
+      expect(badge.text).toBe('还剩 2 天')
+    })
+  })
 })
