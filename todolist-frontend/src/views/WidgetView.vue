@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted } from 'vue'
 import { getTasks, getTodayTasks, getUpcomingTasks, completeTask, uncompleteTask, createTask, deleteTask } from '../api/task'
 import { getLists } from '../api/list'
 import { isOverdue, formatDate } from '../composables/useDateUtils'
@@ -7,6 +7,48 @@ import { getRepeatLabel } from '../composables/useRepeatRule'
 import { priorityClass } from '../composables/usePriority'
 import { useTaskSync } from '../composables/useTaskSync'
 import TaskEditPanel from '../components/TaskEditPanel.vue'
+
+const SETTINGS_STORAGE_KEY = 'todolist-widget-settings'
+
+interface WidgetSettings {
+  theme: 'dark' | 'light'
+  opacity: number
+}
+
+const DEFAULT_SETTINGS: WidgetSettings = {
+  theme: 'dark',
+  opacity: 100,
+}
+
+const clampOpacity = (n: any): number => {
+  const v = Number(n)
+  if (!Number.isFinite(v)) return DEFAULT_SETTINGS.opacity
+  return Math.min(100, Math.max(30, Math.round(v)))
+}
+
+const sanitizeSettings = (raw: any): WidgetSettings => {
+  const theme: WidgetSettings['theme'] = raw?.theme === 'light' ? 'light' : 'dark'
+  return { theme, opacity: clampOpacity(raw?.opacity) }
+}
+
+const loadSettingsFromStorage = (): WidgetSettings => {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY)
+    if (!raw) return { ...DEFAULT_SETTINGS }
+    return sanitizeSettings(JSON.parse(raw))
+  } catch (e) {
+    console.warn('[widget] 读取设置失败，使用默认值:', e)
+    return { ...DEFAULT_SETTINGS }
+  }
+}
+
+const saveSettingsToStorage = (s: WidgetSettings) => {
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(s))
+  } catch (e) {
+    console.warn('[widget] 保存设置失败:', e)
+  }
+}
 
 // ---- 筛选状态 ----
 const currentFilter = ref<'all' | 'today' | 'upcoming' | number>('today')
@@ -44,7 +86,7 @@ const onEditChanged = () => {
 
 // ---- 设置状态 ----
 const showSettings = ref(false)
-const settings = ref({ theme: 'dark', opacity: 100, alwaysOnTop: true })
+const settings = reactive<WidgetSettings>(loadSettingsFromStorage())
 
 const loadTasks = async () => {
   loading.value = true
@@ -120,15 +162,16 @@ const addTask = async () => {
 const isTauriEnv = !!(window as any).__TAURI_INTERNALS__
 
 const applySettings = async () => {
+  const opacityRatio = clampOpacity(settings.opacity) / 100
   if (isTauriEnv) {
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window')
-      const win = getCurrentWindow()
-      await win.setAlwaysOnTop(settings.value.alwaysOnTop)
-    } catch {}
+      await (getCurrentWindow() as any).setOpacity(opacityRatio)
+    } catch (e) {
+      console.warn('[widget] setOpacity 失败:', e)
+    }
   }
-  document.documentElement.style.opacity = String(settings.value.opacity / 100)
-  if (settings.value.theme === 'light') {
+  if (settings.theme === 'light') {
     document.documentElement.classList.add('widget-light')
   } else {
     document.documentElement.classList.remove('widget-light')
@@ -158,7 +201,10 @@ onMounted(() => {
   applySettings()
 })
 
-watch(settings, () => applySettings(), { deep: true })
+watch(settings, () => {
+  saveSettingsToStorage({ ...settings })
+  applySettings()
+}, { deep: true })
 </script>
 
 <template>
@@ -219,15 +265,7 @@ watch(settings, () => applySettings(), { deep: true })
         <label>不透明度: {{ settings.opacity }}%</label>
         <input type="range" min="30" max="100" step="5" v-model.number="settings.opacity" />
       </div>
-      <div class="settings-group">
-        <label class="toggle-label">
-          <span>窗口置顶</span>
-          <label class="toggle-switch">
-            <input type="checkbox" v-model="settings.alwaysOnTop" />
-            <span class="toggle-slider"></span>
-          </label>
-        </label>
-      </div>
+      <div class="settings-hint">小组件窗口始终置顶</div>
       <button class="settings-close-btn" @click="showSettings = false">关闭设置</button>
     </div>
 
@@ -545,6 +583,15 @@ html, body, #app {
   margin-top: 4px;
 }
 .settings-close-btn:hover { background: var(--btn-hover); }
+
+.settings-hint {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 6px 0 4px;
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+}
 
 /* ---- 主体 ---- */
 .widget-body {
