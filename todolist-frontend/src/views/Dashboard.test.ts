@@ -555,4 +555,77 @@ describe('Dashboard.vue', () => {
       expect(badge.text).toBe('还剩 2 天')
     })
   })
+
+  describe('getTimeStatus 循环任务分支', () => {
+    const buildDate = (offsetDays: number, hour = 12) => {
+      const d = new Date()
+      d.setDate(d.getDate() + offsetDays)
+      d.setHours(hour, 0, 0, 0)
+      return d
+    }
+
+    it('循环任务未到期显示"循环 · 还剩 N 天"', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const dueDate = buildDate(5)
+      const status = setupState.getTimeStatus({
+        status: 0,
+        startDate: dueDate,
+        dueDate,
+        repeatRule: '{"type":"DAILY"}',
+      })
+      expect(status).toBe('循环 · 还剩 5 天')
+    })
+
+    it('循环任务当天显示"循环 · 今天"', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const dueDate = buildDate(0)
+      const status = setupState.getTimeStatus({
+        status: 0,
+        startDate: dueDate,
+        dueDate,
+        repeatRule: '{"type":"DAILY"}',
+      })
+      expect(status).toBe('循环 · 今天')
+    })
+
+    it('循环任务过期显示"循环 · 过期"', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const dueDate = buildDate(-3)
+      const status = setupState.getTimeStatus({
+        status: 0,
+        startDate: dueDate,
+        dueDate,
+        repeatRule: '{"type":"DAILY"}',
+      })
+      expect(status).toBe('循环 · 过期')
+    })
+
+    it('循环任务无 dueDate 时返回空', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const status = setupState.getTimeStatus({
+        status: 0,
+        startDate: null,
+        dueDate: null,
+        repeatRule: '{"type":"DAILY"}',
+      })
+      expect(status).toBe('')
+    })
+
+    it('已完成循环任务不显示', async () => {
+      const w = await mountDashboard()
+      const setupState = (w.vm as any).$.setupState
+      const dueDate = buildDate(5)
+      const status = setupState.getTimeStatus({
+        status: 1,
+        startDate: dueDate,
+        dueDate,
+        repeatRule: '{"type":"DAILY"}',
+      })
+      expect(status).toBe('')
+    })
+  })
 })
