@@ -199,6 +199,10 @@
                   <span :class="['time-status', getTimeStatusClass(task)]" :style="{ visibility: getTimeStatus(task) ? 'visible' : 'hidden' }">
                     {{ getTimeStatus(task) || ' ' }}
                   </span>
+                  <!-- 距离结束剩余天数 -->
+                  <span v-if="getDueDaysBadge(task).text" :class="['due-days-badge', getDueDaysClass(task)]">
+                    {{ getDueDaysBadge(task).text }}
+                  </span>
                   <el-button v-if="isOverdue(task)" size="small" type="warning" text @click.stop="handlePostponeTask(task)" title="顺延至今天">
                     顺延
                   </el-button>
@@ -1800,6 +1804,33 @@ const getTimeStatusClass = (task: any) => {
   return ''
 }
 
+// 获取距离结束剩余天数徽章
+// 规则：未到开始日期时返回空（保留 time-status 的"X天后开始"显示）；
+// 已完成或无 dueDate 时返回空；其余按剩余天数返回 overdue/today/upcoming。
+const getDueDaysBadge = (task: any) => {
+  if (!task.dueDate) return { text: '', type: 'empty' }
+  if (task.status === 1) return { text: '', type: 'empty' }
+
+  const now = new Date()
+  const startDate = task.startDate ? new Date(task.startDate) : null
+  if (startDate && now < startDate) return { text: '', type: 'empty' }
+
+  const dueDate = new Date(task.dueDate)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const dueDay = new Date(dueDate); dueDay.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) return { text: `已过期 ${Math.abs(diffDays)} 天`, type: 'overdue' }
+  if (diffDays === 0) return { text: '今天到期', type: 'today' }
+  return { text: `还剩 ${diffDays} 天`, type: 'upcoming' }
+}
+
+// 获取距离结束剩余天数的样式类
+const getDueDaysClass = (task: any) => {
+  const type = getDueDaysBadge(task).type
+  return type === 'empty' ? '' : `due-days-badge-${type}`
+}
+
 // 判断是否过期（仅限严格过期：截止日期 < 今天，当天不算）
 const handlePostponeTask = async (task: any) => {
   try {
@@ -2082,6 +2113,30 @@ onUnmounted(() => {
 
 .time-status-today {
   color: #E6A23C;
+}
+
+/* 距离结束剩余天数徽章 */
+.due-days-badge {
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 80px;
+  text-align: right;
+  margin-right: 8px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.due-days-badge-upcoming {
+  color: #409EFF;
+}
+
+.due-days-badge-today {
+  color: #E6A23C;
+  font-weight: 600;
+}
+
+.due-days-badge-overdue {
+  color: #F56C6C;
 }
 
 .task-actions {
