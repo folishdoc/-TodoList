@@ -44,7 +44,12 @@ const onEditChanged = () => {
 
 // ---- 设置状态 ----
 const showSettings = ref(false)
-const settings = ref({ theme: 'dark', opacity: 100, alwaysOnTop: true })
+const defaultSettings = { theme: 'dark', opacity: 100, alwaysOnTop: true }
+const settings = ref({ ...defaultSettings })
+try {
+  const saved = localStorage.getItem('widget-settings')
+  if (saved) Object.assign(settings.value, JSON.parse(saved))
+} catch {}
 
 const loadTasks = async () => {
   loading.value = true
@@ -125,14 +130,17 @@ const applySettings = async () => {
       const { getCurrentWindow } = await import('@tauri-apps/api/window')
       const win = getCurrentWindow()
       await win.setAlwaysOnTop(settings.value.alwaysOnTop)
+      await win.setOpacity(settings.value.opacity / 100)
     } catch {}
+  } else {
+    document.documentElement.style.opacity = String(settings.value.opacity / 100)
   }
-  document.documentElement.style.opacity = String(settings.value.opacity / 100)
   if (settings.value.theme === 'light') {
     document.documentElement.classList.add('widget-light')
   } else {
     document.documentElement.classList.remove('widget-light')
   }
+  localStorage.setItem('widget-settings', JSON.stringify(settings.value))
 }
 
 // ---- 筛选操作 ----

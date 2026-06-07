@@ -97,7 +97,7 @@
         </div>
       </div>
       <div class="week-content">
-        <div v-for="day in weekDaysData" :key="day.date" class="week-day-column" :class="{ 'last-col': day === weekDaysData[6] }">
+        <div v-for="day in weekDaysData" :key="day.date" class="week-day-column" :class="{ 'last-col': day === weekDaysData[6] }" @click="openCreateWithTime(new Date(day.date))">
           <div class="day-tasks-list">
             <div v-for="task in day.tasks" :key="task.id"
               class="week-task-item"
@@ -146,6 +146,7 @@
       <div class="bar-header" :style="barHeaderStyle" :class="{ 'bar-header-month': barScale === 'month' }">
         <div v-for="(day, i) in barDays" :key="day.date"
           class="bar-header-cell" :class="{ 'today': day.isToday, 'other-month': !day.isCurrentMonth, 'week-end': barScale === 'month' && (i + 1) % 7 === 0 }"
+          @click.stop="openCreateWithTime(new Date(day.date))"
         >
           <div v-if="barScale === 'week'" class="bar-day-name">{{ day.weekDay }}</div>
           <div class="bar-day-num">{{ day.dayNumber }}</div>
@@ -188,7 +189,7 @@
             {{ slot.label }}
           </div>
         </div>
-        <div class="daybar-track" :style="{ height: 48 * SLOT_HEIGHT + 'px' }">
+        <div class="daybar-track" :style="{ height: 48 * SLOT_HEIGHT + 'px' }" @click="onDayBarTrackClick">
           <div v-for="tick in timeTicks" :key="tick.top" class="time-tick" :style="{ top: tick.top + 'px' }" :class="{ 'hour': tick.isHour }"></div>
           <div v-for="task in dayBarTasks" :key="task.id"
             class="daybar-task"
@@ -254,7 +255,7 @@ const showCreateDialog = ref(false)
 const allTasks = ref<any[]>([])
 const filters = ref({ status: 'all', priority: 'all' })
 const hoveredDay = ref<string | null>(null) // Step 2: month view hover
-const newTaskForm = ref({ title: '', description: '', dueDate: new Date(), time: null, priority: 2 })
+const newTaskForm = ref<{ title: string; description: string; dueDate: Date; time: Date | null; priority: number }>({ title: '', description: '', dueDate: new Date(), time: null, priority: 2 })
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
 // ===== 条形视图拖拽状态 =====
@@ -268,6 +269,7 @@ const SLOT_HEIGHT = 30 // px per 30 minutes
 const dayBarDrag = ref<any>(null)
 const dayBarDragPreview = ref<any>(null)
 const dayBarDragHint = ref('')
+const dayBarSuppressClick = ref(0) // timestamp of last drag end, suppresses next click within 200ms
 
 // ===== 筛选 =====
 const filteredTasks = computed(() => {
@@ -633,7 +635,7 @@ const onDayBarPointerDown = (e: PointerEvent, task: any) => {
   if (dayBarDrag.value) return
   const { startMin, endMin } = getDayBarMinutes(task)
   const curMin = getMinuteFromY(e.clientY)
-  dayBarDrag.value = { task, mode: 'move', startMin, endMin, grabMin: curMin }
+  dayBarDrag.value = { task, mode: 'move', startMin, endMin, grabMin: curMin, startY: e.clientY, moved: false }
   ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
 }
 
@@ -641,12 +643,15 @@ const onDayBarResizeStart = (e: PointerEvent, task: any, side: 'top' | 'bottom')
   if (dayBarDrag.value) return
   const { startMin, endMin } = getDayBarMinutes(task)
   const curMin = getMinuteFromY(e.clientY)
-  dayBarDrag.value = { task, mode: side === 'top' ? 'resize-top' : 'resize-bottom', startMin, endMin, grabMin: curMin }
+  dayBarDrag.value = { task, mode: side === 'top' ? 'resize-top' : 'resize-bottom', startMin, endMin, grabMin: curMin, startY: e.clientY, moved: false }
   ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
 }
 
 const onDayBarPointerMove = (e: PointerEvent) => {
   if (!dayBarDrag.value) return
+  if (!dayBarDrag.value.moved && Math.abs(e.clientY - dayBarDrag.value.startY) > 4) {
+    dayBarDrag.value.moved = true
+  }
   const curMin = getMinuteFromY(e.clientY)
   if (curMin < 0) return
   const dMin = curMin - dayBarDrag.value.grabMin
@@ -670,9 +675,11 @@ const onDayBarPointerMove = (e: PointerEvent) => {
 
 const onDayBarPointerUp = async () => {
   if (!dayBarDrag.value) return
-  const { task, mode, startMin: origSm, endMin: origEm } = dayBarDrag.value
+  const { task, mode, startMin: origSm, endMin: origEm, moved } = dayBarDrag.value
   const preview = dayBarDragPreview.value
+  const wasMoved = moved
   dayBarDrag.value = null; dayBarDragPreview.value = null; dayBarDragHint.value = ''
+  if (wasMoved) dayBarSuppressClick.value = Date.now()
   if (!preview) { handleTaskClick(task); return }
   const targetDate = new Date(dayBarDate.value)
   const h = parseFloat(preview.height), top = parseFloat(preview.top)
@@ -701,6 +708,17 @@ const onDayBarPointerUp = async () => {
       await loadTasks()
     } catch (err) { console.error('更新时间失败:', err); ElMessage.error('时间更新失败') }
   }
+}
+
+const onDayBarTrackClick = (e: MouseEvent) => {
+  if (Date.now() - dayBarSuppressClick.value < 200) return
+  const target = e.target as HTMLElement
+  if (target.closest('.daybar-task') || target.closest('.time-tick')) return
+  const minute = getMinuteFromY(e.clientY)
+  if (minute < 0) return
+  const h = Math.floor(minute / 60)
+  const m = minute % 60
+  openCreateWithTime(new Date(dayBarDate.value), { h, m })
 }
 
 // ===== 导航 =====
@@ -736,7 +754,21 @@ const goToToday = () => {
 }
 
 // ===== 事件 =====
-const handleDayClick = (day: any) => { newTaskForm.value.dueDate = new Date(day.date); newTaskForm.value.title = ''; newTaskForm.value.description = ''; newTaskForm.value.time = null; newTaskForm.value.priority = 2; showCreateDialog.value = true }
+const openCreateWithTime = (date: Date, time: { h: number; m: number } | null = null) => {
+  newTaskForm.value.dueDate = new Date(date)
+  if (time) {
+    const t = new Date()
+    t.setHours(time.h, time.m, 0, 0)
+    newTaskForm.value.time = t
+  } else {
+    newTaskForm.value.time = null
+  }
+  newTaskForm.value.title = ''
+  newTaskForm.value.description = ''
+  newTaskForm.value.priority = 2
+  showCreateDialog.value = true
+}
+const handleDayClick = (day: any) => openCreateWithTime(new Date(day.date))
 const handleTaskClick = (task: any) => emit('task-click', task)
 const handleCompleteTask = async (task: any) => {
   try {
@@ -750,7 +782,8 @@ const handleCreateTask = async () => {
   try {
     let dueDate = new Date(newTaskForm.value.dueDate)
     if (newTaskForm.value.time) { const time = new Date(newTaskForm.value.time); dueDate.setHours(time.getHours()); dueDate.setMinutes(time.getMinutes()) }
-    await taskApi.createTask({ title: newTaskForm.value.title, description: newTaskForm.value.description, dueDate: formatLocalDateTime(dueDate), priority: newTaskForm.value.priority, status: 0 })
+    const startDate = new Date()
+    await taskApi.createTask({ title: newTaskForm.value.title, description: newTaskForm.value.description, startDate: formatLocalDateTime(startDate), dueDate: formatLocalDateTime(dueDate), priority: newTaskForm.value.priority, status: 0 })
     ElMessage.success('创建成功'); showCreateDialog.value = false; await loadTasks()
   } catch (err) { console.error('创建任务失败:', err) }
 }
@@ -842,7 +875,8 @@ onMounted(() => { loadTasks() })
 .day-name { font-size: 12px; color: #909399; margin-bottom: 4px; }
 .day-date { font-size: 18px; font-weight: 500; color: #303133; } .day-date.today { color: #409EFF; }
 .week-content { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); overflow-y: auto; }
-.week-day-column { border-right: 1px solid #e8e8e8; padding: 8px; box-sizing: border-box; min-width: 0; }
+.week-day-column { border-right: 1px solid #e8e8e8; padding: 8px; box-sizing: border-box; min-width: 0; cursor: pointer; }
+.week-day-column:hover { background-color: #f5f7fa; }
 .week-day-column.last-col { border-right: none; }
 .day-tasks-list { display: flex; flex-direction: column; gap: 8px; }
 .week-task-item { display: flex; align-items: flex-start; gap: 6px; padding: 8px; background: #f5f7fa; border-radius: 4px; cursor: pointer; border-left: 3px solid #409EFF; transition: all 0.2s; }
@@ -868,7 +902,8 @@ onMounted(() => { loadTasks() })
 /* ===== 条形视图 ===== */
 .bar-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; touch-action: none; }
 .bar-header { display: grid; background: #f5f7fa; border-bottom: 1px solid #e8e8e8; position: sticky; top: 0; z-index: 2; user-select: none; }
-.bar-header-cell { padding: 6px 2px; text-align: center; border-right: 1px solid #e8e8e8; font-size: 11px; box-sizing: border-box; }
+.bar-header-cell { padding: 6px 2px; text-align: center; border-right: 1px solid #e8e8e8; font-size: 11px; box-sizing: border-box; cursor: pointer; }
+.bar-header-cell:hover { background-color: #ecf5ff; }
 .bar-header-cell.week-end { border-right: 2px solid #c0c4cc; }
 .bar-header-month .bar-header-cell { padding: 4px 1px; font-size: 12px; }
 .bar-header-cell.today { background: #ecf5ff; } .bar-header-cell.other-month { color: #c0c4cc; }
@@ -893,7 +928,7 @@ onMounted(() => { loadTasks() })
 .daybar-scale { width: 70px; flex-shrink: 0; border-right: 1px solid #e8e8e8; background: #fafafa; }
 .time-slot-label { height: 30px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 10px; color: #909399; }
 .time-slot-label.hour { color: #606266; font-weight: 500; }
-.daybar-track { flex: 1; position: relative; }
+.daybar-track { flex: 1; position: relative; cursor: copy; }
 .time-tick { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #f0f0f0; pointer-events: none; }
 .time-tick.hour { border-top-color: #e8e8e8; }
 .daybar-task { position: absolute; left: 6px; right: 6px; border-radius: 4px; border: 2px solid; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 2px 8px; overflow: hidden; cursor: pointer; background: rgba(255,255,255,0.85); font-size: 11px; transition: box-shadow 0.2s; user-select: none; }
