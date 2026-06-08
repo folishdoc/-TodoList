@@ -2,7 +2,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const request = axios.create({
-  baseURL: 'http://localhost:18080/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 10000
 })
 
@@ -10,7 +10,8 @@ const request = axios.create({
 request.interceptors.request.use(
   (config) => {
     // 使用配置的personal token（与后端app.personal.token保持一致）
-    config.headers.Authorization = `Bearer dev-personal-token-2026-secure-key`
+    const token = import.meta.env.VITE_PERSONAL_TOKEN || 'dev-personal-token-2026-secure-key'
+    config.headers.Authorization = `Bearer ${token}`
     return config
   },
   (error) => {
