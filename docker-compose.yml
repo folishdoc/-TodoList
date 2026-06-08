@@ -1,39 +1,32 @@
-version: "3.9"
-
 services:
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: eclipse-temurin:17-jre-alpine
     container_name: todolist-backend
     restart: unless-stopped
-    # 后端不需要暴露端口到宿主机，nginx 通过内部网络访问
+    command: java -jar /app/app.jar
     expose:
       - "18080"
     volumes:
-      # H2 数据库文件持久化到宿主机
+      # app.jar 由 deploy.sh 负责更新
+      - ./app.jar:/app/app.jar:ro
+      # H2 数据库持久化
       - ./data:/app/data
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - PERSONAL_TOKEN=${PERSONAL_TOKEN}
-      # H2 数据库路径（相对于容器内 /app）
       - SPRING_DATASOURCE_URL=jdbc:h2:file:/app/data/todolist_db
-      # 生产环境关闭 SQL 日志
       - SPRING_JPA_SHOW_SQL=false
-      # 关闭 H2 Console
       - SPRING_H2_CONSOLE_ENABLED=false
 
   frontend:
-    build:
-      context: ./todolist-frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_PERSONAL_TOKEN=${PERSONAL_TOKEN}
+    image: nginx:alpine
     container_name: todolist-frontend
     restart: unless-stopped
     ports:
-      # 宿主机 80 端口 -> 容器 nginx 80 端口
-      # 如需 HTTPS 请改为 443:443 并配置 SSL
       - "80:80"
+    volumes:
+      # dist/ 由 deploy.sh 负责更新
+      - ./dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backend
