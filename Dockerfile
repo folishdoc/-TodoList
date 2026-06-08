@@ -1,18 +1,8 @@
-# === Stage 1: Build with Maven ===
-FROM maven:3.9-eclipse-temurin-17-alpine AS builder
-
-WORKDIR /build
-COPY pom.xml .
-COPY src ./src
-
-# 跳过测试以加速构建（生产构建不需要跑单元测试）
-RUN mvn package -DskipTests -q
-
-# === Stage 2: Run with JRE ===
+# 后端运行镜像（构建产物由 deploy.sh 构建并 scp 到服务器）
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
-COPY --from=builder /build/target/*.jar app.jar
+COPY app.jar app.jar
 
 # H2 数据目录
 VOLUME /app/data
