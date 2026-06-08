@@ -1,0 +1,41 @@
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+
+# Node
+node_modules/
+
+# Java/Maven
+target/
+
+# Tauri（Windows端应用，不需要）
+src-tauri/
+
+# MCP
+.mcp.json
+.playwright-mcp/
+.gstack/
+
+# 测试和文档
+*.test.ts
+*.test.tsx
+*.spec.ts
+TESTING.md
+README.md
+docs/
+cp.txt
+
+# 临时文件
+*.log
+*.tmp
+
+# 快照/截图
+*.png
+*.yml
+
+# 数据文件
+data/
+uploads/

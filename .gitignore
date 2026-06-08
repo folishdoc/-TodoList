@@ -1,31 +1,64 @@
+# 项目运行不需要 — 桌面端（Tauri）
+src-tauri/
+
+# 项目运行不需要 — 文档
+docs/
+cp.txt
+
+# 项目运行不需要 — 数据库迁移参考（JPA 自动管理表结构）
+database/
+
+# 项目运行不需要 — Node
 node_modules/
+
+# 项目运行不需要 — 构建产物
 target/
 build/
 dist/
 out/
 
-# IDE
+# 项目运行不需要 — IDE
 .idea/
 .vscode/
 *.iml
 *.ipr
 *.iws
 
-# OS
+# 项目运行不需要 — OS
 .DS_Store
 Thumbs.db
 
-# Logs
+# 项目运行不需要 — 日志
 *.log
 logs/
 
-# Test output
+# 项目运行不需要 — 测试输出
 coverage/
 playwright-report/
 test-results/
 *.lcov
 
-# Env
+# 项目运行不需要 — 本地数据
+data/
+uploads/
+
+# 项目运行不需要 — 本地开发脚本
+dev-start.bat
+dev-stop.bat
+
+# 项目运行不需要 — 测试截图/快照
+dashboard-*
+widget-*
+*-test.png
+*-final.png
+
+# 项目运行不需要 — 本地工具配置
+.mcp.json
+.lingma/
+.gstack/
+.playwright-mcp/
+
+# 项目运行不需要 — 环境变量（服务器上手动创建）
 .env
 .env.local
 .env.*.local

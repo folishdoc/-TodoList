@@ -38,7 +38,7 @@ describe('utils/request.ts', () => {
     const axios = (await import('axios')).default
     expect(axios.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        baseURL: 'http://localhost:18080/api',
+        baseURL: '/api',
         timeout: 10000
       })
     )
