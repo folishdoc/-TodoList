@@ -196,14 +196,13 @@ class TaskServiceTest extends BaseUnitTest {
         child.setUserId(1L);
         child.setParentId(10L);
         when(taskRepository.findById(10L)).thenReturn(Optional.of(parent));
-        when(taskRepository.findById(11L)).thenReturn(Optional.of(child));
         when(taskRepository.findByUserIdAndParentId(1L, 10L)).thenReturn(List.of(child));
         when(taskRepository.findByUserIdAndParentId(1L, 11L)).thenReturn(List.of());
 
         taskService.deleteTask(1L, 10L);
 
+        verify(taskRepository).deleteById(11L);
         verify(taskRepository).delete(parent);
-        verify(taskRepository).delete(child);
     }
 
     @Test
@@ -250,19 +249,8 @@ class TaskServiceTest extends BaseUnitTest {
         todayActive.setDueDate(endOfDay.minusMinutes(1));
         todayActive.setPriority(2);
 
-        Task todayCompleted = new Task();
-        todayCompleted.setStatus(1);
-        todayCompleted.setDueDate(endOfDay.minusMinutes(1));
-
-        Task overdue = new Task();
-        overdue.setStatus(0);
-        overdue.setDueDate(startOfDay.minusDays(1));
-
-        Task future = new Task();
-        future.setStatus(0);
-        future.setStartDate(endOfDay.plusDays(1));
-
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(todayActive, todayCompleted, overdue, future));
+        when(taskRepository.findTodayTasks(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(todayActive));
 
         List<Task> result = taskService.getTodayTasks(1L);
 

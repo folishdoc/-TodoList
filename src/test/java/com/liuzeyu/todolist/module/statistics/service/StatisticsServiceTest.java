@@ -15,9 +15,12 @@ import org.mockito.Mock;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 class StatisticsServiceTest extends BaseUnitTest {
@@ -46,11 +49,14 @@ class StatisticsServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("任务总览 - 全部统计字段正确")
     void getTaskStatistics_succeeds() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(
-                createTask(1L, 1, 3, LocalDate.now().atStartOfDay()),
-                createTask(2L, 0, 2, LocalDate.now().plusDays(1).atStartOfDay()),
-                createTask(3L, 0, 1, null)
+        LocalDate today = LocalDate.now();
+        when(taskRepository.countByUserId(1L)).thenReturn(3L);
+        when(taskRepository.countByUserIdAndStatus(1L, 1)).thenReturn(1L);
+        when(taskRepository.countByUserIdGroupByPriority(1L)).thenReturn(List.of(
+                new Object[]{3, 1L}, new Object[]{2, 1L}, new Object[]{1, 1L}
         ));
+        when(taskRepository.countByUserIdAndDueDateBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(1L);
+        when(taskRepository.countByUserIdAndDueDateAfter(eq(1L), any(LocalDateTime.class))).thenReturn(1L);
 
         TaskStatistics stats = statisticsService.getTaskStatistics(1L);
 
@@ -66,7 +72,11 @@ class StatisticsServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("任务总览 - 空列表完成率为 0")
     void getTaskStatistics_empty() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of());
+        when(taskRepository.countByUserId(1L)).thenReturn(0L);
+        when(taskRepository.countByUserIdAndStatus(1L, 1)).thenReturn(0L);
+        when(taskRepository.countByUserIdGroupByPriority(1L)).thenReturn(List.of());
+        when(taskRepository.countByUserIdAndDueDateBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(0L);
+        when(taskRepository.countByUserIdAndDueDateAfter(eq(1L), any(LocalDateTime.class))).thenReturn(0L);
 
         TaskStatistics stats = statisticsService.getTaskStatistics(1L);
 
@@ -77,8 +87,6 @@ class StatisticsServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("按清单分布 - 跳过空清单")
     void getTasksByList_skipsEmpty() {
-        Task t = new Task();
-        t.setListId(1L);
         TaskList list1 = new TaskList();
         list1.setId(1L);
         list1.setName("工作");
@@ -86,7 +94,7 @@ class StatisticsServiceTest extends BaseUnitTest {
         list2.setId(2L);
         list2.setName("生活");
         when(taskListRepository.findByUserId(1L)).thenReturn(List.of(list1, list2));
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(t));
+        when(taskRepository.countByUserIdGroupByListId(1L)).thenReturn(Collections.singletonList(new Object[]{1L, 1L}));
 
         List<TaskDistribution> dist = statisticsService.getTasksByList(1L);
 
@@ -97,10 +105,7 @@ class StatisticsServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("按优先级分布 - 只返回非空桶")
     void getTasksByPriority_skipsEmpty() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(
-                createTask(1L, 0, 3, null),
-                createTask(2L, 0, 3, null)
-        ));
+        when(taskRepository.countByUserIdGroupByPriority(1L)).thenReturn(Collections.singletonList(new Object[]{3, 2L}));
 
         List<TaskDistribution> dist = statisticsService.getTasksByPriority(1L);
 
@@ -112,11 +117,11 @@ class StatisticsServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("任务趋势 - 7 天窗口")
     void getDailyTrend_succeeds() {
-        LocalDateTime now = LocalDateTime.now();
-        Task t1 = new Task();
-        t1.setCreatedAt(now.minusDays(2));
-        t1.setCompletedAt(now.minusDays(2).plusHours(1));
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(t1));
+        LocalDate twoDaysAgo = LocalDate.now().minusDays(2);
+        when(taskRepository.countCreatedByDateAfter(eq(1L), any(LocalDateTime.class)))
+                .thenReturn(Collections.singletonList(new Object[]{twoDaysAgo, 1L}));
+        when(taskRepository.countCompletedByDateAfter(eq(1L), any(LocalDateTime.class)))
+                .thenReturn(Collections.singletonList(new Object[]{twoDaysAgo, 1L}));
 
         List<DailyTaskStats> trend = statisticsService.getDailyTrend(1L, 7);
 

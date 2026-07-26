@@ -49,7 +49,7 @@ const sendShutdownRequest = () => {
     const blob = new Blob([JSON.stringify({ action: 'shutdown' })], {
       type: 'application/json',
     })
-    const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/i, '') || 'http://localhost:8080'
+    const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/i, '') || 'http://localhost:18080'
     navigator.sendBeacon(`${apiBase}/api/system/shutdown`, blob)
   } catch (error) {
     console.error('Failed to send shutdown request:', error)

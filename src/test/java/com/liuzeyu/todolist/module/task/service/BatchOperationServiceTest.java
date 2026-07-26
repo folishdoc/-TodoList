@@ -39,7 +39,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
         Task mine = makeTask(1L, 1L, 0);
         Task other = makeTask(2L, 2L, 0);
         when(taskRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(mine, other));
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L, 2L));
@@ -65,7 +65,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
         int count = batchOperationService.executeBatchOperation(1L, req);
 
         assertThat(count).isEqualTo(0);
-        verify(taskRepository, never()).save(any());
+        verify(taskRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -75,8 +75,6 @@ class BatchOperationServiceTest extends BaseUnitTest {
         Task child = makeTask(2L, 1L, 0);
         child.setParentId(1L);
         when(taskRepository.findAllById(List.of(1L))).thenReturn(List.of(parent));
-        when(taskRepository.findById(1L)).thenReturn(java.util.Optional.of(parent));
-        when(taskRepository.findById(2L)).thenReturn(java.util.Optional.of(child));
         when(taskRepository.findByUserIdAndParentId(1L, 1L)).thenReturn(List.of(child));
         when(taskRepository.findByUserIdAndParentId(1L, 2L)).thenReturn(List.of());
 
@@ -87,8 +85,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
         int count = batchOperationService.executeBatchOperation(1L, req);
 
         assertThat(count).isEqualTo(1);
-        verify(taskRepository).delete(parent);
-        verify(taskRepository).delete(child);
+        verify(taskRepository).deleteAllById(List.of(1L, 2L));
     }
 
     @Test
@@ -96,7 +93,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
     void move_setsListId() {
         Task t = makeTask(1L, 1L, 0);
         when(taskRepository.findAllById(List.of(1L))).thenReturn(List.of(t));
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L));
@@ -139,7 +136,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
     void setPriority_succeeds() {
         Task t = makeTask(1L, 1L, 0);
         when(taskRepository.findAllById(List.of(1L))).thenReturn(List.of(t));
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L));
