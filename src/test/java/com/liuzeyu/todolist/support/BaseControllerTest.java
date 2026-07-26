@@ -12,7 +12,6 @@ import com.liuzeyu.todolist.module.anniversary.service.AnniversaryService;
 import com.liuzeyu.todolist.module.export.service.ExportService;
 import com.liuzeyu.todolist.module.habit.service.HabitService;
 import com.liuzeyu.todolist.module.list.service.TaskListService;
-import com.liuzeyu.todolist.module.reminder.service.ReminderService;
 import com.liuzeyu.todolist.module.statistics.service.StatisticsService;
 import com.liuzeyu.todolist.module.tag.service.TagService;
 import com.liuzeyu.todolist.module.task.service.BatchOperationService;
@@ -53,7 +52,6 @@ public abstract class BaseControllerTest {
     @MockitoBean protected TagService tagService;
     @MockitoBean protected TaskService taskService;
     @MockitoBean protected TaskListService taskListService;
-    @MockitoBean protected ReminderService reminderService;
 
     /**
      * 携带个人 token 的 request post processor。

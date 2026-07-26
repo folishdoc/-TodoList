@@ -8,14 +8,6 @@ export const getLists = () => {
   })
 }
 
-// 获取清单详情
-export const getListById = (id: number) => {
-  return request({
-    url: `/lists/${id}`,
-    method: 'get',
-  })
-}
-
 // 创建清单
 export const createList = (data: any) => {
   return request({

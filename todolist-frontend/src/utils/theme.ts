@@ -15,20 +15,6 @@ export const initTheme = () => {
   }
 }
 
-// 切换主题
-export const toggleTheme = () => {
-  currentTheme.value = currentTheme.value === 'light' ? 'dark' : 'light'
-  applyTheme(currentTheme.value)
-  localStorage.setItem('theme', currentTheme.value)
-}
-
-// 设置主题
-export const setTheme = (theme: ThemeType) => {
-  currentTheme.value = theme
-  applyTheme(theme)
-  localStorage.setItem('theme', theme)
-}
-
 // 应用主题
 const applyTheme = (theme: ThemeType) => {
   if (theme === 'dark') {
@@ -38,5 +24,4 @@ const applyTheme = (theme: ThemeType) => {
   }
 }
 
-// 获取当前主题
-export const getCurrentTheme = () => currentTheme.value
+
