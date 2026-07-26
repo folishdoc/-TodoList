@@ -1,5 +1,6 @@
 package com.liuzeyu.todolist.module.anniversary.service;
 
+import com.liuzeyu.todolist.common.constant.PriorityEnum;
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryRequest;
 import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryVO;
@@ -121,7 +122,7 @@ public class AnniversaryService {
         req.setTitle("纪念日: " + a.getName());
         req.setDescription("关联纪念日ID: " + a.getId() + "\n下一个纪念日: " + nextDate + " (还有" + daysUntil + "天)\n" + (a.getNotes() != null ? a.getNotes() : ""));
         req.setDueDate(LocalDateTime.of(nextDate, LocalTime.of(23, 59)));
-        req.setPriority(2);
+        req.setPriority(PriorityEnum.MEDIUM.getCode());
 
         return taskService.createTask(userId, req);
     }

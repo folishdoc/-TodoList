@@ -85,10 +85,10 @@ class ExportServiceTest extends BaseUnitTest {
 
         assertThat(json).startsWith("[");
         assertThat(json).endsWith("]");
-        assertThat(json).contains("\"title\": \"A\"");
-        assertThat(json).contains("\"title\": \"B\"");
-        assertThat(json).contains("\"priority\": 2");
-        assertThat(json).contains("\"status\": 0");
+        assertThat(json).contains("\"title\" : \"A\"");
+        assertThat(json).contains("\"title\" : \"B\"");
+        assertThat(json).contains("\"priority\" : 2");
+        assertThat(json).contains("\"status\" : 0");
     }
 
     @Test
@@ -110,6 +110,6 @@ class ExportServiceTest extends BaseUnitTest {
 
         String json = exportService.exportTasksAsJson(1L);
 
-        assertThat(json).isEqualTo("[\n]");
+        assertThat(json).isEqualTo("[ ]");
     }
 }

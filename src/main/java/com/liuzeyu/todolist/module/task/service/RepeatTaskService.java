@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
+import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.dto.RepeatRule;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
@@ -77,7 +79,7 @@ public class RepeatTaskService {
      */
     private boolean shouldGenerateNewTask(Task task, RepeatRule rule, LocalDateTime now) {
         // 如果任务未完成，不生成新任务
-        if (task.getStatus() == 0) {
+        if (task.getStatus() == TaskStatusEnum.INCOMPLETE.getCode()) {
             return false;
         }
         
@@ -115,7 +117,7 @@ public class RepeatTaskService {
         newTask.setTitle(originalTask.getTitle());
         newTask.setDescription(originalTask.getDescription());
         newTask.setPriority(originalTask.getPriority());
-        newTask.setStatus(0); // 未完成
+        newTask.setStatus(TaskStatusEnum.INCOMPLETE.getCode()); // 未完成
         newTask.setSortOrder(originalTask.getSortOrder());
         newTask.setRepeatRule(originalTask.getRepeatRule());
         
@@ -155,7 +157,7 @@ public class RepeatTaskService {
     @Transactional
     public void setRepeatRule(Long taskId, RepeatRule rule) throws JsonProcessingException {
         Task task = taskRepository.findById(taskId)
-            .orElseThrow(() -> new RuntimeException("任务不存在"));
+            .orElseThrow(() -> new BusinessException(404, "任务不存在"));
         
         String ruleJson = objectMapper.writeValueAsString(rule);
         task.setRepeatRule(ruleJson);
@@ -170,7 +172,7 @@ public class RepeatTaskService {
     @Transactional
     public void cancelRepeatRule(Long taskId) {
         Task task = taskRepository.findById(taskId)
-            .orElseThrow(() -> new RuntimeException("任务不存在"));
+            .orElseThrow(() -> new BusinessException(404, "任务不存在"));
         
         task.setRepeatRule(null);
         taskRepository.save(task);

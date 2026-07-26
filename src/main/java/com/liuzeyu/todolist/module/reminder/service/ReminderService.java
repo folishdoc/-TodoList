@@ -1,5 +1,6 @@
 package com.liuzeyu.todolist.module.reminder.service;
 
+import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class ReminderService {
         LocalDateTime oneHourLater = now.plusHours(1);
         
         return taskRepository.findAllByUserId(userId).stream()
-            .filter(task -> task.getStatus() == 0) // 未完成
+            .filter(task -> task.getStatus() == TaskStatusEnum.INCOMPLETE.getCode()) // 未完成
             .filter(task -> task.getDueDate() != null)
             .filter(task -> !task.getDueDate().isBefore(now))
             .filter(task -> task.getDueDate().isBefore(oneHourLater))
