@@ -853,8 +853,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import {
   List,
   Calendar,
@@ -870,170 +870,97 @@ import {
   Upload,
   Download,
 } from '@element-plus/icons-vue'
-import type { FormInstance } from 'element-plus'
-import { marked } from 'marked'
-import * as taskApi from '../api/task'
-import * as batchApi from '../api/batch'
-import * as listApi from '../api/list'
-import * as tagApi from '../api/tag'
-import * as attachmentApi from '../api/attachment'
-import * as repeatApi from '../api/repeat'
 import * as anniversaryApi from '../api/anniversary'
-import { formatLocalDateTime } from '../utils/date'
-import { isOverdue, formatDateShort, hasTimeValue } from '../composables/useDateUtils'
-import { getRepeatLabel } from '../composables/useRepeatRule'
+import { isOverdue } from '../composables/useDateUtils'
 import { getPriorityType, getPriorityText } from '../composables/usePriority'
-import { useTaskTimeMode } from '../composables/useTaskTimeMode'
 import { useTaskSync } from '../composables/useTaskSync'
+import { useTaskCrud } from '../composables/useTaskCrud'
+import { useTaskEdit } from '../composables/useTaskEdit'
+import { useSubtasks } from '../composables/useSubtasks'
+import { useTags } from '../composables/useTags'
+import { useAttachments } from '../composables/useAttachments'
+import { useLists } from '../composables/useLists'
+import { useBatchOps } from '../composables/useBatchOps'
+import { useReminders } from '../composables/useReminders'
+import { getTimeStatus, getTimeStatusClass, getDueDaysBadge, getDueDaysClass, formatFileSize, renderMarkdown, getTimeSummary, getCreateTimeSummary } from '../composables/useTimeUtils'
 import StatisticsView from '../components/StatisticsView.vue'
 import TagsView from '../components/TagsView.vue'
 import CalendarView from '../components/CalendarView.vue'
 import HabitsView from '../components/HabitsView.vue'
 import AnniversaryList from '../components/AnniversaryList.vue'
+import type { Task, TaskList, Tag } from '../types'
 
+// ===== 导航状态 =====
 const currentModule = ref('tasks') // 当前模块: tasks, calendar, habits, anniversaries
 const activeMenu = ref('all')
-const loading = ref(false)
-const submitLoading = ref(false)
-const showCreateTaskDialog = ref(false)
-const openCreateTaskDialog = () => {
-  resetRepeatForm()
-  showRepeatForm.value = false
-  taskTimeMode.value = 'normal'
-  showCreateTaskDialog.value = true
-}
-const showCreateListDialog = ref(false)
-const editingTask = ref<any>(null)
-const taskFormRef = ref<FormInstance>()
-const listFormRef = ref<FormInstance>()
-const searchKeyword = ref('')
-const currentPage = ref(1)
-const pageSize = ref(20)
-const total = ref(0)
 
-// 批量选择
-const batchMode = ref(false)
-const selectedTaskIds = ref<Set<number>>(new Set())
+// ===== 组合式函数 =====
+const { emitTaskChanged } = useTaskSync(() => loadTasks())
 
-const tasks = ref<any[]>([])
-const taskLists = ref<any[]>([])
-const allTags = ref<any[]>([])
-const taskTags = ref<any[]>([])
-const taskAttachments = ref<any[]>([])
-const attachmentUploading = ref(false)
-const descriptionPreview = ref(false)
+const taskCrud = useTaskCrud()
+const {
+  tasks, loading, total, currentPage, pageSize, searchKeyword,
+  taskTree, loadTasks, handleToggleTask, handleDeleteTask: handleDeleteTaskFromCmp, handlePostponeTask,
+} = taskCrud
+// Wrapper: template calls handleDeleteTask(task), composable expects (task, showUndo, emitTaskChanged)
+const handleDeleteTask = (task: Task) => handleDeleteTaskFromCmp(task, showUndo, emitTaskChanged)
 
-// 纪念日提醒
-const reminders = ref<any[]>([])
-const unreadReminderCount = ref(0)
-let reminderTimer: any = null
+const taskEdit = useTaskEdit(loadTasks, emitTaskChanged)
+const {
+  editingTask, showCreateTaskDialog, submitLoading, isSaving, descriptionPreview,
+  taskFormRef, taskForm, taskTags, taskAttachments, selectedTagIds,
+  repeatForm, editRepeatEndDate, showRepeatForm, taskTimeMode,
+  datePickerFormat, taskRules,
+  openCreateTaskDialog, handleEditTask, handleCalendarTaskClick,
+  handleMainContentClick, closeEditPanel, flushAndSave, autoSave, doSave,
+  handlePriorityChange, handleListChange, getSelectedListName: getSelectedListNameFromCmp,
+  handleSubmitTask, handleCompleteTask, resetTaskForm,
+  resetRepeatForm, onRepeatTypeChange, onModeChange,
+  handleAddRepeatInPanel, handleUpdateRepeatEndDate, handleCancelRepeat,
+} = taskEdit
 
-const loadReminders = async () => {
-  try {
-    const res = await anniversaryApi.getPendingReminders()
-    reminders.value = res.data || []
-    unreadReminderCount.value = reminders.value.filter((r: any) => !r.isRead).length
-  } catch (e) { console.warn('加载提醒失败', e) }
-}
+const {
+  addSubtask, removeSubtask, handleSubtaskEnter,
+} = useSubtasks(taskForm, autoSave)
 
-const getReminderName = (anniversaryId: number) => {
-  return `纪念日 #${anniversaryId}`
-}
+const tagsMgmt = useTags()
+const { allTags, loadAllTags, handleTagChange, handleRemoveTag } = tagsMgmt
 
-const formatReminderTime = (time: string) => {
-  if (!time) return ''
-  const d = new Date(time)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
+const attachmentsMgmt = useAttachments()
+const {
+  attachmentUploading, fileInputRef, triggerFileUpload,
+  handleFileSelect, downloadAttachment, handleDeleteAttachment,
+} = attachmentsMgmt
 
-const handleReminderClick = async (r: any) => {
-  if (!r.isRead) {
-    await anniversaryApi.markReminderRead(r.id)
-    await loadReminders()
-  }
-  currentModule.value = 'anniversaries'
-}
+const listsMgmt = useLists()
+const {
+  taskLists, showCreateListDialog,
+  listFormRef, listForm, listRules, submitLoading: listSubmitLoading,
+  loadLists, resetListForm, handleSubmitList, handleDeleteList: handleDeleteListFromCmp,
+} = listsMgmt
+// Wrapper: template calls handleDeleteList(list), composable expects (list, activeMenu, setActiveMenu, loadTasks)
+const handleDeleteList = (list: TaskList) => handleDeleteListFromCmp(list, activeMenu, (v: string) => { activeMenu.value = v }, loadTasks)
+// Wrapper: template calls getSelectedListName() with no args, composable expects taskLists parameter
+const getSelectedListName = () => getSelectedListNameFromCmp(taskLists.value)
 
-const taskForm = reactive({
-  title: '',
-  description: '',
-  priority: 0,
-  startDate: '',
-  dueDate: '',
-  listId: null as number | null,
-  subtasks: [] as any[],
-})
+const batchOps = useBatchOps(tasks)
+const {
+  batchMode, selectedTaskIds, enterBatchMode, exitBatchMode,
+  toggleTaskSelection, handleSelectAll, handleBatchDelete: handleBatchDeleteFromCmp,
+} = batchOps
+// Wrapper: template calls handleBatchDelete (no args), composable expects (loadTasks, emitTaskChanged)
+const handleBatchDelete = () => handleBatchDeleteFromCmp(loadTasks, emitTaskChanged)
 
-const listForm = reactive({
-  name: '',
-  color: '#409EFF',
-})
+const remindersMgmt = useReminders()
+const {
+  reminders, unreadReminderCount, loadReminders,
+  getReminderName, formatReminderTime,
+  onMountedReminders, onUnmountedReminders,
+} = remindersMgmt
 
-const repeatForm = reactive({
-  type: '' as string,
-  interval: 1,
-  weekDays: [] as number[],
-  dayOfMonth: 1,
-  endDate: '' as string,
-})
-
-const editRepeatEndDate = ref('')
-const showRepeatForm = ref(false)
-
-// 时间模式：普通任务 / 循环任务（互斥）
-const { mode: taskTimeMode, switchToRepeat, switchToNormal } = useTaskTimeMode(editingTask)
-
-const onModeChange = async (newMode: 'normal' | 'repeat') => {
-  const ctx = { taskForm, showRepeatForm, repeatForm, editRepeatEndDate }
-  if (newMode === 'repeat') {
-    await switchToRepeat(ctx)
-  } else {
-    await switchToNormal(ctx)
-  }
-}
-
-// 防抖定时器
-let autoSaveTimer: any = null
-const isSaving = ref(false)
-
-const taskRules = {
-  title: [{ required: true, message: '请输入任务标题', trigger: 'blur' }],
-  dueDate: [
-    {
-      validator: (_rule: any, value: string, callback: any) => {
-        if (value && taskForm.startDate) {
-          if (new Date(value) < new Date(taskForm.startDate)) {
-            callback(new Error('结束时间不能早于开始时间'))
-            return
-          }
-        }
-        callback()
-      },
-      trigger: 'change',
-    },
-  ],
-  startDate: [
-    {
-      validator: (_rule: any, value: string, callback: any) => {
-        if (value && taskForm.dueDate) {
-          if (new Date(value) > new Date(taskForm.dueDate)) {
-            callback(new Error('开始时间不能晚于结束时间'))
-            return
-          }
-        }
-        callback()
-      },
-      trigger: 'change',
-    },
-  ],
-}
-
-const listRules = {
-  name: [{ required: true, message: '请输入清单名称', trigger: 'blur' }],
-}
-
+// ===== 页面剩余状态 =====
 const pageTitle = computed(() => {
-  const titles: any = {
+  const titles: Record<string, string> = {
     all: '全部任务',
     today: '今日任务',
     upcoming: '未来任务',
@@ -1042,129 +969,11 @@ const pageTitle = computed(() => {
   }
   if (activeMenu.value.startsWith('list-')) {
     const listId = parseInt(activeMenu.value.split('-')[1])
-    const list = taskLists.value.find((l) => l.id === listId)
+    const list = taskLists.value.find((l: TaskList) => l.id === listId)
     return list ? list.name : '清单'
   }
   return titles[activeMenu.value] || '全部任务'
 })
-
-// 加载任务列表
-const loadTasks = async () => {
-  loading.value = true
-  try {
-    let res
-    if (searchKeyword.value) {
-      res = await taskApi.searchTasks({
-        keyword: searchKeyword.value,
-        page: currentPage.value - 1,
-        size: pageSize.value,
-      })
-      tasks.value = res.data.content
-      total.value = res.data.totalElements
-    } else {
-      // 统一：加载全部任务（扁平列表）再构建树结构
-      res = await taskApi.getTasks({ page: 0, size: 1000 })
-      const allFlat: any[] = res.data.content || []
-
-      // 构建映射
-      const taskMap = new Map<number, any>()
-      allFlat.forEach((t) => taskMap.set(t.id, { ...t, level: 0 }))
-
-      // 递归计算层级
-      const calcLevel = (id: number): number => {
-        const t = taskMap.get(id)
-        if (!t || !t.parentId) return 0
-        return calcLevel(t.parentId) + 1
-      }
-      taskMap.forEach((t) => {
-        t.level = calcLevel(t.id)
-      })
-
-      // 构建展平的树
-      const buildFlatTree = (roots: any[]) => {
-        const result: any[] = []
-        const addChildren = (task: any) => {
-          result.push(task)
-          const children = Array.from(taskMap.values()).filter((t: any) => t.parentId === task.id)
-          children.sort(
-            (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-          )
-          children.forEach(addChildren)
-        }
-        roots.forEach(addChildren)
-        return result
-      }
-
-      // 筛选逻辑
-      if (activeMenu.value === 'today') {
-        const today = new Date().toDateString()
-        const todayRoots = Array.from(taskMap.values()).filter((t: any) => {
-          if (t.parentId) return false
-          if (t.status === 1) return false
-          if (t.dueDate && new Date(t.dueDate).toDateString() === today) return true
-          if (t.startDate && new Date(t.startDate).toDateString() === today) return true
-          if (t.startDate && t.dueDate) {
-            const now = new Date()
-            now.setHours(0, 0, 0, 0)
-            const s = new Date(t.startDate)
-            s.setHours(0, 0, 0, 0)
-            const e = new Date(t.dueDate)
-            e.setHours(0, 0, 0, 0)
-            return now >= s && now <= e
-          }
-          return false
-        })
-        todayRoots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        tasks.value = buildFlatTree(todayRoots)
-        total.value = tasks.value.length
-      } else if (activeMenu.value === 'upcoming') {
-        const now = new Date()
-        now.setHours(0, 0, 0, 0)
-        const upcomingRoots = Array.from(taskMap.values()).filter((t: any) => {
-          if (t.parentId) return false
-          if (t.status === 1) return false
-          if (t.startDate && new Date(t.startDate) > now) return true
-          if (t.dueDate && new Date(t.dueDate) > now) return true
-          return false
-        })
-        upcomingRoots.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        )
-        tasks.value = buildFlatTree(upcomingRoots)
-        total.value = tasks.value.length
-      } else if (activeMenu.value.startsWith('list-')) {
-        const listId = parseInt(activeMenu.value.split('-')[1])
-        const listRoots = Array.from(taskMap.values()).filter((t: any) => {
-          if (t.parentId) return false
-          return t.listId == listId
-        })
-        listRoots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        tasks.value = buildFlatTree(listRoots)
-        total.value = tasks.value.length
-      } else {
-        // 'all' — 展示完整树
-        const allRoots = Array.from(taskMap.values()).filter((t: any) => !t.parentId)
-        allRoots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        tasks.value = buildFlatTree(allRoots)
-        total.value = tasks.value.length
-      }
-    }
-  } catch (error) {
-    console.error('加载任务失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-// 加载清单列表
-const loadLists = async () => {
-  try {
-    const res = await listApi.getLists()
-    taskLists.value = res.data
-  } catch (error) {
-    console.error('加载清单失败:', error)
-  }
-}
 
 // 菜单选择
 const handleMenuSelect = (index: string) => {
@@ -1191,7 +1000,6 @@ const showUndo = (label: string, callback: () => void) => {
       /* undo expired */
     },
   })
-  // 利用 setTimeout 追加撤销按钮到消息DOM
   setTimeout(() => {
     const messages = document.querySelectorAll('.el-message--success')
     messages.forEach((el) => {
@@ -1211,896 +1019,18 @@ const showUndo = (label: string, callback: () => void) => {
   }, 50)
 }
 
-// 同步
-const { emitTaskChanged } = useTaskSync(() => loadTasks())
-
-// 完成任务
-const handleCompleteTask = async (task: any) => {
-  try {
-    if (task.status === 1) {
-      await taskApi.uncompleteTask(task.id)
-    } else {
-      await taskApi.completeTask(task.id)
-    }
-    loadTasks()
-    emitTaskChanged()
-  } catch (error) {
-    console.error('操作失败:', error)
+const handleReminderClick = async (r: { id: number; isRead: boolean; anniversaryId: number; remindDatetime: string }) => {
+  if (!r.isRead) {
+    await anniversaryApi.markReminderRead(r.id)
+    await loadReminders()
   }
-}
-
-// 日历中点击任务 → 打开同一个编辑面板
-const handleCalendarTaskClick = (task: any) => {
-  handleEditTask(task)
-}
-
-// 编辑任务
-const handleEditTask = async (task: any) => {
-  editingTask.value = task
-  taskForm.title = task.title
-  taskForm.description = task.description || ''
-  taskForm.priority = task.priority
-  taskForm.startDate = task.startDate || ''
-  taskForm.dueDate = task.dueDate || ''
-  taskForm.listId = task.listId || null
-
-  // 加载循环结束日期
-  if (task.repeatRule) {
-    try {
-      const rule = JSON.parse(task.repeatRule)
-      editRepeatEndDate.value = rule.endDate || ''
-    } catch (e) { console.warn('解析循环规则失败', e); editRepeatEndDate.value = '' }
-  } else {
-    editRepeatEndDate.value = ''
-  }
-
-  // 加载子任务，将 status 映射为 completed
-  try {
-    const res = await taskApi.getSubtasks(task.id)
-    taskForm.subtasks = (res.data || []).map((st: any) => ({
-      ...st,
-      completed: st.status === 1,
-    }))
-  } catch (error) {
-    console.error('加载子任务失败:', error)
-    taskForm.subtasks = []
-  }
-
-  // 加载任务标签
-  try {
-    const res = await tagApi.getTaskTags(task.id)
-    taskTags.value = res.data || []
-    selectedTagIds.value = taskTags.value.map((t: any) => t.id)
-  } catch (e) { console.warn('加载标签失败', e); taskTags.value = []; selectedTagIds.value = [] }
-
-  // 加载任务附件
-  try {
-    const res = await attachmentApi.getTaskAttachments(task.id)
-    taskAttachments.value = res.data || []
-  } catch (e) { console.warn('加载附件失败', e); taskAttachments.value = [] }
-}
-
-// 点击主内容区（用于关闭编辑面板）
-const handleMainContentClick = (event: MouseEvent) => {
-  // 如果正在编辑，关闭编辑面板
-  if (editingTask.value) {
-    // 检查点击的是否是编辑面板内部，如果是则不关闭
-    const editPanel = document.querySelector('.edit-panel')
-    if (editPanel && !editPanel.contains(event.target as Node)) {
-      closeEditPanel()
-    }
-  }
-}
-
-// 关闭编辑面板
-const closeEditPanel = async () => {
-  if (editingTask.value && taskForm.title.trim()) {
-    await flushAndSave()
-  }
-  editingTask.value = null
-  resetTaskForm()
-}
-
-// 立即保存（取消 debounce，直接执行）
-const flushAndSave = async () => {
-  if (isSaving.value) return
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer)
-    autoSaveTimer = null
-  }
-  await doSave()
-}
-
-// 自动保存（失去焦点时，debounce 300ms）
-const autoSave = () => {
-  if (isSaving.value) {
-    return
-  }
-
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer)
-  }
-
-  autoSaveTimer = setTimeout(() => {
-    if (!editingTask.value || !taskForm.title.trim()) {
-      return
-    }
-    doSave()
-  }, 300)
-}
-
-// 实际执行保存的核心逻辑
-const doSave = async () => {
-  if (!editingTask.value || !taskForm.title.trim()) return
-
-  // 在异步操作前立即捕获所有表单数据，防止 closeEditPanel / resetTaskForm 干扰
-  const taskId = editingTask.value.id
-  const mainTaskData = {
-    title: taskForm.title,
-    description: taskForm.description,
-    priority: taskForm.priority,
-    startDate: taskForm.startDate,
-    dueDate: taskForm.dueDate,
-    listId: taskForm.listId,
-    parentId: editingTask.value.parentId, // 保持父任务关系不变
-  }
-  const subtasksSnapshot: Array<{ id?: number; title: string; completed: boolean }> = []
-  if (taskForm.subtasks) {
-    taskForm.subtasks.forEach((st) => {
-      if (st.title && st.title.trim()) {
-        subtasksSnapshot.push({
-          id: st.id,
-          title: st.title.trim(),
-          completed: st.completed,
-        })
-      }
-    })
-  }
-
-  isSaving.value = true
-  try {
-    // 先保存主任务（使用捕获的快照数据）
-    await taskApi.updateTask(taskId, mainTaskData)
-
-    // 获取当前数据库中该任务的所有子任务
-    const existingSubtasksRes = await taskApi.getSubtasks(taskId)
-    const existingSubtasks = existingSubtasksRes.data || []
-
-    // 构建数据库子任务映射（仅按 id）
-    const dbSubtaskById = new Map<number, any>()
-    existingSubtasks.forEach((st: any) => {
-      dbSubtaskById.set(st.id, st)
-    })
-
-    // 收集前端有 id 的子任务
-    const frontendIds = new Set<number>()
-    subtasksSnapshot.forEach((st) => {
-      if (st.id) frontendIds.add(st.id)
-    })
-
-    // 1. 删除数据库中不在前端的子任务（按 id 判断）
-    for (const [id, dbSubtask] of dbSubtaskById) {
-      if (!frontendIds.has(id)) {
-        await taskApi.deleteTask(dbSubtask.id)
-      }
-    }
-
-    // 2. 更新或创建子任务（遍历快照而非 taskForm.subtasks）
-    for (const subtask of subtasksSnapshot) {
-      // 仅按 id 匹配，允许同名子任务
-      const dbSubtask =
-        subtask.id && dbSubtaskById.has(subtask.id) ? dbSubtaskById.get(subtask.id) : null
-
-      if (dbSubtask) {
-        // 更新现有子任务（保留 parentId，防止被提升为顶级任务）
-        await taskApi.updateTask(dbSubtask.id, {
-          title: subtask.title,
-          status: subtask.completed ? 1 : 0,
-          parentId: taskId,
-        })
-      } else {
-        // 创建新子任务
-        const res = await taskApi.createTask({
-          title: subtask.title,
-          parentId: taskId,
-          status: subtask.completed ? 1 : 0,
-          priority: 0,
-        })
-        // 回填 id 到原始 reactive 对象
-        const originalSubtask = taskForm.subtasks?.find(
-          (st: any) => st.title && st.title.trim() === subtask.title && !st.id,
-        )
-        if (res.data && res.data.id && originalSubtask) {
-          originalSubtask.id = res.data.id
-        }
-      }
-    }
-
-
-    loadTasks()
-    emitTaskChanged()
-  } catch (error) {
-    console.error('保存失败:', error)
-    ElMessage.error('保存失败，请重试')
-  } finally {
-    isSaving.value = false
-  }
-}
-
-// 添加子任务
-const addSubtask = () => {
-  if (!taskForm.subtasks) {
-    taskForm.subtasks = []
-  }
-
-  const hasEmptySubtask = taskForm.subtasks.some((st) => !st.title || !st.title.trim())
-  if (hasEmptySubtask) {
-    focusLastSubtaskInput()
-    return
-  }
-
-  taskForm.subtasks.push({ title: '', completed: false })
-  focusLastSubtaskInput()
-}
-
-// 聚焦最后一个子任务输入框
-const focusLastSubtaskInput = () => {
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('.subtask-input .el-input__inner')
-    if (inputs.length > 0) {
-      ;(inputs[inputs.length - 1] as HTMLInputElement).focus()
-    }
-  }, 100)
-}
-
-// 子任务输入框按 Enter: 保存当前内容并添加新行
-const handleSubtaskEnter = (index: number) => {
-  const subtask = taskForm.subtasks?.[index]
-  if (!subtask) return
-
-  const title = (subtask.title || '').trim()
-  if (!title) {
-    // 空标题按 Enter：聚焦到当前输入框（不做其他操作）
-    focusLastSubtaskInput()
-    return
-  }
-
-  // 有内容：触发保存，然后添加新空行
-  autoSave()
-  addSubtask()
-}
-
-// 删除子任务
-const removeSubtask = async (index: number) => {
-  if (taskForm.subtasks) {
-    const subtask = taskForm.subtasks[index]
-
-    // 如果子任务已经保存到数据库，则调用 API 删除
-    if (subtask.id) {
-      try {
-      await taskApi.deleteTask(subtask.id)
-        ElMessage.success('子任务已删除')
-      } catch (error) {
-        console.error('删除子任务失败:', error)
-        ElMessage.error('删除子任务失败')
-        return // 删除失败则不继续
-      }
-    }
-
-    // 从前端数组中移除
-    taskForm.subtasks.splice(index, 1)
-
-    // 触发自动保存，确保任务列表刷新
-    autoSave()
-  }
-}
-
-// 修改优先级
-const handlePriorityChange = (priority: string) => {
-  taskForm.priority = parseInt(priority)
-  autoSave()
-}
-
-// 修改清单
-const handleListChange = (listId: string) => {
-  taskForm.listId = listId === 'null' ? null : parseInt(listId)
-  autoSave()
-}
-
-// 获取选中的清单名称
-const getSelectedListName = () => {
-  if (!taskForm.listId) return '无清单'
-  const list = taskLists.value.find((l) => l.id === taskForm.listId)
-  return list ? list.name : '无清单'
-}
-
-// ===== 标签相关 =====
-const selectedTagIds = ref<number[]>([])
-
-const loadAllTags = async () => {
-  try {
-    const res = await tagApi.getTags()
-    allTags.value = res.data || []
-  } catch (e) { console.warn('加载全部标签失败', e) }
-}
-
-const handleTagChange = async (tagIds: number[]) => {
-  if (!editingTask.value) return
-  const taskId = editingTask.value.id
-  // 找出新增的标签
-  const currentIds = new Set(taskTags.value.map((t: any) => t.id))
-  const newIds = new Set(tagIds)
-  for (const id of tagIds) {
-    if (!currentIds.has(id)) {
-      try {
-        await tagApi.addTagToTask(taskId, id)
-      } catch (e) { console.warn('添加标签失败', e) }
-    }
-  }
-  // 找出移除的标签
-  for (const id of currentIds) {
-    if (!newIds.has(id)) {
-      try {
-        await tagApi.removeTagFromTask(taskId, id)
-      } catch (e) { console.warn('移除标签失败', e) }
-    }
-  }
-  // 重新加载
-  try {
-    const res = await tagApi.getTaskTags(taskId)
-    taskTags.value = res.data || []
-    selectedTagIds.value = taskTags.value.map((t: any) => t.id)
-  } catch (e) { console.warn('刷新标签失败', e) }
-}
-
-const handleRemoveTag = async (tagId: number) => {
-  if (!editingTask.value) return
-  try {
-    await tagApi.removeTagFromTask(editingTask.value.id, tagId)
-    taskTags.value = taskTags.value.filter((t: any) => t.id !== tagId)
-    selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId)
-  } catch (e) { console.warn('移除标签失败', e) }
-}
-
-// ===== 附件相关 =====
-const fileInputRef = ref<HTMLInputElement>()
-
-const triggerFileUpload = () => {
-  fileInputRef.value?.click()
-}
-
-const handleFileSelect = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  if (!input.files || input.files.length === 0 || !editingTask.value) return
-  const file = input.files[0]
-  if (file.size > 10 * 1024 * 1024) {
-    ElMessage.warning('文件大小不能超过 10MB')
-    return
-  }
-  attachmentUploading.value = true
-  try {
-    await attachmentApi.uploadFile(editingTask.value.id, file)
-    ElMessage.success('上传成功')
-    const res = await attachmentApi.getTaskAttachments(editingTask.value.id)
-    taskAttachments.value = res.data || []
-  } catch {
-    ElMessage.error('上传失败')
-  } finally {
-    attachmentUploading.value = false
-    input.value = '' // 清空 input，允许重复上传同一文件
-  }
-}
-
-const downloadAttachment = (att: any) => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:18080/api'
-  const url = `${baseUrl}/attachments/${encodeURIComponent(att.fileName)}`
-  const a = document.createElement('a')
-  a.href = url
-  a.download = att.fileName
-  a.target = '_blank'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-}
-
-const handleDeleteAttachment = async (att: any) => {
-  if (!editingTask.value) return
-  try {
-    await ElMessageBox.confirm('确定要删除这个附件吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
-    await attachmentApi.deleteAttachment(att.id)
-    taskAttachments.value = taskAttachments.value.filter((a: any) => a.id !== att.id)
-    ElMessage.success('附件已删除')
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除附件失败:', error)
-    }
-  }
-}
-
-const formatFileSize = (bytes: number) => {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-}
-
-const renderMarkdown = (text: string) => {
-  if (!text) return ''
-  try {
-    return marked(text, { breaks: true, gfm: true }) as string
-  } catch (e) { console.warn('渲染 Markdown 失败', e); return text }
-}
-
-const datePickerFormat = computed(() => {
-  const val = taskForm.dueDate || taskForm.startDate
-  return hasTimeValue(val) ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD'
-})
-
-// 删除任务
-const handleDeleteTask = async (task: any) => {
-  try {
-    await ElMessageBox.confirm('确定要删除这个任务吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
-
-    // 保存删除前的任务数据用于撤销
-    const deletedTask = { ...task }
-    await taskApi.deleteTask(task.id)
-    showUndo('任务已删除', async () => {
-      await taskApi.createTask({
-        title: deletedTask.title,
-        description: deletedTask.description,
-        priority: deletedTask.priority,
-        startDate: deletedTask.startDate,
-        dueDate: deletedTask.dueDate,
-        listId: deletedTask.listId,
-        parentId: deletedTask.parentId,
-      })
-      loadTasks()
-    })
-    loadTasks()
-    emitTaskChanged()
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除任务失败:', error)
-    }
-  }
-}
-
-// 批量操作
-const enterBatchMode = () => {
-  batchMode.value = true
-  selectedTaskIds.value.clear()
-}
-
-const exitBatchMode = () => {
-  batchMode.value = false
-  selectedTaskIds.value.clear()
-}
-
-const toggleTaskSelection = (taskId: number) => {
-  const newSet = new Set(selectedTaskIds.value)
-  if (newSet.has(taskId)) {
-    newSet.delete(taskId)
-  } else {
-    newSet.add(taskId)
-  }
-  selectedTaskIds.value = newSet
-}
-
-const handleSelectAll = () => {
-  const visibleIds = new Set(tasks.value.map((t) => t.id))
-  // Skip child tasks whose parent is also visible (parent cascade will delete them)
-  const filtered = tasks.value
-    .filter((t) => !t.parentId || !visibleIds.has(t.parentId))
-    .map((t) => t.id)
-  selectedTaskIds.value = new Set(filtered)
-}
-
-const handleBatchDelete = async () => {
-  if (selectedTaskIds.value.size === 0) {
-    ElMessage.warning('请先选择要删除的任务')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${selectedTaskIds.value.size} 个任务吗？此操作不可恢复。`,
-      '批量删除',
-      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
-    )
-    await batchApi.batchDelete(Array.from(selectedTaskIds.value))
-    ElMessage.success(`已删除 ${selectedTaskIds.value.size} 个任务`)
-    exitBatchMode()
-    loadTasks()
-    emitTaskChanged()
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('批量删除失败:', error)
-      ElMessage.error('批量删除失败')
-    }
-  }
-}
-
-// 提交任务
-const handleSubmitTask = async () => {
-  if (!taskFormRef.value) return
-
-  await taskFormRef.value.validate(async (valid) => {
-    if (valid) {
-      submitLoading.value = true
-      try {
-        if (editingTask.value) {
-          await taskApi.updateTask(editingTask.value.id, taskForm)
-          ElMessage.success('更新成功')
-          closeEditPanel()
-        } else {
-          // 循环模式：startDate 同步为 dueDate（循环任务没有开始时间）
-          const submitForm = { ...taskForm }
-          if (taskTimeMode.value === 'repeat') {
-            submitForm.startDate = submitForm.dueDate
-          }
-          const res = await taskApi.createTask(submitForm)
-          // 如果设置了重复规则，创建后立即设置
-          if (repeatForm.type && res.data?.id) {
-            try {
-              await repeatApi.setRepeatRule(res.data.id, {
-                type: repeatForm.type,
-                interval: repeatForm.interval,
-                weekDays: repeatForm.weekDays.length > 0 ? repeatForm.weekDays.join(',') : null,
-                dayOfMonth: repeatForm.type === 'MONTHLY' ? repeatForm.dayOfMonth : null,
-                endDate: repeatForm.endDate || null,
-              })
-            } catch {
-              ElMessage.warning('循环规则设置失败')
-            }
-          }
-          ElMessage.success('创建成功')
-          showCreateTaskDialog.value = false
-          resetRepeatForm()
-        }
-        resetTaskForm()
-        loadTasks()
-        emitTaskChanged()
-      } catch (error) {
-        console.error('提交任务失败:', error)
-      } finally {
-        submitLoading.value = false
-      }
-    }
-  })
-}
-
-// 提交清单
-const handleSubmitList = async () => {
-  if (!listFormRef.value) return
-
-  await listFormRef.value.validate(async (valid) => {
-    if (valid) {
-      submitLoading.value = true
-      try {
-        await listApi.createList(listForm)
-        ElMessage.success('创建成功')
-        showCreateListDialog.value = false
-        resetListForm()
-        loadLists()
-      } catch (error) {
-        console.error('创建清单失败:', error)
-      } finally {
-        submitLoading.value = false
-      }
-    }
-  })
-}
-
-// 删除清单
-const handleDeleteList = async (list: any) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除清单“${list.name}”吗？该清单下的任务将不会被删除。`,
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    await listApi.deleteList(list.id)
-    ElMessage.success('删除成功')
-    loadLists()
-
-    // 如果当前正在查看被删除的清单，切换到全部任务
-    if (activeMenu.value === `list-${list.id}`) {
-      activeMenu.value = 'all'
-      loadTasks()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除清单失败:', error)
-    }
-  }
-}
-
-// 重置表单
-const resetTaskForm = () => {
-  editingTask.value = null
-  taskForm.title = ''
-  taskForm.description = ''
-  taskForm.priority = 0
-  taskForm.startDate = ''
-  taskForm.dueDate = ''
-  taskForm.listId = null
-  taskForm.subtasks = []
-  taskTags.value = []
-  taskAttachments.value = []
-  selectedTagIds.value = []
-  taskTimeMode.value = 'normal'
-}
-
-const resetListForm = () => {
-  listForm.name = ''
-  listForm.color = '#409EFF'
-}
-
-const resetRepeatForm = () => {
-  repeatForm.type = ''
-  repeatForm.interval = 1
-  repeatForm.weekDays = []
-  repeatForm.dayOfMonth = 1
-  repeatForm.endDate = ''
-}
-
-const onRepeatTypeChange = () => {
-  repeatForm.weekDays = []
-  repeatForm.dayOfMonth = 1
-  repeatForm.endDate = ''
-  if (repeatForm.type) {
-    repeatForm.interval = 1
-  }
-}
-
-// 更新循环结束日期
-const handleUpdateRepeatEndDate = async () => {
-  if (!editingTask.value?.repeatRule) return
-  try {
-    const rule = JSON.parse(editingTask.value.repeatRule)
-    rule.endDate = editRepeatEndDate.value || null
-    await repeatApi.setRepeatRule(editingTask.value.id, rule)
-    editingTask.value.repeatRule = JSON.stringify(rule)
-    ElMessage.success('循环结束日期已更新')
-  } catch {
-    ElMessage.error('更新失败')
-  }
-}
-
-// 取消循环
-const handleCancelRepeat = async () => {
-  if (!editingTask.value) return
-  try {
-    await repeatApi.cancelRepeatRule(editingTask.value.id)
-    editingTask.value.repeatRule = null
-    editRepeatEndDate.value = ''
-    ElMessage.success('已取消循环')
-    loadTasks()
-  } catch {
-    ElMessage.error('取消失败')
-  }
-}
-
-// 时间设置按钮摘要文字
-const getTimeSummary = () => {
-  const hasStart = taskForm.startDate
-  const hasDue = taskForm.dueDate
-  const hasRepeat = editingTask.value?.repeatRule
-
-  if (!hasStart && !hasDue && !hasRepeat) return '时间'
-
-  const parts: string[] = []
-  if (hasStart) parts.push(formatDateShort(taskForm.startDate))
-  if (hasDue) parts.push(formatDateShort(taskForm.dueDate))
-
-  let summary = parts.join(' ~ ')
-
-  if (hasRepeat) {
-    const label = getRepeatLabel(editingTask.value.repeatRule, editingTask.value)
-    summary = summary ? `${summary} · ${label}` : label
-  }
-
-  return summary || '时间'
-}
-
-const getCreateTimeSummary = () => {
-  const hasStart = taskForm.startDate
-  const hasDue = taskForm.dueDate
-  const hasRepeat = repeatForm.type
-
-  if (!hasStart && !hasDue && !hasRepeat) return '设置时间'
-
-  const parts: string[] = []
-  if (hasStart) parts.push(formatDateShort(taskForm.startDate))
-  if (hasDue) parts.push(formatDateShort(taskForm.dueDate))
-  let summary = parts.join(' ~ ')
-
-  if (hasRepeat) {
-    const labels: any = { DAILY: '每天', WEEKLY: '每周', MONTHLY: '每月', YEARLY: '每年' }
-    const label = labels[repeatForm.type] || repeatForm.type
-    summary = summary ? `${summary} · ${label}` : label
-  }
-
-  return summary || '设置时间'
-}
-
-// 为现有任务添加循环规则（详情面板内，不重载任务列表）
-const handleAddRepeatInPanel = async () => {
-  if (!editingTask.value || !repeatForm.type) return
-  try {
-    const rule: any = {
-      type: repeatForm.type,
-      interval: repeatForm.interval,
-      weekDays: repeatForm.weekDays.length > 0 ? repeatForm.weekDays.join(',') : null,
-      dayOfMonth: repeatForm.type === 'MONTHLY' ? repeatForm.dayOfMonth : null,
-      endDate: repeatForm.endDate || null,
-    }
-    await repeatApi.setRepeatRule(editingTask.value.id, rule)
-    editingTask.value.repeatRule = JSON.stringify(rule)
-    editRepeatEndDate.value = repeatForm.endDate || ''
-    showRepeatForm.value = false
-    ElMessage.success('已设置循环')
-    resetRepeatForm()
-  } catch {
-    ElMessage.error('设置循环失败')
-  }
-}
-
-// 获取优先级类型
-// 获取优先级文本
-// 获取时间状态文本
-// 规则：无具体时间不显示；跨天只显示天数；同日有时间才显示小时分钟
-const getTimeStatus = (task: any) => {
-  if (!task.startDate && !task.dueDate) return ''
-  if (task.status === 1) return ''
-
-  // 循环任务：startDate = dueDate（周期基准日期），仅基于 dueDate 显示循环进度
-  if (task.repeatRule) {
-    if (!task.dueDate) return ''
-    const dueDate = new Date(task.dueDate)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const dueDay = new Date(dueDate)
-    dueDay.setHours(0, 0, 0, 0)
-    const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    if (diffDays < 0) return '循环 · 过期'
-    if (diffDays === 0) return '循环 · 今天'
-    return `循环 · 还剩 ${diffDays} 天`
-  }
-
-  const now = new Date()
-  const startDate = task.startDate ? new Date(task.startDate) : null
-  const dueDate = task.dueDate ? new Date(task.dueDate) : null
-
-  const dueHasTime = dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0)
-  const startHasTime = startDate && (startDate.getHours() !== 0 || startDate.getMinutes() !== 0)
-  const isCrossDay = startDate && dueDate && startDate.toDateString() !== dueDate.toDateString()
-
-  // 无具体时间 → 不显示
-  if (!dueHasTime && !startHasTime) return ''
-
-  // 还没到开始日期
-  if (startDate && now < startDate) {
-    const diff = startDate.getTime() - now.getTime()
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-    return `${days}天后开始`
-  }
-
-  if (dueDate) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const dueDay = new Date(dueDate)
-    dueDay.setHours(0, 0, 0, 0)
-    const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-    // 跨天或仅有日期（无时间）→ 只显示天数
-    if (isCrossDay || !dueHasTime) {
-      if (diffDays === 0) return '今天'
-      if (diffDays > 0) return `${diffDays}天后结束`
-      return `过期${Math.abs(diffDays)}天`
-    }
-
-    // 同日 + 有具体时间 → 精确到小时分钟
-    const diffMs = now.getTime() - dueDate.getTime()
-    const absMs = Math.abs(diffMs)
-    const days = Math.floor(absMs / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((absMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-    const mins = Math.floor((absMs % (1000 * 60 * 60)) / (1000 * 60))
-    if (diffMs > 0) {
-      if (days > 0) return `过期${days}天${hours}小时`
-      if (hours > 0) return `过期${hours}小时${mins}分钟`
-      return `过期${mins}分钟`
-    } else {
-      if (days > 0) return `${days}天后结束`
-      if (hours > 0) return `${hours}小时${mins}分钟后`
-      return `${mins}分钟后`
-    }
-  }
-
-  return ''
-}
-
-// 获取时间状态样式类
-const getTimeStatusClass = (task: any) => {
-  if (!getTimeStatus(task)) return ''
-
-  const now = new Date()
-  const startDate = task.startDate ? new Date(task.startDate) : null
-  const dueDate = task.dueDate ? new Date(task.dueDate) : null
-
-  if (startDate && now < startDate) return 'time-status-upcoming'
-
-  if (dueDate) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const dueDay = new Date(dueDate)
-    dueDay.setHours(0, 0, 0, 0)
-    if (dueDay < today) return 'time-status-overdue'
-    if (dueDay > today) return 'time-status-active'
-    return 'time-status-today'
-  }
-
-  return ''
-}
-
-// 获取距离结束剩余天数徽章
-// 规则：未到开始日期时返回空（保留 time-status 的"X天后开始"显示）；
-// 已完成或无 dueDate 时返回空；其余按剩余天数返回 overdue/today/upcoming。
-const getDueDaysBadge = (task: any) => {
-  if (!task.dueDate) return { text: '', type: 'empty' }
-  if (task.status === 1) return { text: '', type: 'empty' }
-
-  const now = new Date()
-  const startDate = task.startDate ? new Date(task.startDate) : null
-  if (startDate && now < startDate) return { text: '', type: 'empty' }
-
-  const dueDate = new Date(task.dueDate)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const dueDay = new Date(dueDate)
-  dueDay.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-  if (diffDays < 0) return { text: `已过期 ${Math.abs(diffDays)} 天`, type: 'overdue' }
-  if (diffDays === 0) return { text: '今天到期', type: 'today' }
-  return { text: `还剩 ${diffDays} 天`, type: 'upcoming' }
-}
-
-// 获取距离结束剩余天数的样式类
-const getDueDaysClass = (task: any) => {
-  const type = getDueDaysBadge(task).type
-  return type === 'empty' ? '' : `due-days-badge-${type}`
-}
-
-// 判断是否过期（仅限严格过期：截止日期 < 今天，当天不算）
-const handlePostponeTask = async (task: any) => {
-  try {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    await taskApi.updateTaskTime(task.id, { dueDate: formatLocalDateTime(today) })
-    ElMessage.success('已顺延至今天')
-    loadTasks()
-  } catch {
-    ElMessage.error('顺延失败')
-  }
+  currentModule.value = 'anniversaries'
 }
 
 onMounted(async () => {
   loadLists()
   loadTasks()
-  loadReminders()
-  reminderTimer = setInterval(loadReminders, 60000) // 每分钟轮询提醒
+  onMountedReminders()
 })
 
 // 切换模块时退出批量模式
@@ -2109,8 +1039,9 @@ watch(currentModule, () => {
 })
 
 onUnmounted(() => {
-  if (reminderTimer) clearInterval(reminderTimer)
+  onUnmountedReminders()
 })
+
 </script>
 
 <style scoped>

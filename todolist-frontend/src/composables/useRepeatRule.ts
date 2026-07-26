@@ -1,6 +1,7 @@
 // 共享循环规则逻辑
+import type { Task, RepeatRule } from '../types'
 
-export function getRepeatLabel(repeatRuleJson: string, task?: any): string {
+export function getRepeatLabel(repeatRuleJson: string, task?: Partial<Task>): string {
   try {
     const rule = JSON.parse(repeatRuleJson)
     const labels: Record<string, string> = {

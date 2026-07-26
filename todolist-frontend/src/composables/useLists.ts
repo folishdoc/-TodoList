@@ -1,0 +1,99 @@
+import { ref, reactive } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance } from 'element-plus'
+import * as listApi from '../api/list'
+
+export interface ListForm {
+  name: string
+  color: string
+}
+
+export function useLists() {
+  const taskLists = ref<any[]>([])
+  const showCreateListDialog = ref(false)
+  const submitLoading = ref(false)
+  const listFormRef = ref<FormInstance>()
+  const listRules = {
+    name: [{ required: true, message: '请输入清单名称', trigger: 'blur' }],
+  }
+
+  const listForm = reactive<ListForm>({
+    name: '',
+    color: '#409EFF',
+  })
+
+  const loadLists = async () => {
+    try {
+      const res = await listApi.getLists()
+      taskLists.value = res.data || []
+    } catch (e) {
+      console.warn('加载清单失败', e)
+    }
+  }
+
+  const resetListForm = () => {
+    listForm.name = ''
+    listForm.color = '#409EFF'
+  }
+
+  const handleSubmitList = async () => {
+    if (!listFormRef.value) return
+
+    await listFormRef.value.validate(async (valid) => {
+      if (valid) {
+        submitLoading.value = true
+        try {
+          await listApi.createList(listForm)
+          ElMessage.success('创建成功')
+          showCreateListDialog.value = false
+          resetListForm()
+          loadLists()
+        } catch (error) {
+          console.error('创建清单失败:', error)
+        } finally {
+          submitLoading.value = false
+        }
+      }
+    })
+  }
+
+  const handleDeleteList = async (list: any, activeMenu: any, setActiveMenu: (v: string) => void, loadTasks: () => void) => {
+    try {
+      await ElMessageBox.confirm(
+        `确定要删除清单"${list.name}"吗？该清单下的任务将不会被删除。`,
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        },
+      )
+
+      await listApi.deleteList(list.id)
+      ElMessage.success('删除成功')
+      loadLists()
+
+      if (activeMenu === `list-${list.id}`) {
+        setActiveMenu('all')
+        loadTasks()
+      }
+    } catch (error) {
+      if (error !== 'cancel') {
+        console.error('删除清单失败:', error)
+      }
+    }
+  }
+
+  return {
+    taskLists,
+    showCreateListDialog,
+    submitLoading,
+    listFormRef,
+    listForm,
+    listRules,
+    loadLists,
+    resetListForm,
+    handleSubmitList,
+    handleDeleteList,
+  }
+}
