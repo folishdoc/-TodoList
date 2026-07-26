@@ -1,11 +1,15 @@
 package com.liuzeyu.todolist.module.export.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.liuzeyu.todolist.common.constant.PriorityEnum;
+import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 数据导出服务
@@ -15,6 +19,7 @@ import java.util.List;
 public class ExportService {
 
     private final TaskRepository taskRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 导出任务为CSV格式
@@ -29,8 +34,8 @@ public class ExportService {
             csv.append(task.getId()).append(",");
             csv.append(escapeCsv(task.getTitle())).append(",");
             csv.append(escapeCsv(task.getDescription() != null ? task.getDescription() : "")).append(",");
-            csv.append(getPriorityText(task.getPriority())).append(",");
-            csv.append(task.getStatus() == 1 ? "已完成" : "待完成").append(",");
+            csv.append(PriorityEnum.fromCode(task.getPriority()).getDescription()).append(",");
+            csv.append(task.getStatus() == TaskStatusEnum.COMPLETE.getCode() ? "已完成" : "待完成").append(",");
             csv.append(task.getDueDate() != null ? task.getDueDate().toString() : "").append(",");
             csv.append(task.getCreatedAt() != null ? task.getCreatedAt().toString() : "").append("\n");
         }
@@ -39,30 +44,23 @@ public class ExportService {
     }
 
     /**
-     * 导出任务为JSON格式（简化版）
+     * 导出任务为JSON格式（使用Jackson）
      */
     public String exportTasksAsJson(Long userId) {
         List<Task> tasks = taskRepository.findAllByUserId(userId);
-        
-        StringBuilder json = new StringBuilder();
-        json.append("[\n");
-        
-        for (int i = 0; i < tasks.size(); i++) {
-            Task task = tasks.get(i);
-            json.append("  {\n");
-            json.append("    \"id\": ").append(task.getId()).append(",\n");
-            json.append("    \"title\": \"").append(escapeJson(task.getTitle())).append("\",\n");
-            json.append("    \"priority\": ").append(task.getPriority()).append(",\n");
-            json.append("    \"status\": ").append(task.getStatus()).append("\n");
-            json.append("  }");
-            if (i < tasks.size() - 1) {
-                json.append(",");
-            }
-            json.append("\n");
+        try {
+            List<Map<String, Object>> jsonList = tasks.stream().map(task -> {
+                Map<String, Object> map = new java.util.HashMap<>();
+                map.put("id", task.getId());
+                map.put("title", task.getTitle());
+                map.put("priority", task.getPriority());
+                map.put("status", task.getStatus());
+                return map;
+            }).collect(java.util.stream.Collectors.toList());
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonList);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("JSON 导出失败", e);
         }
-        
-        json.append("]");
-        return json.toString();
     }
 
     private String escapeCsv(String value) {
@@ -72,20 +70,5 @@ public class ExportService {
         return value;
     }
 
-    private String escapeJson(String value) {
-        return value.replace("\\", "\\\\")
-                   .replace("\"", "\\\"")
-                   .replace("\n", "\\n")
-                   .replace("\r", "\\r")
-                   .replace("\t", "\\t");
-    }
 
-    private String getPriorityText(Integer priority) {
-        return switch (priority) {
-            case 3 -> "高";
-            case 2 -> "中";
-            case 1 -> "低";
-            default -> "未知";
-        };
-    }
 }

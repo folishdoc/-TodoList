@@ -1,5 +1,6 @@
 package com.liuzeyu.todolist.module.task.service;
 
+import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.entity.TaskAttachment;
 import com.liuzeyu.todolist.module.task.mapper.TaskAttachmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,7 @@ public class FileUploadService {
     @Transactional
     public void deleteAttachment(Long attachmentId) {
         TaskAttachment attachment = attachmentRepository.findById(attachmentId)
-            .orElseThrow(() -> new RuntimeException("附件不存在"));
+            .orElseThrow(() -> new BusinessException(404, "附件不存在"));
 
         // 删除文件
         try {
