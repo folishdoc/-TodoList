@@ -37,7 +37,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         t.setRepeatRule("{\"type\":\"DAILY\"}");
         when(taskRepository.findAll()).thenReturn(List.of(t));
 
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
 
         verify(taskRepository, never()).save(any());
     }
@@ -57,7 +57,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         when(taskRepository.findAll()).thenReturn(List.of(t));
         when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
 
         ArgumentCaptor<Task> captor = ArgumentCaptor.forClass(Task.class);
         verify(taskRepository).save(captor.capture());
@@ -79,7 +79,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         when(taskRepository.findAll()).thenReturn(List.of(t));
         when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
 
         ArgumentCaptor<Task> captor = ArgumentCaptor.forClass(Task.class);
         verify(taskRepository).save(captor.capture());
@@ -103,7 +103,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         when(taskRepository.findAll()).thenReturn(List.of(monthly, yearly));
         when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
 
         verify(taskRepository, times(2)).save(any(Task.class));
     }
@@ -117,7 +117,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         t.setRepeatRule("{\"type\":\"DAILY\",\"interval\":1,\"endDate\":\"2020-01-01T00:00:00\"}");
         when(taskRepository.findAll()).thenReturn(List.of(t));
 
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
 
         verify(taskRepository, never()).save(any());
     }
@@ -131,7 +131,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         bad.setRepeatRule("not-json");
         when(taskRepository.findAll()).thenReturn(List.of(bad));
 
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
 
         verify(taskRepository, never()).save(any());
     }

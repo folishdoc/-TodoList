@@ -1,6 +1,9 @@
 package com.liuzeyu.todolist.common.config;
 
-import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +18,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +34,9 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins:}")
     private String allowedOrigins;
 
+    @Value("${app.personal.token}")
+    private String personalToken;
+
     /**
      * 配置 CORS 跨域
      * 生产环境通过 app.cors.allowed-origins 指定允许的域名（逗号分隔）
@@ -38,13 +46,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         if (allowedOrigins == null || allowedOrigins.isBlank()) {
+            // Dev mode: allow all origins but must disable credentials
             configuration.setAllowedOriginPatterns(List.of("*"));
+            configuration.setAllowCredentials(false);
         } else {
+            // Prod mode: explicit origins with credentials
             configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+            configuration.setAllowCredentials(true);
         }
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Requested-With", "Accept"));
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -66,20 +77,38 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated()
             )
-            // 匿名认证过滤器：所有请求默认使用 userId=1
-            .addFilterBefore(anonymousAuthFilter(), UsernamePasswordAuthenticationFilter.class);
+            // 个人令牌认证过滤器：验证 Bearer token 并注入 userId=1
+            .addFilterBefore(personalTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
-    public Filter anonymousAuthFilter() {
-        return (request, response, chain) -> {
-            UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(1L, null, new ArrayList<>());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails((jakarta.servlet.http.HttpServletRequest) request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            chain.doFilter(request, response);
+    public OncePerRequestFilter personalTokenFilter() {
+        return new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+                    throws ServletException, IOException {
+                String authHeader = request.getHeader("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"code\":401,\"message\":\"Missing or invalid token\"}");
+                    return;
+                }
+                String token = authHeader.substring(7);
+                if (!personalToken.equals(token)) {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"code\":401,\"message\":\"Invalid token\"}");
+                    return;
+                }
+                UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(1L, null, new ArrayList<>());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                chain.doFilter(request, response);
+            }
         };
     }
 }

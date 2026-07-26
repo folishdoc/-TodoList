@@ -19,7 +19,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 重复任务集成测试 — 验证 RepeatTaskService.generateRepeatTasks() 的实例生成逻辑。
+ * 重复任务集成测试 — 验证 RepeatTaskService.scheduledGenerateRepeatTasks() 的实例生成逻辑。
  *
  * 关键约束（来自 RepeatTaskService 实现）：
  *  - 只有 status=1（已完成）的任务才会触发新实例生成
@@ -58,7 +58,7 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         final Long parentId = parent.getId();
 
         long before = taskRepository.count();
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
         long after = taskRepository.count();
 
         assertThat(after).isEqualTo(before + 1);
@@ -97,7 +97,7 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         final Long taskId = task.getId();
 
         long before = taskRepository.count();
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
         long after = taskRepository.count();
 
         // 未完成不生成
@@ -121,7 +121,7 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         task = taskRepository.save(task);
 
         long before = taskRepository.count();
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
         long after = taskRepository.count();
 
         assertThat(after).isEqualTo(before);
@@ -150,7 +150,7 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         final String weeklyTitle = task.getTitle();
         final Long weeklyId = task.getId();
 
-        repeatTaskService.generateRepeatTasks();
+        repeatTaskService.scheduledGenerateRepeatTasks();
 
         List<Task> generated = taskRepository.findByUserIdAndStatus(1L, 0).stream()
                 .filter(t -> t.getTitle().equals(weeklyTitle))

@@ -36,7 +36,7 @@ class RepeatTaskControllerTest extends BaseControllerTest {
     @Test
     @DisplayName("POST /api/tasks/repeat/generate - manual trigger")
     void generate_succeeds() throws Exception {
-        doNothing().when(repeatTaskService).generateRepeatTasks();
+        doNothing().when(repeatTaskService).scheduledGenerateRepeatTasks();
 
         doPost("/api/tasks/repeat/generate")
                 .andExpect(status().isOk());

@@ -1,7 +1,6 @@
 package com.liuzeyu.todolist.module.task.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -10,13 +9,13 @@ import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.dto.RepeatRule;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,6 +28,7 @@ public class RepeatTaskService {
 
     private final TaskRepository taskRepository;
     private final ObjectMapper objectMapper;
+    private LocalDate lastGenerateDate = null;
 
     public RepeatTaskService(TaskRepository taskRepository) {
         this.taskRepository = taskRepository;
@@ -38,12 +38,18 @@ public class RepeatTaskService {
     }
 
     /**
-     * 每天凌晨检查并生成重复任务
+     * 每天凌晨检查并生成重复任务（处理所有用户）
      */
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
-    public void generateRepeatTasks() {
-        log.info("开始生成重复任务...");
+    public void scheduledGenerateRepeatTasks() {
+        LocalDate today = LocalDate.now();
+        if (today.equals(lastGenerateDate)) {
+            log.info("今天已生成过重复任务，跳过");
+            return;
+        }
+
+        log.info("开始定时生成重复任务...");
         
         LocalDateTime now = LocalDateTime.now();
         List<Task> allTasks = taskRepository.findAll();
@@ -72,6 +78,44 @@ public class RepeatTaskService {
         }
 
         log.info("重复任务生成完成，共生成 {} 个新任务", generatedCount);
+
+        lastGenerateDate = today;
+    }
+
+    /**
+     * 为指定用户生成重复任务
+     */
+    @Transactional
+    public void generateRepeatTasks(Long userId) {
+        log.info("开始为用户 {} 生成重复任务...", userId);
+
+        LocalDateTime now = LocalDateTime.now();
+        List<Task> userTasks = taskRepository.findAllByUserId(userId);
+
+        int generatedCount = 0;
+
+        for (Task task : userTasks) {
+            if (task.getRepeatRule() != null && !task.getRepeatRule().isEmpty()) {
+                try {
+                    RepeatRule rule = objectMapper.readValue(task.getRepeatRule(), RepeatRule.class);
+
+                    if (shouldGenerateNewTask(task, rule, now)) {
+                        Task newTask = createRepeatedTask(task, rule);
+                        taskRepository.save(newTask);
+                        generatedCount++;
+
+                        log.info("生成重复任务: {} -> {}", task.getTitle(), newTask.getTitle());
+                    }
+
+                    // 检查循环结束日期是否临近（7天内）
+                    checkEndDateApproaching(task, rule, now);
+                } catch (JsonProcessingException e) {
+                    log.error("解析重复规则失败: taskId={}", task.getId(), e);
+                }
+            }
+        }
+
+        log.info("用户 {} 重复任务生成完成，共生成 {} 个新任务", userId, generatedCount);
     }
 
     /**

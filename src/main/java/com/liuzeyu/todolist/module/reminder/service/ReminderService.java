@@ -27,13 +27,17 @@ public class ReminderService {
     @Scheduled(cron = "0 * * * * ?")
     public void checkDueTasks() {
         log.info("开始检查即将到期的任务...");
-        
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime oneHourLater = now.plusHours(1);
-        
-        // 这里可以添加邮件或通知发送逻辑
-        // 目前仅记录日志
-        log.info("提醒检查完成: {} - {}", now, oneHourLater);
+        Long userId = 1L;
+        List<Task> upcomingTasks = getUpcomingDueTasks(userId);
+        if (upcomingTasks.isEmpty()) {
+            log.info("没有即将到期的任务");
+        } else {
+            log.info("发现 {} 个即将到期的任务:", upcomingTasks.size());
+            for (Task task : upcomingTasks) {
+                log.info("  任务: id={}, title={}, 截止时间={}", task.getId(), task.getTitle(), task.getDueDate());
+            }
+        }
+        log.info("提醒检查完成");
     }
 
     /**

@@ -34,28 +34,33 @@ public class AnniversaryReminderService {
 
         LocalDateTime now = LocalDateTime.now();
         for (Anniversary a : allEnabled) {
-            LocalDate nextDate = AnniversaryCalculator.getNextOccurrence(a.getDate(), a.getRepeatType());
-            String[] daysBeforeArr = a.getRemindDaysBefore() != null ? a.getRemindDaysBefore().split(",") : new String[]{"0"};
-            for (String ds : daysBeforeArr) {
-                try {
-                    int daysBefore = Integer.parseInt(ds.trim());
-                    LocalTime remindTime = a.getRemindTime() != null ? a.getRemindTime() : LocalTime.of(9, 0);
-                    LocalDateTime remindAt = LocalDateTime.of(nextDate.minusDays(daysBefore), remindTime);
+            try {
+                LocalDate nextDate = AnniversaryCalculator.getNextOccurrence(a.getDate(), a.getRepeatType());
+                String[] daysBeforeArr = a.getRemindDaysBefore() != null ? a.getRemindDaysBefore().split(",") : new String[]{"0"};
+                for (String ds : daysBeforeArr) {
+                    try {
+                        int daysBefore = Integer.parseInt(ds.trim());
+                        LocalTime remindTime = a.getRemindTime() != null ? a.getRemindTime() : LocalTime.of(9, 0);
+                        LocalDateTime remindAt = LocalDateTime.of(nextDate.minusDays(daysBefore), remindTime);
 
-                    if (now.isAfter(remindAt) || now.isEqual(remindAt)) {
-                        List<ReminderLog> existing = reminderLogRepository
-                                .findByAnniversaryIdAndRemindDatetime(a.getId(), remindAt);
-                        if (existing.isEmpty()) {
-                            ReminderLog entry = new ReminderLog();
-                            entry.setAnniversaryId(a.getId());
-                            entry.setRemindDatetime(remindAt);
-                            entry.setIsRead(false);
-                            reminderLogRepository.save(entry);
-                            log.info("触发提醒: 纪念日={}, 提醒时间={}", a.getName(), remindAt);
+                        if (now.isAfter(remindAt) || now.isEqual(remindAt)) {
+                            List<ReminderLog> existing = reminderLogRepository
+                                    .findByAnniversaryIdAndRemindDatetime(a.getId(), remindAt);
+                            if (existing.isEmpty()) {
+                                ReminderLog entry = new ReminderLog();
+                                entry.setAnniversaryId(a.getId());
+                                entry.setRemindDatetime(remindAt);
+                                entry.setIsRead(false);
+                                reminderLogRepository.save(entry);
+                                log.info("触发提醒: 纪念日={}, 提醒时间={}", a.getName(), remindAt);
+                            }
                         }
+                    } catch (NumberFormatException e) {
+                        log.warn("解析 remindDaysBefore 失败: anniversaryId={}, value='{}'", a.getId(), ds, e);
                     }
-                } catch (NumberFormatException ignored) {
                 }
+            } catch (Exception e) {
+                log.error("检查纪念日提醒失败: anniversaryId={}", a.getId(), e);
             }
         }
     }

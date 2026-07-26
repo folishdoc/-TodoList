@@ -45,8 +45,9 @@ public class RepeatTaskController {
 
     @PostMapping("/generate")
     @Operation(summary = "手动生成重复任务（测试用）")
-    public Result<Void> generateRepeatTasks() {
-        repeatTaskService.generateRepeatTasks();
+    public Result<Void> generateRepeatTasks(
+            @AuthenticationPrincipal Long userId) {
+        repeatTaskService.generateRepeatTasks(userId);
         return Result.success(null);
     }
 }
