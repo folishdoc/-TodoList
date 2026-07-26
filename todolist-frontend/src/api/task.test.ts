@@ -7,7 +7,6 @@ vi.mock('../utils/request', () => ({
 
 import {
   getTasks,
-  getTaskById,
   createTask,
   updateTask,
   deleteTask,
@@ -15,7 +14,6 @@ import {
   uncompleteTask,
   getTodayTasks,
   getUpcomingTasks,
-  searchTasks,
   updateTaskTime,
   getTasksByDateRange,
 } from './task'
@@ -33,12 +31,6 @@ describe('api/task.ts', () => {
       method: 'get',
       params: { page: 0, size: 20, status: 0 },
     })
-  })
-
-  it('getTaskById: GET /tasks/{id}', async () => {
-    requestMock.mockResolvedValue({ id: 1 } as any)
-    await getTaskById(1)
-    expect(requestMock).toHaveBeenCalledWith({ url: '/tasks/1', method: 'get' })
   })
 
   it('createTask: POST /tasks', async () => {
@@ -91,16 +83,6 @@ describe('api/task.ts', () => {
     requestMock.mockResolvedValue([] as any)
     await getUpcomingTasks()
     expect(requestMock).toHaveBeenCalledWith({ url: '/tasks/upcoming', method: 'get' })
-  })
-
-  it('searchTasks: GET /tasks/search with params', async () => {
-    requestMock.mockResolvedValue({ data: { content: [] } } as any)
-    await searchTasks({ keyword: 'milk' })
-    expect(requestMock).toHaveBeenCalledWith({
-      url: '/tasks/search',
-      method: 'get',
-      params: { keyword: 'milk' },
-    })
   })
 
   it('updateTaskTime: PATCH /tasks/{id}/time', async () => {

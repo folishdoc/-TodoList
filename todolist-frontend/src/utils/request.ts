@@ -18,7 +18,7 @@ request.interceptors.request.use(
 
 // 响应拦截器
 request.interceptors.response.use(
-  (response: any) => {
+  (response: import('axios').AxiosResponse) => {
     // 对于 blob 等非 JSON 响应，直接返回 data
     if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') {
       return response.data

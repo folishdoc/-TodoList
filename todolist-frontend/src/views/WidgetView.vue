@@ -15,22 +15,23 @@ import { getRepeatLabel } from '../composables/useRepeatRule'
 import { priorityClass } from '../composables/usePriority'
 import { useTaskSync } from '../composables/useTaskSync'
 import TaskEditPanel from '../components/TaskEditPanel.vue'
+import type { Task, TaskList, ApiResponse, PageResponse } from '../types'
 
 // ---- 筛选状态 ----
 const currentFilter = ref<'all' | 'today' | 'upcoming' | number>('today')
 const showFilterMenu = ref(false)
-const lists = ref<any[]>([])
+const lists = ref<TaskList[]>([])
 
 const filterLabel = () => {
   if (currentFilter.value === 'all') return '全部任务'
   if (currentFilter.value === 'today') return '今日任务'
   if (currentFilter.value === 'upcoming') return '未来任务'
-  const l = lists.value.find((l: any) => l.id === currentFilter.value)
+  const l = lists.value.find((l: TaskList) => l.id === currentFilter.value)
   return l ? l.name : '选择清单'
 }
 
 // ---- 任务列表 ----
-const tasks = ref<any[]>([])
+const tasks = ref<Task[]>([])
 const loading = ref(false)
 const newTitle = ref('')
 
@@ -40,7 +41,7 @@ const editingTaskId = ref<number | null>(null)
 
 const getEditingTask = () => tasks.value.find((t) => t.id === editingTaskId.value) || null
 
-const handleEdit = (task: any) => {
+const handleEdit = (task: Task) => {
   editingTaskId.value = task.id
   showEditDialog.value = true
 }
@@ -52,7 +53,7 @@ const onEditChanged = () => {
 
 // ---- 设置状态 ----
 const showSettings = ref(false)
-const defaultSettings = { theme: 'dark', opacity: 100, alwaysOnTop: true }
+const defaultSettings: { theme: string; opacity: number; alwaysOnTop: boolean } = { theme: 'dark', opacity: 100, alwaysOnTop: true }
 const settings = ref({ ...defaultSettings })
 try {
   const saved = localStorage.getItem('widget-settings')
@@ -62,7 +63,7 @@ try {
 const loadTasks = async () => {
   loading.value = true
   try {
-    let res: any
+    let res: ApiResponse<Task[] | PageResponse<Task>>
     const filter = currentFilter.value
     if (filter === 'today') {
       res = await getTodayTasks()
@@ -85,7 +86,7 @@ const loadTasks = async () => {
 
 const loadLists = async () => {
   try {
-    const res: any = await getLists()
+    const res: ApiResponse<TaskList[]> = await getLists()
     lists.value = res?.data || []
   } catch (e) {
     console.error(e)
@@ -96,7 +97,7 @@ const loadLists = async () => {
 const { emitTaskChanged } = useTaskSync(() => loadTasks())
 
 // ---- 任务操作 ----
-const toggleTask = async (task: any, e?: MouseEvent) => {
+const toggleTask = async (task: Task, e?: MouseEvent) => {
   if (e) {
     e.stopPropagation()
     e.preventDefault()
@@ -115,7 +116,7 @@ const toggleTask = async (task: any, e?: MouseEvent) => {
   }
 }
 
-const handleDelete = async (task: any, e?: MouseEvent) => {
+const handleDelete = async (task: Task, e?: MouseEvent) => {
   if (e) e.stopPropagation()
   try {
     await deleteTask(task.id)

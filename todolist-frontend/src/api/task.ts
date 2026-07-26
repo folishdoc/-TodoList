@@ -1,7 +1,7 @@
 import request from '../utils/request'
 
 // 获取任务列表
-export const getTasks = (params: any) => {
+export const getTasks = (params: Record<string, any>) => {
   return request({
     url: '/tasks',
     method: 'get',
@@ -9,16 +9,8 @@ export const getTasks = (params: any) => {
   })
 }
 
-// 获取任务详情
-export const getTaskById = (id: number) => {
-  return request({
-    url: `/tasks/${id}`,
-    method: 'get',
-  })
-}
-
 // 创建任务
-export const createTask = (data: any) => {
+export const createTask = (data: Record<string, any>) => {
   return request({
     url: '/tasks',
     method: 'post',
@@ -27,7 +19,7 @@ export const createTask = (data: any) => {
 }
 
 // 更新任务
-export const updateTask = (id: number, data: any) => {
+export const updateTask = (id: number, data: Record<string, any>) => {
   return request({
     url: `/tasks/${id}`,
     method: 'put',
@@ -75,15 +67,6 @@ export const getUpcomingTasks = () => {
   })
 }
 
-// 搜索任务
-export const searchTasks = (params: any) => {
-  return request({
-    url: '/tasks/search',
-    method: 'get',
-    params,
-  })
-}
-
 // 获取子任务列表
 export const getSubtasks = (id: number) => {
   return request({
@@ -92,17 +75,8 @@ export const getSubtasks = (id: number) => {
   })
 }
 
-// 获取带子任务的任务列表
-export const getTasksWithSubtasks = (params: any) => {
-  return request({
-    url: '/tasks/with-subtasks',
-    method: 'get',
-    params,
-  })
-}
-
 // 更新时间（拖拽修改开始/截止时间）
-export const updateTaskTime = (id: number, data: any) => {
+export const updateTaskTime = (id: number, data: Record<string, any>) => {
   return request({
     url: `/tasks/${id}/time`,
     method: 'patch',
