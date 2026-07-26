@@ -1,7 +1,0 @@
-- generic [ref=e3]:
-  - generic [ref=e4]:
-    - generic [ref=e5]: 📋 今日待办
-    - button "关闭小组件" [ref=e6] [cursor=pointer]:
-      - img [ref=e7]
-  - generic [ref=e11]: 今天没有待办任务
-  - textbox "快速添加..." [ref=e13]

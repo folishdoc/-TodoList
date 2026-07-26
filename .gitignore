@@ -63,6 +63,9 @@ widget-*
 .agents/
 todolist-frontend/.agents/
 
+# 项目运行不需要 — 部署临时目录
+deploy-tmp/
+
 # 项目运行不需要 — 环境变量（服务器上手动创建）
 .env
 .env.local
