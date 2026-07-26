@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
-const isTauri = '__TAURI_INTERNALS__' in window
+const isTauri = () => '__TAURI_INTERNALS__' in window
 const isMaximized = ref(false)
 let appWindow: any = null
 let unlisten: (() => void) | null = null
 
 onMounted(async () => {
-  document.documentElement.style.setProperty('--titlebar-height', isTauri ? '32px' : '0px')
+  document.documentElement.style.setProperty('--titlebar-height', isTauri() ? '32px' : '0px')
 
-  if (!isTauri) return
+  if (!isTauri()) return
 
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window')
@@ -53,7 +53,7 @@ async function handleClose() {
 </script>
 
 <template>
-  <div v-if="isTauri" class="titlebar" data-tauri-drag-region>
+  <div v-if="isTauri()" class="titlebar" data-tauri-drag-region>
     <div class="titlebar-title">
       <span class="titlebar-icon">📝</span>
       <span class="titlebar-text">Todolist</span>
