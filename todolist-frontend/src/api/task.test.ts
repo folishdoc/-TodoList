@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import {
@@ -17,7 +17,7 @@ import {
   getUpcomingTasks,
   searchTasks,
   updateTaskTime,
-  getTasksByDateRange
+  getTasksByDateRange,
 } from './task'
 
 describe('api/task.ts', () => {
@@ -31,7 +31,7 @@ describe('api/task.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks',
       method: 'get',
-      params: { page: 0, size: 20, status: 0 }
+      params: { page: 0, size: 20, status: 0 },
     })
   })
 
@@ -48,7 +48,7 @@ describe('api/task.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks',
       method: 'post',
-      data: payload
+      data: payload,
     })
   })
 
@@ -59,7 +59,7 @@ describe('api/task.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/5',
       method: 'put',
-      data: payload
+      data: payload,
     })
   })
 
@@ -99,7 +99,7 @@ describe('api/task.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/search',
       method: 'get',
-      params: { keyword: 'milk' }
+      params: { keyword: 'milk' },
     })
   })
 
@@ -110,7 +110,7 @@ describe('api/task.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/3/time',
       method: 'patch',
-      data
+      data,
     })
   })
 
@@ -120,7 +120,7 @@ describe('api/task.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/range',
       method: 'get',
-      params: { start: '2026-06-01', end: '2026-06-30' }
+      params: { start: '2026-06-01', end: '2026-06-30' },
     })
   })
 })

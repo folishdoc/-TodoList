@@ -5,7 +5,7 @@ export const getAnniversaries = (params?: any) => {
   return request({
     url: '/anniversaries',
     method: 'get',
-    params
+    params,
   })
 }
 
@@ -13,7 +13,7 @@ export const getAnniversaries = (params?: any) => {
 export const getAnniversaryById = (id: number) => {
   return request({
     url: `/anniversaries/${id}`,
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -22,7 +22,7 @@ export const createAnniversary = (data: any) => {
   return request({
     url: '/anniversaries',
     method: 'post',
-    data
+    data,
   })
 }
 
@@ -31,7 +31,7 @@ export const updateAnniversary = (id: number, data: any) => {
   return request({
     url: `/anniversaries/${id}`,
     method: 'put',
-    data
+    data,
   })
 }
 
@@ -39,7 +39,7 @@ export const updateAnniversary = (id: number, data: any) => {
 export const deleteAnniversary = (id: number) => {
   return request({
     url: `/anniversaries/${id}`,
-    method: 'delete'
+    method: 'delete',
   })
 }
 
@@ -47,7 +47,7 @@ export const deleteAnniversary = (id: number) => {
 export const generateTodo = (id: number) => {
   return request({
     url: `/anniversaries/${id}/generate-todo`,
-    method: 'post'
+    method: 'post',
   })
 }
 
@@ -55,7 +55,7 @@ export const generateTodo = (id: number) => {
 export const getPendingReminders = () => {
   return request({
     url: '/anniversaries/pending-reminders',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -63,6 +63,6 @@ export const getPendingReminders = () => {
 export const markReminderRead = (logId: number) => {
   return request({
     url: `/anniversaries/reminders/${logId}/read`,
-    method: 'put'
+    method: 'put',
   })
 }

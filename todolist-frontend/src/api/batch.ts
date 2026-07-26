@@ -5,7 +5,7 @@ export const executeBatchOperation = (data: any) => {
   return request({
     url: '/tasks/batch/execute',
     method: 'post',
-    data
+    data,
   })
 }
 
@@ -14,7 +14,7 @@ export const batchComplete = (taskIds: number[]) => {
   return request({
     url: '/tasks/batch/complete',
     method: 'post',
-    data: { taskIds }
+    data: { taskIds },
   })
 }
 
@@ -23,7 +23,7 @@ export const batchDelete = (taskIds: number[]) => {
   return request({
     url: '/tasks/batch/delete',
     method: 'post',
-    data: { taskIds }
+    data: { taskIds },
   })
 }
 
@@ -32,7 +32,7 @@ export const batchMove = (taskIds: number[], targetListId: number) => {
   return request({
     url: '/tasks/batch/move',
     method: 'post',
-    data: { taskIds, targetListId }
+    data: { taskIds, targetListId },
   })
 }
 
@@ -41,6 +41,6 @@ export const batchSetPriority = (taskIds: number[], priority: number) => {
   return request({
     url: '/tasks/batch/set-priority',
     method: 'post',
-    data: { taskIds, priority }
+    data: { taskIds, priority },
   })
 }

@@ -4,7 +4,7 @@ import request from '../utils/request'
 export const getOverview = () => {
   return request({
     url: '/statistics/overview',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -12,7 +12,7 @@ export const getOverview = () => {
 export const getByList = () => {
   return request({
     url: '/statistics/by-list',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -20,7 +20,7 @@ export const getByList = () => {
 export const getByPriority = () => {
   return request({
     url: '/statistics/by-priority',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -29,6 +29,6 @@ export const getTrend = (days: number = 7) => {
   return request({
     url: '/statistics/trend',
     method: 'get',
-    params: { days }
+    params: { days },
   })
 }

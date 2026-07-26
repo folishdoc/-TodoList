@@ -13,18 +13,35 @@ async function setupApiMocks(page: Page, initialTasks: any[] = []) {
     const path = url.pathname
     const method = req.method()
     let body: any = null
-    try { body = req.postDataJSON() } catch {}
+    try {
+      body = req.postDataJSON()
+    } catch {}
 
-    const ok = (data: any) => route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ code: 200, message: 'success', data })
-    })
+    const ok = (data: any) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 200, message: 'success', data }),
+      })
 
     if (path === '/api/tasks' && method === 'GET') {
-      return ok({ content: tasks, totalElements: tasks.length, totalPages: 1, size: 1000, number: 0 })
+      return ok({
+        content: tasks,
+        totalElements: tasks.length,
+        totalPages: 1,
+        size: 1000,
+        number: 0,
+      })
     }
     if (path === '/api/tasks' && method === 'POST') {
-      const t = { id: nextId++, status: 0, priority: 2, parentId: null, ...body, createdAt: new Date().toISOString() }
+      const t = {
+        id: nextId++,
+        status: 0,
+        priority: 2,
+        parentId: null,
+        ...body,
+        createdAt: new Date().toISOString(),
+      }
       tasks.push(t)
       return ok(t)
     }
@@ -32,7 +49,10 @@ async function setupApiMocks(page: Page, initialTasks: any[] = []) {
     if (idMatch && method === 'PUT') {
       const id = Number(idMatch[1])
       const idx = tasks.findIndex((t) => t.id === id)
-      if (idx >= 0) { tasks[idx] = { ...tasks[idx], ...body }; return ok(tasks[idx]) }
+      if (idx >= 0) {
+        tasks[idx] = { ...tasks[idx], ...body }
+        return ok(tasks[idx])
+      }
     }
     if (idMatch && method === 'DELETE') {
       const id = Number(idMatch[1])
@@ -47,9 +67,20 @@ async function setupApiMocks(page: Page, initialTasks: any[] = []) {
     if (tagMatch && method === 'GET') return ok(tags[Number(tagMatch[1])] || [])
     const attMatch = path.match(/^\/api\/tasks\/(\d+)\/attachments$/)
     if (attMatch && method === 'GET') return ok(attachments[Number(attMatch[1])] || [])
-    if (path === '/api/lists' && method === 'GET') return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
-    if (path === '/api/tags' && method === 'GET') return ok([{ id: 1, name: '重要', color: '#f56c6c' }, { id: 2, name: '工作', color: '#409EFF' }])
-    if (path === '/api/statistics/overview' && method === 'GET') return ok({ totalTasks: tasks.length, completedTasks: 0, pendingTasks: tasks.length, completionRate: 0 })
+    if (path === '/api/lists' && method === 'GET')
+      return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
+    if (path === '/api/tags' && method === 'GET')
+      return ok([
+        { id: 1, name: '重要', color: '#f56c6c' },
+        { id: 2, name: '工作', color: '#409EFF' },
+      ])
+    if (path === '/api/statistics/overview' && method === 'GET')
+      return ok({
+        totalTasks: tasks.length,
+        completedTasks: 0,
+        pendingTasks: tasks.length,
+        completionRate: 0,
+      })
     if (path === '/api/statistics/by-list' && method === 'GET') return ok([])
     if (path === '/api/statistics/by-priority' && method === 'GET') return ok([])
     if (path === '/api/statistics/trend' && method === 'GET') return ok([])
@@ -73,14 +104,36 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 1, title: '买菜', status: 0, priority: 1, parentId: null, createdAt: '2025-01-01' },
-              { id: 2, title: '做饭', status: 1, priority: 2, parentId: null, createdAt: '2025-01-02' }
-            ], totalElements: 2, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 1,
+                  title: '买菜',
+                  status: 0,
+                  priority: 1,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+                {
+                  id: 2,
+                  title: '做饭',
+                  status: 1,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-02',
+                },
+              ],
+              totalElements: 2,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -106,13 +159,28 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 5, title: '可编辑任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 5,
+                  title: '可编辑任务',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -134,19 +202,39 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 7, title: '待完成', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 7,
+                  title: '待完成',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       if (route.request().method() === 'PUT') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
-          body: JSON.stringify({ code: 200, message: 'success', data: { id: 7, title: '待完成', status: 1 } })
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 200,
+            message: 'success',
+            data: { id: 7, title: '待完成', status: 1 },
+          }),
         })
       }
       return route.continue()
@@ -154,7 +242,11 @@ test.describe('E2E 任务完整流程', () => {
     await page.reload()
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
-    const checkbox = page.locator('.task-item').filter({ hasText: '待完成' }).locator('.el-checkbox').first()
+    const checkbox = page
+      .locator('.task-item')
+      .filter({ hasText: '待完成' })
+      .locator('.el-checkbox')
+      .first()
     await checkbox.click({ force: true })
     await page.waitForTimeout(500)
     const completedItem = page.locator('.task-item.completed').filter({ hasText: '待完成' })
@@ -167,13 +259,28 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 9, title: '待删除', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 9,
+                  title: '待删除',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -191,13 +298,28 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 11, title: '父任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 11,
+                  title: '父任务',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -222,13 +344,29 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 13, title: '过期任务', status: 0, priority: 2, parentId: null, dueDate: '2020-01-01', createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 13,
+                  title: '过期任务',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  dueDate: '2020-01-01',
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -248,13 +386,28 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 15, title: '可关闭', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 15,
+                  title: '可关闭',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -271,13 +424,29 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 17, title: '有描述', description: '**粗体文本**', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 17,
+                  title: '有描述',
+                  description: '**粗体文本**',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -298,14 +467,36 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 19, title: '高优', status: 0, priority: 3, parentId: null, createdAt: '2025-01-01' },
-              { id: 20, title: '中优', status: 0, priority: 2, parentId: null, createdAt: '2025-01-02' }
-            ], totalElements: 2, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 19,
+                  title: '高优',
+                  status: 0,
+                  priority: 3,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+                {
+                  id: 20,
+                  title: '中优',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-02',
+                },
+              ],
+              totalElements: 2,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -321,13 +512,28 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 21, title: '标签测试', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 21,
+                  title: '标签测试',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -347,13 +553,29 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 23, title: '有清单', status: 0, priority: 2, listId: 1, parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 23,
+                  title: '有清单',
+                  status: 0,
+                  priority: 2,
+                  listId: 1,
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -374,13 +596,29 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 25, title: '循环任务', status: 0, priority: 2, parentId: null, repeatRule: rule, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 25,
+                  title: '循环任务',
+                  status: 0,
+                  priority: 2,
+                  parentId: null,
+                  repeatRule: rule,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()
@@ -400,11 +638,13 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: { content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 },
+          }),
         })
       }
       return route.continue()
@@ -419,13 +659,29 @@ test.describe('E2E 任务完整流程', () => {
     await page.route('http://localhost:18080/api/tasks**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { content: [
-              { id: 27, title: '今日', status: 0, priority: 2, dueDate: new Date().toISOString(), parentId: null, createdAt: '2025-01-01' }
-            ], totalElements: 1, totalPages: 1, size: 1000, number: 0 }
-          })
+            code: 200,
+            message: 'success',
+            data: {
+              content: [
+                {
+                  id: 27,
+                  title: '今日',
+                  status: 0,
+                  priority: 2,
+                  dueDate: new Date().toISOString(),
+                  parentId: null,
+                  createdAt: '2025-01-01',
+                },
+              ],
+              totalElements: 1,
+              totalPages: 1,
+              size: 1000,
+              number: 0,
+            },
+          }),
         })
       }
       return route.continue()

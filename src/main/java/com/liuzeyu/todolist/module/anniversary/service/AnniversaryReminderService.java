@@ -29,9 +29,8 @@ public class AnniversaryReminderService {
     @Scheduled(cron = "0 * * * * ?")
     public void checkAnniversaryReminders() {
         log.debug("检查纪念日提醒...");
-        List<Anniversary> allEnabled = anniversaryRepository.findAll().stream()
-                .filter(Anniversary::getRemindEnabled)
-                .toList();
+        // 只查询已启用提醒的纪念日（代替全表扫描）
+        List<Anniversary> allEnabled = anniversaryRepository.findRemindEnabledByUserId(1L);
 
         LocalDateTime now = LocalDateTime.now();
         for (Anniversary a : allEnabled) {

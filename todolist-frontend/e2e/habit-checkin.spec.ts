@@ -2,8 +2,30 @@ import { test, expect, type Page } from '@playwright/test'
 
 async function setupApiMocks(page: Page) {
   let habits: any[] = [
-    { id: 1, name: '晨跑', icon: '🏃', color: '#67C23A', targetType: 'count', targetValue: 1, frequency: 'daily', timePeriod: 'morning', currentStreak: 5, totalCompletions: 20 },
-    { id: 2, name: '阅读', icon: '📚', color: '#409EFF', targetType: 'duration', targetValue: 30, frequency: 'daily', timePeriod: 'evening', currentStreak: 12, totalCompletions: 50 }
+    {
+      id: 1,
+      name: '晨跑',
+      icon: '🏃',
+      color: '#67C23A',
+      targetType: 'count',
+      targetValue: 1,
+      frequency: 'daily',
+      timePeriod: 'morning',
+      currentStreak: 5,
+      totalCompletions: 20,
+    },
+    {
+      id: 2,
+      name: '阅读',
+      icon: '📚',
+      color: '#409EFF',
+      targetType: 'duration',
+      targetValue: 30,
+      frequency: 'daily',
+      timePeriod: 'evening',
+      currentStreak: 12,
+      totalCompletions: 50,
+    },
   ]
   let records: any[] = []
 
@@ -13,16 +35,20 @@ async function setupApiMocks(page: Page) {
     const path = url.pathname
     const method = req.method()
 
-    const ok = (data: any) => route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ code: 200, message: 'success', data })
-    })
+    const ok = (data: any) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 200, message: 'success', data }),
+      })
 
     if (path === '/api/habits' && method === 'GET') return ok(habits)
     if (path === '/api/habits/records/today' && method === 'GET') return ok(records)
-    if (path === '/api/lists' && method === 'GET') return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
+    if (path === '/api/lists' && method === 'GET')
+      return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
     if (path === '/api/tags' && method === 'GET') return ok([])
-    if (path === '/api/tasks' && method === 'GET') return ok({ content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 })
+    if (path === '/api/tasks' && method === 'GET')
+      return ok({ content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 })
     if (path === '/api/anniversaries' && method === 'GET') return ok([])
     if (path === '/api/anniversaries/pending-reminders' && method === 'GET') return ok([])
 

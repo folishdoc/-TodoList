@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import { exportTasksCsv, exportTasksJson } from './export'
@@ -18,7 +18,7 @@ describe('api/export.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/export/tasks/csv',
       method: 'get',
-      responseType: 'blob'
+      responseType: 'blob',
     })
   })
 
@@ -28,7 +28,7 @@ describe('api/export.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/export/tasks/json',
       method: 'get',
-      responseType: 'blob'
+      responseType: 'blob',
     })
   })
 })

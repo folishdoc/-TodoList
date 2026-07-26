@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import { getLists, getListById, createList, updateList, deleteList } from './list'
@@ -31,7 +31,7 @@ describe('api/list.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/lists',
       method: 'post',
-      data: payload
+      data: payload,
     })
   })
 
@@ -42,7 +42,7 @@ describe('api/list.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/lists/2',
       method: 'put',
-      data: payload
+      data: payload,
     })
   })
 

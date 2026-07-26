@@ -2,15 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
-import {
-  uploadFile,
-  getTaskAttachments,
-  deleteAttachment,
-  downloadAttachment
-} from './attachment'
+import { uploadFile, getTaskAttachments, deleteAttachment, downloadAttachment } from './attachment'
 
 describe('api/attachment.ts', () => {
   beforeEach(() => {
@@ -47,7 +42,7 @@ describe('api/attachment.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/attachments/report.pdf',
       method: 'get',
-      responseType: 'blob'
+      responseType: 'blob',
     })
   })
 })

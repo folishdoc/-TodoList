@@ -3,7 +3,12 @@
 export function getRepeatLabel(repeatRuleJson: string, task?: any): string {
   try {
     const rule = JSON.parse(repeatRuleJson)
-    const labels: Record<string, string> = { DAILY: '每天', WEEKLY: '每周', MONTHLY: '每月', YEARLY: '每年' }
+    const labels: Record<string, string> = {
+      DAILY: '每天',
+      WEEKLY: '每周',
+      MONTHLY: '每月',
+      YEARLY: '每年',
+    }
     let label = labels[rule.type] || rule.type
     if (rule.interval > 1) label = `每${rule.interval}${getRepeatTypeText(rule.type)}`
     // 显示本次实例截止日期
@@ -20,12 +25,10 @@ export function getRepeatLabel(repeatRuleJson: string, task?: any): string {
     }
     if (rule.endDate) {
       const end = new Date(rule.endDate)
-      label += `（至${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}）`
+      label += `（至${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}）`
     }
     return label
-  } catch {
-    return '循环'
-  }
+  } catch (e) { console.warn('解析循环规则失败', e); return '循环' }
 }
 
 export function getRepeatTypeText(type: string): string {

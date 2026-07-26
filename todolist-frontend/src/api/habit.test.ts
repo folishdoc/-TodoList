@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import {
@@ -15,7 +15,7 @@ import {
   cancelCheckIn,
   getRecords,
   getRecordsByRange,
-  getTodayRecords
+  getTodayRecords,
 } from './habit'
 
 describe('api/habit.ts', () => {
@@ -42,7 +42,7 @@ describe('api/habit.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/habits',
       method: 'post',
-      data: payload
+      data: payload,
     })
   })
 
@@ -53,7 +53,7 @@ describe('api/habit.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/habits/2',
       method: 'put',
-      data: payload
+      data: payload,
     })
   })
 
@@ -69,7 +69,7 @@ describe('api/habit.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/habits/1/checkin',
       method: 'post',
-      params: { date: '2026-06-15' }
+      params: { date: '2026-06-15' },
     })
   })
 
@@ -79,7 +79,7 @@ describe('api/habit.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/habits/1/checkin',
       method: 'delete',
-      params: { checkDate: '2026-06-15' }
+      params: { checkDate: '2026-06-15' },
     })
   })
 
@@ -95,7 +95,7 @@ describe('api/habit.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/habits/1/records/range',
       method: 'get',
-      params: { startDate: '2026-06-01', endDate: '2026-06-30' }
+      params: { startDate: '2026-06-01', endDate: '2026-06-30' },
     })
   })
 

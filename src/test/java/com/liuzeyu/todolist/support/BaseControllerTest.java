@@ -7,8 +7,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.liuzeyu.todolist.common.config.JwtAuthenticationFilter;
-import com.liuzeyu.todolist.common.config.JwtUtils;
 import com.liuzeyu.todolist.common.exception.GlobalExceptionHandler;
 import com.liuzeyu.todolist.module.anniversary.service.AnniversaryService;
 import com.liuzeyu.todolist.module.export.service.ExportService;
@@ -21,7 +19,6 @@ import com.liuzeyu.todolist.module.task.service.BatchOperationService;
 import com.liuzeyu.todolist.module.task.service.FileUploadService;
 import com.liuzeyu.todolist.module.task.service.RepeatTaskService;
 import com.liuzeyu.todolist.module.task.service.TaskService;
-import com.liuzeyu.todolist.module.user.service.UserService;
 
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -34,7 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  */
 @WebMvcTest
 @ActiveProfiles("test")
-@Import({TestSecurityConfig.class, JwtAuthenticationFilter.class, JwtUtils.class, GlobalExceptionHandler.class})
+@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
 public abstract class BaseControllerTest {
 
     @Autowired
@@ -47,7 +44,6 @@ public abstract class BaseControllerTest {
      * Subclasses can override individual mocks with their own @MockitoBean.
      */
     @MockitoBean protected AnniversaryService anniversaryService;
-    @MockitoBean protected UserService userService;
     @MockitoBean protected BatchOperationService batchOperationService;
     @MockitoBean protected ExportService exportService;
     @MockitoBean protected FileUploadService fileUploadService;
@@ -61,7 +57,7 @@ public abstract class BaseControllerTest {
 
     /**
      * 携带个人 token 的 request post processor。
-     * 将 userId=1L 注入 SecurityContext（模拟 JwtAuthenticationFilter 的行为）。
+     * 将 userId=1L 注入 SecurityContext。
      */
     protected static final String PERSONAL_TOKEN = "test-personal-token-2026-secure-key";
 

@@ -4,7 +4,7 @@ import request from '../utils/request'
 export const getHabits = () => {
   return request({
     url: '/habits',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -12,7 +12,7 @@ export const getHabits = () => {
 export const getHabitById = (id: number) => {
   return request({
     url: `/habits/${id}`,
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -21,7 +21,7 @@ export const createHabit = (data: any) => {
   return request({
     url: '/habits',
     method: 'post',
-    data
+    data,
   })
 }
 
@@ -30,7 +30,7 @@ export const updateHabit = (id: number, data: any) => {
   return request({
     url: `/habits/${id}`,
     method: 'put',
-    data
+    data,
   })
 }
 
@@ -38,7 +38,7 @@ export const updateHabit = (id: number, data: any) => {
 export const deleteHabit = (id: number) => {
   return request({
     url: `/habits/${id}`,
-    method: 'delete'
+    method: 'delete',
   })
 }
 
@@ -47,7 +47,7 @@ export const checkIn = (id: number, params: any) => {
   return request({
     url: `/habits/${id}/checkin`,
     method: 'post',
-    params
+    params,
   })
 }
 
@@ -56,7 +56,7 @@ export const cancelCheckIn = (id: number, checkDate: string) => {
   return request({
     url: `/habits/${id}/checkin`,
     method: 'delete',
-    params: { checkDate }
+    params: { checkDate },
   })
 }
 
@@ -64,7 +64,7 @@ export const cancelCheckIn = (id: number, checkDate: string) => {
 export const getRecords = (id: number) => {
   return request({
     url: `/habits/${id}/records`,
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -73,7 +73,7 @@ export const getRecordsByRange = (id: number, startDate: string, endDate: string
   return request({
     url: `/habits/${id}/records/range`,
     method: 'get',
-    params: { startDate, endDate }
+    params: { startDate, endDate },
   })
 }
 
@@ -81,6 +81,6 @@ export const getRecordsByRange = (id: number, startDate: string, endDate: string
 export const getTodayRecords = () => {
   return request({
     url: '/habits/records/today',
-    method: 'get'
+    method: 'get',
   })
 }

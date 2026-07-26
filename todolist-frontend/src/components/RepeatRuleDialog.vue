@@ -1,10 +1,5 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    title="设置重复规则"
-    width="500px"
-    @close="handleClose"
-  >
+  <el-dialog v-model="visible" title="设置重复规则" width="500px" @close="handleClose">
     <el-form :model="ruleForm" label-width="100px">
       <el-form-item label="重复类型">
         <el-select v-model="ruleForm.type" placeholder="选择重复类型" style="width: 100%">
@@ -16,12 +11,7 @@
       </el-form-item>
 
       <el-form-item label="间隔">
-        <el-input-number 
-          v-model="ruleForm.interval" 
-          :min="1" 
-          :max="365"
-          style="width: 100%"
-        />
+        <el-input-number v-model="ruleForm.interval" :min="1" :max="365" style="width: 100%" />
         <div class="hint">每 {{ ruleForm.interval }} {{ getTypeText() }}</div>
       </el-form-item>
 
@@ -43,20 +33,10 @@
       </el-form-item>
 
       <el-form-item v-if="endType === 'count'" label="重复次数">
-        <el-input-number 
-          v-model="ruleForm.count" 
-          :min="1" 
-          :max="100"
-          style="width: 100%"
-        />
+        <el-input-number v-model="ruleForm.count" :min="1" :max="100" style="width: 100%" />
       </el-form-item>
 
-      <el-alert
-        title="提示"
-        type="info"
-        :closable="false"
-        show-icon
-      >
+      <el-alert title="提示" type="info" :closable="false" show-icon>
         <p>• 任务完成后会自动生成下一个重复任务</p>
         <p>• 新任务的截止日期会根据重复规则自动计算</p>
       </el-alert>
@@ -64,9 +44,7 @@
 
     <template #footer>
       <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" @click="handleSubmit" :loading="loading">
-        确定
-      </el-button>
+      <el-button type="primary" @click="handleSubmit" :loading="loading"> 确定 </el-button>
     </template>
   </el-dialog>
 </template>
@@ -92,12 +70,15 @@ const ruleForm = reactive({
   type: 'DAILY',
   interval: 1,
   endDate: null as Date | null,
-  count: 10
+  count: 10,
 })
 
-watch(() => props.modelValue, (val) => {
-  visible.value = val
-})
+watch(
+  () => props.modelValue,
+  (val) => {
+    visible.value = val
+  },
+)
 
 watch(visible, (val) => {
   emit('update:modelValue', val)
@@ -108,27 +89,27 @@ const getTypeText = () => {
     DAILY: '天',
     WEEKLY: '周',
     MONTHLY: '月',
-    YEARLY: '年'
+    YEARLY: '年',
   }
   return texts[ruleForm.type] || '天'
 }
 
 const handleSubmit = async () => {
   if (!props.taskId) return
-  
+
   loading.value = true
   try {
     const rule: any = {
       type: ruleForm.type,
-      interval: ruleForm.interval
+      interval: ruleForm.interval,
     }
-    
+
     if (endType.value === 'date' && ruleForm.endDate) {
       rule.endDate = formatLocalDateTime(new Date(ruleForm.endDate))
     } else if (endType.value === 'count') {
       rule.count = ruleForm.count
     }
-    
+
     await repeatApi.setRepeatRule(props.taskId, rule)
     ElMessage.success('设置成功')
     emit('success')

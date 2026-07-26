@@ -30,7 +30,7 @@ public class TagService {
         // 检查标签名是否已存在
         Tag existing = tagRepository.findByUserIdAndName(userId, request.getName());
         if (existing != null) {
-            throw new BusinessException("标签名称已存在");
+            throw new BusinessException(409, "标签名称已存在");
         }
 
         Tag tag = new Tag();
@@ -54,16 +54,16 @@ public class TagService {
     @Transactional
     public Tag updateTag(Long userId, Long tagId, TagRequest request) {
         Tag tag = tagRepository.findById(tagId)
-                .orElseThrow(() -> new BusinessException("标签不存在"));
+                .orElseThrow(() -> new BusinessException(404, "标签不存在"));
 
         if (!tag.getUserId().equals(userId)) {
-            throw new BusinessException("无权操作此标签");
+            throw new BusinessException(403, "无权操作此标签");
         }
 
         // 检查新名称是否与其他标签重复
         Tag existing = tagRepository.findByUserIdAndName(userId, request.getName());
         if (existing != null && !existing.getId().equals(tagId)) {
-            throw new BusinessException("标签名称已存在");
+            throw new BusinessException(409, "标签名称已存在");
         }
 
         tag.setName(request.getName());
@@ -78,10 +78,10 @@ public class TagService {
     @Transactional
     public void deleteTag(Long userId, Long tagId) {
         Tag tag = tagRepository.findById(tagId)
-                .orElseThrow(() -> new BusinessException("标签不存在"));
+                .orElseThrow(() -> new BusinessException(404, "标签不存在"));
 
         if (!tag.getUserId().equals(userId)) {
-            throw new BusinessException("无权操作此标签");
+            throw new BusinessException(403, "无权操作此标签");
         }
 
         // 删除任务-标签关联
@@ -98,16 +98,16 @@ public class TagService {
     public void addTagToTask(Long userId, Long taskId, Long tagId) {
         // 验证标签属于当前用户
         Tag tag = tagRepository.findById(tagId)
-                .orElseThrow(() -> new BusinessException("标签不存在"));
+                .orElseThrow(() -> new BusinessException(404, "标签不存在"));
 
         if (!tag.getUserId().equals(userId)) {
-            throw new BusinessException("无权使用此标签");
+            throw new BusinessException(403, "无权使用此标签");
         }
 
         // 检查是否已关联
         TaskTag existing = taskTagRepository.findByTaskIdAndTagId(taskId, tagId);
         if (existing != null) {
-            throw new BusinessException("标签已关联");
+            throw new BusinessException(409, "标签已关联");
         }
 
         TaskTag taskTag = new TaskTag();
@@ -124,7 +124,7 @@ public class TagService {
     public void removeTagFromTask(Long userId, Long taskId, Long tagId) {
         TaskTag taskTag = taskTagRepository.findByTaskIdAndTagId(taskId, tagId);
         if (taskTag == null) {
-            throw new BusinessException("标签未关联");
+            throw new BusinessException(400, "标签未关联");
         }
 
         taskTagRepository.delete(taskTag);

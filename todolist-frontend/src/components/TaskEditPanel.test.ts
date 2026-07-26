@@ -17,143 +17,150 @@ const setRepeatRuleMock = vi.fn()
 const cancelRepeatRuleMock = vi.fn()
 
 vi.mock('element-plus', () => ({
-  ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() }
+  ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }))
 
 vi.mock('../api/task', () => ({
   getSubtasks: (...args: unknown[]) => getSubtasksMock(...args),
   updateTask: (...args: unknown[]) => updateTaskMock(...args),
   deleteTask: (...args: unknown[]) => deleteTaskMock(...args),
-  createTask: (...args: unknown[]) => createTaskMock(...args)
+  createTask: (...args: unknown[]) => createTaskMock(...args),
 }))
 
 vi.mock('../api/list', () => ({
-  getLists: (...args: unknown[]) => getListsMock(...args)
+  getLists: (...args: unknown[]) => getListsMock(...args),
 }))
 
 vi.mock('../api/tag', () => ({
   getTaskTags: (...args: unknown[]) => getTaskTagsMock(...args),
   addTagToTask: (...args: unknown[]) => addTagToTaskMock(...args),
   removeTagFromTask: (...args: unknown[]) => removeTagFromTaskMock(...args),
-  getTags: (...args: unknown[]) => getTagsMock(...args)
+  getTags: (...args: unknown[]) => getTagsMock(...args),
 }))
 
 vi.mock('../api/attachment', () => ({
   getTaskAttachments: (...args: unknown[]) => getTaskAttachmentsMock(...args),
   uploadFile: (...args: unknown[]) => uploadFileMock(...args),
-  deleteAttachment: (...args: unknown[]) => deleteAttachmentMock(...args)
+  deleteAttachment: (...args: unknown[]) => deleteAttachmentMock(...args),
 }))
 
 vi.mock('../api/repeat', () => ({
   setRepeatRule: (...args: unknown[]) => setRepeatRuleMock(...args),
-  cancelRepeatRule: (...args: unknown[]) => cancelRepeatRuleMock(...args)
+  cancelRepeatRule: (...args: unknown[]) => cancelRepeatRuleMock(...args),
 }))
 
 import TaskEditPanel from './TaskEditPanel.vue'
 
 const ElInputStub = {
   name: 'ElInputStub',
-  template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" @blur="$emit(\'blur\')" @keyup.enter="$emit(\'keyup.enter\')" />',
-  props: ['modelValue', 'placeholder', 'type', 'rows']
+  template:
+    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" @blur="$emit(\'blur\')" @keyup.enter="$emit(\'keyup.enter\')" />',
+  props: ['modelValue', 'placeholder', 'type', 'rows'],
 }
 
 const ElButtonStub = {
   name: 'ElButtonStub',
   template: '<button type="button" @click="$emit(\'click\')"><slot/></button>',
-  props: ['type', 'size']
+  props: ['type', 'size'],
 }
 
 const ElTagStub = {
   name: 'ElTagStub',
   template: '<span class="el-tag" :data-type="type" @click="$emit(\'click\')"><slot/></span>',
-  props: ['type', 'size', 'closable', 'color']
+  props: ['type', 'size', 'closable', 'color'],
 }
 
 const ElIconStub = {
   name: 'ElIconStub',
-  template: '<i class="el-icon"><slot/></i>'
+  template: '<i class="el-icon"><slot/></i>',
 }
 
 const ElDropdownStub = {
   name: 'ElDropdownStub',
   template: '<div class="el-dropdown" @click="$emit(\'click\')"><slot/></div>',
-  props: ['trigger']
+  props: ['trigger'],
 }
 
 const ElDropdownMenuStub = {
   name: 'ElDropdownMenuStub',
-  template: '<div class="el-dropdown-menu"><slot/></div>'
+  template: '<div class="el-dropdown-menu"><slot/></div>',
 }
 
 const ElDropdownItemStub = {
   name: 'ElDropdownItemStub',
-  template: '<div class="el-dropdown-item" :data-command="command" @click="$emit(\'click\')"><slot/></div>',
-  props: ['command', 'divided']
+  template:
+    '<div class="el-dropdown-item" :data-command="command" @click="$emit(\'click\')"><slot/></div>',
+  props: ['command', 'divided'],
 }
 
 const ElPopoverStub = {
   name: 'ElPopoverStub',
   template: '<div class="el-popover" @hide="$emit(\'hide\')"><slot name="reference"/><slot/></div>',
-  props: ['trigger', 'placement', 'width']
+  props: ['trigger', 'placement', 'width'],
 }
 
 const ElFormStub = {
   name: 'ElFormStub',
   template: '<form class="el-form"><slot/></form>',
-  props: ['model']
+  props: ['model'],
 }
 
 const ElFormItemStub = {
   name: 'ElFormItemStub',
   template: '<div class="el-form-item"><slot/></div>',
-  props: ['label']
+  props: ['label'],
 }
 
 const ElSelectStub = {
   name: 'ElSelectStub',
-  template: '<div class="el-select" @update:modelValue="$emit(\'update:modelValue\', $event)"><slot/></div>',
-  props: ['modelValue', 'placeholder', 'multiple', 'filterable']
+  template:
+    '<div class="el-select" @update:modelValue="$emit(\'update:modelValue\', $event)"><slot/></div>',
+  props: ['modelValue', 'placeholder', 'multiple', 'filterable'],
 }
 
 const ElOptionStub = {
   name: 'ElOptionStub',
   template: '<div class="el-option" :data-value="value"><slot/></div>',
-  props: ['value', 'label']
+  props: ['value', 'label'],
 }
 
 const ElDatePickerStub = {
   name: 'ElDatePickerStub',
-  template: '<input :value="modelValue" @update:modelValue="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'type', 'placeholder', 'format', 'valueFormat']
+  template:
+    '<input :value="modelValue" @update:modelValue="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'type', 'placeholder', 'format', 'valueFormat'],
 }
 
 const ElInputNumberStub = {
   name: 'ElInputNumberStub',
-  template: '<input type="number" :value="modelValue" @update:modelValue="$emit(\'update:modelValue\', Number($event.target.value))" />',
-  props: ['modelValue', 'min', 'max']
+  template:
+    '<input type="number" :value="modelValue" @update:modelValue="$emit(\'update:modelValue\', Number($event.target.value))" />',
+  props: ['modelValue', 'min', 'max'],
 }
 
 const ElCheckboxStub = {
   name: 'ElCheckboxStub',
-  template: '<input type="checkbox" :checked="modelValue" @change="$emit(\'change\', $event.target.checked)" />',
-  props: ['modelValue']
+  template:
+    '<input type="checkbox" :checked="modelValue" @change="$emit(\'change\', $event.target.checked)" />',
+  props: ['modelValue'],
 }
 
 const ElCheckboxGroupStub = {
   name: 'ElCheckboxGroupStub',
   template: '<div class="el-checkbox-group"><slot/></div>',
-  props: ['modelValue']
+  props: ['modelValue'],
 }
 
 const ElSwitchStub = {
   name: 'ElSwitchStub',
-  template: '<button role="switch" :aria-checked="String(modelValue)" @click="$emit(\'update:modelValue\', !modelValue)">{{ modelValue }}</button>',
-  props: ['modelValue']
+  template:
+    '<button role="switch" :aria-checked="String(modelValue)" @click="$emit(\'update:modelValue\', !modelValue)">{{ modelValue }}</button>',
+  props: ['modelValue'],
 }
 
 const ElDividerStub = {
   name: 'ElDividerStub',
-  template: '<hr class="el-divider" />'
+  template: '<hr class="el-divider" />',
 }
 
 function mountPanel(task: any, mode: 'panel' | 'dialog' = 'panel') {
@@ -178,23 +185,35 @@ function mountPanel(task: any, mode: 'panel' | 'dialog' = 'panel') {
         'el-checkbox': ElCheckboxStub,
         'el-checkbox-group': ElCheckboxGroupStub,
         'el-switch': ElSwitchStub,
-        'el-divider': ElDividerStub
-      }
-    }
+        'el-divider': ElDividerStub,
+      },
+    },
   })
 }
 
 const baseTask = {
-  id: 1, title: '原始标题', description: '原始描述', priority: 2,
-  startDate: '', dueDate: '', listId: null, parentId: null,
-  repeatRule: null, status: 0
+  id: 1,
+  title: '原始标题',
+  description: '原始描述',
+  priority: 2,
+  startDate: '',
+  dueDate: '',
+  listId: null,
+  parentId: null,
+  repeatRule: null,
+  status: 0,
 }
 
 describe('TaskEditPanel.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
-    getListsMock.mockResolvedValue({ data: [{ id: 1, name: '工作' }, { id: 2, name: '生活' }] } as any)
+    getListsMock.mockResolvedValue({
+      data: [
+        { id: 1, name: '工作' },
+        { id: 2, name: '生活' },
+      ],
+    } as any)
     getSubtasksMock.mockResolvedValue({ data: [] } as any)
     updateTaskMock.mockResolvedValue({} as any)
     deleteTaskMock.mockResolvedValue({} as any)
@@ -229,7 +248,9 @@ describe('TaskEditPanel.vue', () => {
     getListsMock.mockResolvedValueOnce({ data: [{ id: 1, name: 'A' }] } as any)
     getSubtasksMock.mockResolvedValueOnce({ data: [{ id: 10, title: '子1', status: 0 }] } as any)
     getTaskTagsMock.mockResolvedValueOnce({ data: [{ id: 5, name: '重要' }] } as any)
-    getTaskAttachmentsMock.mockResolvedValueOnce({ data: [{ id: 1, fileName: 'a.pdf', originalName: '文档.pdf', fileSize: 1024 }] } as any)
+    getTaskAttachmentsMock.mockResolvedValueOnce({
+      data: [{ id: 1, fileName: 'a.pdf', originalName: '文档.pdf', fileSize: 1024 }],
+    } as any)
     const wrapper = mountPanel(baseTask)
     await vi.runAllTimersAsync()
     await flushPromises()
@@ -295,7 +316,12 @@ describe('TaskEditPanel.vue', () => {
   })
 
   it('标签下拉打开时 loadAllTags 被调用', async () => {
-    getTagsMock.mockResolvedValueOnce({ data: [{ id: 1, name: 'A', color: '#f00' }, { id: 2, name: 'B', color: '#0f0' }] } as any)
+    getTagsMock.mockResolvedValueOnce({
+      data: [
+        { id: 1, name: 'A', color: '#f00' },
+        { id: 2, name: 'B', color: '#0f0' },
+      ],
+    } as any)
     const wrapper = mountPanel(baseTask)
     await vi.runAllTimersAsync()
     await flushPromises()
@@ -318,7 +344,12 @@ describe('TaskEditPanel.vue', () => {
   })
 
   it('标签关闭 → removeTagFromTask + 从列表移除', async () => {
-    getTaskTagsMock.mockResolvedValue({ data: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }] } as any)
+    getTaskTagsMock.mockResolvedValue({
+      data: [
+        { id: 1, name: 'A' },
+        { id: 2, name: 'B' },
+      ],
+    } as any)
     const wrapper = mountPanel(baseTask)
     await vi.runAllTimersAsync()
     await flushPromises()
@@ -338,7 +369,10 @@ describe('TaskEditPanel.vue', () => {
     await (wrapper.vm as any).autoSave()
     await vi.advanceTimersByTimeAsync(300)
     await flushPromises()
-    expect(updateTaskMock).toHaveBeenCalledWith(1, expect.objectContaining({ description: '新描述' }))
+    expect(updateTaskMock).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ description: '新描述' }),
+    )
   })
 
   it('描述切换为预览 → 渲染 Markdown HTML', async () => {
@@ -447,7 +481,12 @@ describe('TaskEditPanel.vue', () => {
   })
 
   it('附件删除 → deleteAttachment + 从列表移除', async () => {
-    getTaskAttachmentsMock.mockResolvedValue({ data: [{ id: 1, fileName: 'a.pdf' }, { id: 2, fileName: 'b.pdf' }] } as any)
+    getTaskAttachmentsMock.mockResolvedValue({
+      data: [
+        { id: 1, fileName: 'a.pdf' },
+        { id: 2, fileName: 'b.pdf' },
+      ],
+    } as any)
     const wrapper = mountPanel(baseTask)
     await vi.runAllTimersAsync()
     await flushPromises()
@@ -476,19 +515,28 @@ describe('TaskEditPanel.vue', () => {
     ;(wrapper.vm as any).repeatForm.interval = 2
     await (wrapper.vm as any).handleAddRepeatInPanel()
     await flushPromises()
-    expect(setRepeatRuleMock).toHaveBeenCalledWith(1, expect.objectContaining({ type: 'DAILY', interval: 2 }))
+    expect(setRepeatRuleMock).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ type: 'DAILY', interval: 2 }),
+    )
     expect((wrapper.vm as any).task.repeatRule).toContain('DAILY')
   })
 
   it('重复规则更新 endDate', async () => {
-    const task = { ...baseTask, repeatRule: JSON.stringify({ type: 'DAILY', interval: 1, endDate: null }) }
+    const task = {
+      ...baseTask,
+      repeatRule: JSON.stringify({ type: 'DAILY', interval: 1, endDate: null }),
+    }
     const wrapper = mountPanel(task)
     await vi.runAllTimersAsync()
     await flushPromises()
     ;(wrapper.vm as any).editRepeatEndDate = '2025-12-31T23:59:59'
     await (wrapper.vm as any).handleUpdateRepeatEndDate()
     await flushPromises()
-    expect(setRepeatRuleMock).toHaveBeenCalledWith(1, expect.objectContaining({ endDate: '2025-12-31T23:59:59' }))
+    expect(setRepeatRuleMock).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ endDate: '2025-12-31T23:59:59' }),
+    )
   })
 
   it('重复规则取消 → cancelRepeatRule + 清空', async () => {
@@ -525,13 +573,22 @@ describe('TaskEditPanel.vue', () => {
   })
 
   it('getTimeSummary 有 dueDate → 返回格式化日期', () => {
-    const wrapper = mountPanel({ ...baseTask, dueDate: '2025-06-15', startDate: '', repeatRule: null })
+    const wrapper = mountPanel({
+      ...baseTask,
+      dueDate: '2025-06-15',
+      startDate: '',
+      repeatRule: null,
+    })
     const summary = (wrapper.vm as any).getTimeSummary()
     expect(summary).toContain('6/15')
   })
 
   it('getTimeSummary 有 repeatRule → 包含循环标签', () => {
-    const task = { ...baseTask, dueDate: '2025-06-15', repeatRule: JSON.stringify({ type: 'DAILY', interval: 1 }) }
+    const task = {
+      ...baseTask,
+      dueDate: '2025-06-15',
+      repeatRule: JSON.stringify({ type: 'DAILY', interval: 1 }),
+    }
     const wrapper = mountPanel(task)
     const summary = (wrapper.vm as any).getTimeSummary()
     expect(summary).toContain('每天')

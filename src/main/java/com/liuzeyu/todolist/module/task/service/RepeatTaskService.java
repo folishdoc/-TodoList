@@ -1,10 +1,14 @@
 package com.liuzeyu.todolist.module.task.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.liuzeyu.todolist.module.task.dto.RepeatRule;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,14 +23,17 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RepeatTaskService {
 
     private final TaskRepository taskRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper()
-        .setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
-        .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    private final ObjectMapper objectMapper;
+
+    public RepeatTaskService(TaskRepository taskRepository) {
+        this.taskRepository = taskRepository;
+        this.objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
 
     /**
      * 每天凌晨检查并生成重复任务

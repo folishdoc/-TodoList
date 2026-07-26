@@ -2,9 +2,33 @@ import { test, expect, type Page } from '@playwright/test'
 
 async function setupApiMocks(page: Page) {
   let tasks: any[] = [
-    { id: 1, title: '任务A', status: 0, priority: 1, listId: null, parentId: null, createdAt: '2025-01-01' },
-    { id: 2, title: '任务B', status: 0, priority: 2, listId: null, parentId: null, createdAt: '2025-01-02' },
-    { id: 3, title: '任务C', status: 0, priority: 3, listId: null, parentId: null, createdAt: '2025-01-03' }
+    {
+      id: 1,
+      title: '任务A',
+      status: 0,
+      priority: 1,
+      listId: null,
+      parentId: null,
+      createdAt: '2025-01-01',
+    },
+    {
+      id: 2,
+      title: '任务B',
+      status: 0,
+      priority: 2,
+      listId: null,
+      parentId: null,
+      createdAt: '2025-01-02',
+    },
+    {
+      id: 3,
+      title: '任务C',
+      status: 0,
+      priority: 3,
+      listId: null,
+      parentId: null,
+      createdAt: '2025-01-03',
+    },
   ]
 
   await page.route('http://localhost:18080/api/**', async (route) => {
@@ -13,18 +37,35 @@ async function setupApiMocks(page: Page) {
     const path = url.pathname
     const method = req.method()
     let body: any = null
-    try { body = req.postDataJSON() } catch {}
+    try {
+      body = req.postDataJSON()
+    } catch {}
 
-    const ok = (data: any) => route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ code: 200, message: 'success', data })
-    })
+    const ok = (data: any) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 200, message: 'success', data }),
+      })
 
     if (path === '/api/tasks' && method === 'GET') {
-      return ok({ content: tasks, totalElements: tasks.length, totalPages: 1, size: 1000, number: 0 })
+      return ok({
+        content: tasks,
+        totalElements: tasks.length,
+        totalPages: 1,
+        size: 1000,
+        number: 0,
+      })
     }
     if (path === '/api/tasks' && method === 'POST') {
-      const t = { id: 100 + tasks.length, status: 0, priority: 2, parentId: null, ...body, createdAt: new Date().toISOString() }
+      const t = {
+        id: 100 + tasks.length,
+        status: 0,
+        priority: 2,
+        parentId: null,
+        ...body,
+        createdAt: new Date().toISOString(),
+      }
       tasks.push(t)
       return ok(t)
     }
@@ -32,7 +73,10 @@ async function setupApiMocks(page: Page) {
     if (idMatch && method === 'PUT') {
       const id = Number(idMatch[1])
       const idx = tasks.findIndex((t) => t.id === id)
-      if (idx >= 0) { tasks[idx] = { ...tasks[idx], ...body }; return ok(tasks[idx]) }
+      if (idx >= 0) {
+        tasks[idx] = { ...tasks[idx], ...body }
+        return ok(tasks[idx])
+      }
     }
     if (idMatch && method === 'DELETE') {
       const id = Number(idMatch[1])
@@ -44,9 +88,16 @@ async function setupApiMocks(page: Page) {
       tasks = tasks.filter((t) => !ids.includes(t.id))
       return ok(null)
     }
-    if (path === '/api/lists' && method === 'GET') return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
+    if (path === '/api/lists' && method === 'GET')
+      return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
     if (path === '/api/tags' && method === 'GET') return ok([])
-    if (path === '/api/statistics/overview' && method === 'GET') return ok({ totalTasks: tasks.length, completedTasks: 0, pendingTasks: tasks.length, completionRate: 0 })
+    if (path === '/api/statistics/overview' && method === 'GET')
+      return ok({
+        totalTasks: tasks.length,
+        completedTasks: 0,
+        pendingTasks: tasks.length,
+        completionRate: 0,
+      })
     if (path === '/api/statistics/by-list' && method === 'GET') return ok([])
     if (path === '/api/statistics/by-priority' && method === 'GET') return ok([])
     if (path === '/api/statistics/trend' && method === 'GET') return ok([])

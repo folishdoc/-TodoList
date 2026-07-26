@@ -6,8 +6,8 @@ vi.mock('element-plus', () => ({
     success: vi.fn(),
     error: vi.fn(),
     warning: vi.fn(),
-    info: vi.fn()
-  }
+    info: vi.fn(),
+  },
 }))
 
 // Avoid window.matchMedia warnings in jsdom.
@@ -21,6 +21,6 @@ Object.defineProperty(window, 'matchMedia', {
     removeListener: () => {},
     addEventListener: () => {},
     removeEventListener: () => {},
-    dispatchEvent: () => false
-  })
+    dispatchEvent: () => false,
+  }),
 })

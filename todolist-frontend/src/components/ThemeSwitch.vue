@@ -1,7 +1,7 @@
 <template>
-  <el-button 
-    :icon="currentTheme === 'dark' ? Sunny : Moon" 
-    circle 
+  <el-button
+    :icon="currentTheme === 'dark' ? Sunny : Moon"
+    circle
     @click="handleToggleTheme"
     title="切换主题"
   />

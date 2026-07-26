@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import {
@@ -13,7 +13,7 @@ import {
   deleteAnniversary,
   generateTodo,
   getPendingReminders,
-  markReminderRead
+  markReminderRead,
 } from './anniversary'
 
 describe('api/anniversary.ts', () => {
@@ -27,7 +27,7 @@ describe('api/anniversary.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/anniversaries',
       method: 'get',
-      params: { year: 2026 }
+      params: { year: 2026 },
     })
   })
 
@@ -37,7 +37,7 @@ describe('api/anniversary.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/anniversaries',
       method: 'get',
-      params: undefined
+      params: undefined,
     })
   })
 
@@ -54,7 +54,7 @@ describe('api/anniversary.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/anniversaries',
       method: 'post',
-      data: payload
+      data: payload,
     })
   })
 
@@ -65,7 +65,7 @@ describe('api/anniversary.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/anniversaries/3',
       method: 'put',
-      data: payload
+      data: payload,
     })
   })
 
@@ -80,7 +80,7 @@ describe('api/anniversary.ts', () => {
     await generateTodo(5)
     expect(requestMock).toHaveBeenCalledWith({
       url: '/anniversaries/5/generate-todo',
-      method: 'post'
+      method: 'post',
     })
   })
 
@@ -89,7 +89,7 @@ describe('api/anniversary.ts', () => {
     await getPendingReminders()
     expect(requestMock).toHaveBeenCalledWith({
       url: '/anniversaries/pending-reminders',
-      method: 'get'
+      method: 'get',
     })
   })
 
@@ -98,7 +98,7 @@ describe('api/anniversary.ts', () => {
     await markReminderRead(99)
     expect(requestMock).toHaveBeenCalledWith({
       url: '/anniversaries/reminders/99/read',
-      method: 'put'
+      method: 'put',
     })
   })
 })

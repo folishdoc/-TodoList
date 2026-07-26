@@ -13,10 +13,14 @@ onMounted(async () => {
   if (!isTauri || isWidget.value) return
   for (let i = 0; i < 30; i++) {
     try {
-      const r = await fetch('http://localhost:18080/')
-      if (r.ok) { backendReady.value = true; return }
-    } catch {}
-    await new Promise(r => setTimeout(r, 1000))
+      const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/i, '') || 'http://localhost:18080'
+      const r = await fetch(apiBase)
+      if (r.ok) {
+        backendReady.value = true
+        return
+      }
+    } catch {/* 后端未就绪，继续轮询 */}
+    await new Promise((r) => setTimeout(r, 1000))
   }
   backendError.value = true
 })
@@ -28,12 +32,14 @@ onMounted(async () => {
   </template>
   <template v-else>
     <TitleBar />
-    <div v-if="backendReady" style="flex:1;overflow:hidden">
+    <div v-if="backendReady" style="flex: 1; overflow: hidden">
       <router-view />
     </div>
     <div v-else class="app-loader">
       <h2>📝 Todolist</h2>
-      <p v-if="!backendError">正在启动服务<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
+      <p v-if="!backendError">
+        正在启动服务<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+      </p>
       <p v-else style="color: #f56c6c">后端启动超时，请确认 Java 17+ 已安装并重试</p>
     </div>
   </template>
@@ -47,7 +53,9 @@ onMounted(async () => {
 }
 
 #app {
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  font-family:
+    'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   display: flex;
@@ -76,8 +84,23 @@ body {
   color: #667eea;
 }
 
-.dot { animation: blink 1.4s infinite both; }
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes blink { 0%, 80%, 100% { opacity: 0; } 40% { opacity: 1; } }
+.dot {
+  animation: blink 1.4s infinite both;
+}
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+}
 </style>

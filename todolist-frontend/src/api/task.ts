@@ -5,7 +5,7 @@ export const getTasks = (params: any) => {
   return request({
     url: '/tasks',
     method: 'get',
-    params
+    params,
   })
 }
 
@@ -13,7 +13,7 @@ export const getTasks = (params: any) => {
 export const getTaskById = (id: number) => {
   return request({
     url: `/tasks/${id}`,
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -22,7 +22,7 @@ export const createTask = (data: any) => {
   return request({
     url: '/tasks',
     method: 'post',
-    data
+    data,
   })
 }
 
@@ -31,7 +31,7 @@ export const updateTask = (id: number, data: any) => {
   return request({
     url: `/tasks/${id}`,
     method: 'put',
-    data
+    data,
   })
 }
 
@@ -39,7 +39,7 @@ export const updateTask = (id: number, data: any) => {
 export const deleteTask = (id: number) => {
   return request({
     url: `/tasks/${id}`,
-    method: 'delete'
+    method: 'delete',
   })
 }
 
@@ -47,7 +47,7 @@ export const deleteTask = (id: number) => {
 export const completeTask = (id: number) => {
   return request({
     url: `/tasks/${id}/complete`,
-    method: 'patch'
+    method: 'patch',
   })
 }
 
@@ -55,7 +55,7 @@ export const completeTask = (id: number) => {
 export const uncompleteTask = (id: number) => {
   return request({
     url: `/tasks/${id}/uncomplete`,
-    method: 'patch'
+    method: 'patch',
   })
 }
 
@@ -63,7 +63,7 @@ export const uncompleteTask = (id: number) => {
 export const getTodayTasks = () => {
   return request({
     url: '/tasks/today',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -71,7 +71,7 @@ export const getTodayTasks = () => {
 export const getUpcomingTasks = () => {
   return request({
     url: '/tasks/upcoming',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -80,7 +80,7 @@ export const searchTasks = (params: any) => {
   return request({
     url: '/tasks/search',
     method: 'get',
-    params
+    params,
   })
 }
 
@@ -88,7 +88,7 @@ export const searchTasks = (params: any) => {
 export const getSubtasks = (id: number) => {
   return request({
     url: `/tasks/${id}/subtasks`,
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -97,7 +97,7 @@ export const getTasksWithSubtasks = (params: any) => {
   return request({
     url: '/tasks/with-subtasks',
     method: 'get',
-    params
+    params,
   })
 }
 
@@ -106,7 +106,7 @@ export const updateTaskTime = (id: number, data: any) => {
   return request({
     url: `/tasks/${id}/time`,
     method: 'patch',
-    data
+    data,
   })
 }
 
@@ -115,6 +115,6 @@ export const getTasksByDateRange = (start: string, end: string) => {
   return request({
     url: '/tasks/range',
     method: 'get',
-    params: { start, end }
+    params: { start, end },
   })
 }

@@ -2,19 +2,23 @@ import { test, expect, type Page } from '@playwright/test'
 
 async function setupApiMocks(page: Page) {
   await page.route('http://localhost:18080/api/**', async (route) => {
-    const ok = (data: any) => route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ code: 200, message: 'success', data })
-    })
+    const ok = (data: any) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 200, message: 'success', data }),
+      })
     const path = new URL(route.request().url()).pathname
     if (path === '/api/tasks' && route.request().method() === 'GET') {
       return ok({ content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 })
     }
-    if (path === '/api/lists' && route.request().method() === 'GET') return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
+    if (path === '/api/lists' && route.request().method() === 'GET')
+      return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
     if (path === '/api/tags' && route.request().method() === 'GET') return ok([])
     if (path === '/api/habits' && route.request().method() === 'GET') return ok([])
     if (path === '/api/anniversaries' && route.request().method() === 'GET') return ok([])
-    if (path === '/api/anniversaries/pending-reminders' && route.request().method() === 'GET') return ok([])
+    if (path === '/api/anniversaries/pending-reminders' && route.request().method() === 'GET')
+      return ok([])
     return ok(null)
   })
 }
@@ -35,7 +39,9 @@ test.describe('E2E 导航与主题', () => {
     await expect(page.locator('.nav-item.bell-btn, .nav-item').last()).toBeVisible()
   })
 
-  test('侧边栏显示 5 个固定菜单项（全部任务、今日任务、未来任务、数据统计、标签管理）', async ({ page }) => {
+  test('侧边栏显示 5 个固定菜单项（全部任务、今日任务、未来任务、数据统计、标签管理）', async ({
+    page,
+  }) => {
     await expect(page.getByText('全部任务').first()).toBeVisible()
     await expect(page.getByText('今日任务').first()).toBeVisible()
     await expect(page.getByText('未来任务').first()).toBeVisible()

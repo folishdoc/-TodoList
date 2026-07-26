@@ -5,7 +5,10 @@ test.describe('Todolist E2E 主题切换', () => {
     await page.goto('/')
     await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {})
 
-    const themeButton = page.locator('button').filter({ has: page.locator('svg') }).first()
+    const themeButton = page
+      .locator('button')
+      .filter({ has: page.locator('svg') })
+      .first()
     if ((await themeButton.count()) > 0) {
       await expect(themeButton).toBeVisible()
     }

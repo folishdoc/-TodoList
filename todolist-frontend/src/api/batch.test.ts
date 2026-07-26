@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import {
@@ -10,7 +10,7 @@ import {
   batchComplete,
   batchDelete,
   batchMove,
-  batchSetPriority
+  batchSetPriority,
 } from './batch'
 
 describe('api/batch.ts', () => {
@@ -25,7 +25,7 @@ describe('api/batch.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/batch/execute',
       method: 'post',
-      data: payload
+      data: payload,
     })
   })
 
@@ -35,7 +35,7 @@ describe('api/batch.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/batch/complete',
       method: 'post',
-      data: { taskIds: [1, 2, 3] }
+      data: { taskIds: [1, 2, 3] },
     })
   })
 
@@ -45,7 +45,7 @@ describe('api/batch.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/batch/delete',
       method: 'post',
-      data: { taskIds: [10, 20] }
+      data: { taskIds: [10, 20] },
     })
   })
 
@@ -55,7 +55,7 @@ describe('api/batch.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/batch/move',
       method: 'post',
-      data: { taskIds: [1, 2], targetListId: 5 }
+      data: { taskIds: [1, 2], targetListId: 5 },
     })
   })
 
@@ -65,7 +65,7 @@ describe('api/batch.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/batch/set-priority',
       method: 'post',
-      data: { taskIds: [1, 2, 3], priority: 2 }
+      data: { taskIds: [1, 2, 3], priority: 2 },
     })
   })
 })

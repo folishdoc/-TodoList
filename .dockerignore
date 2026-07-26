@@ -39,3 +39,7 @@ cp.txt
 # 数据文件
 data/
 uploads/
+
+# 部署临时文件
+deploy-tmp/
+.env

@@ -44,10 +44,10 @@ public class TaskListService {
      */
     public TaskList getTaskList(Long userId, Long listId) {
         TaskList taskList = taskListRepository.findById(listId)
-                .orElseThrow(() -> new BusinessException("清单不存在"));
+                .orElseThrow(() -> new BusinessException(404, "清单不存在"));
         
         if (!taskList.getUserId().equals(userId)) {
-            throw new BusinessException("无权访问该清单");
+            throw new BusinessException(403, "无权访问该清单");
         }
         
         return taskList;
@@ -76,7 +76,7 @@ public class TaskListService {
         
         // 不允许删除默认清单
         if (taskList.getIsDefault()) {
-            throw new BusinessException("不能删除默认清单");
+            throw new BusinessException(400, "不能删除默认清单");
         }
         
         taskListRepository.delete(taskList);

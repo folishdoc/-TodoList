@@ -9,19 +9,29 @@ const responseErrorInterceptor = vi.fn((err) => Promise.reject(err))
 
 const mockRequestInstance = {
   interceptors: {
-    request: { use: vi.fn((ok, err) => { requestInterceptor.mockImplementation(ok); requestErrorInterceptor.mockImplementation(err) }) },
-    response: { use: vi.fn((ok, err) => { responseInterceptor.mockImplementation(ok); responseErrorInterceptor.mockImplementation(err) }) }
-  }
+    request: {
+      use: vi.fn((ok, err) => {
+        requestInterceptor.mockImplementation(ok)
+        requestErrorInterceptor.mockImplementation(err)
+      }),
+    },
+    response: {
+      use: vi.fn((ok, err) => {
+        responseInterceptor.mockImplementation(ok)
+        responseErrorInterceptor.mockImplementation(err)
+      }),
+    },
+  },
 }
 
 vi.mock('axios', () => ({
   default: {
-    create: vi.fn(() => mockRequestInstance)
-  }
+    create: vi.fn(() => mockRequestInstance),
+  },
 }))
 
 vi.mock('element-plus', () => ({
-  ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn(), info: vi.fn() }
+  ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }))
 
 describe('utils/request.ts', () => {
@@ -39,16 +49,16 @@ describe('utils/request.ts', () => {
     expect(axios.create).toHaveBeenCalledWith(
       expect.objectContaining({
         baseURL: '/api',
-        timeout: 10000
-      })
+        timeout: 10000,
+      }),
     )
   })
 
-  it('injects Authorization header with personal token', async () => {
+  it('request interceptor passes config through unchanged', async () => {
     await import('./request')
     const config: any = { headers: {} }
     const result = requestInterceptor(config)
-    expect(result.headers.Authorization).toBe('Bearer dev-personal-token-2026-secure-key')
+    expect(result).toBe(config)
   })
 
   it('rejects request interceptor errors', async () => {
@@ -89,11 +99,11 @@ describe('utils/request.ts', () => {
     expect(ElMessage.error).toHaveBeenCalledWith('请求失败')
   })
 
-  it('shows "认证失败" on 401 network error', async () => {
+  it('shows error message on network error', async () => {
     await import('./request')
-    const error: any = { response: { status: 401 }, message: 'Unauthorized' }
+    const error: any = { message: 'Unauthorized' }
     await expect(responseErrorInterceptor(error)).rejects.toBe(error)
-    expect(ElMessage.error).toHaveBeenCalledWith('认证失败，请检查后端服务')
+    expect(ElMessage.error).toHaveBeenCalledWith('Unauthorized')
   })
 
   it('shows generic error message on other network errors', async () => {

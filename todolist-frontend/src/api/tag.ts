@@ -5,7 +5,7 @@ export const createTag = (data: any) => {
   return request({
     url: '/tags',
     method: 'post',
-    data
+    data,
   })
 }
 
@@ -13,7 +13,7 @@ export const createTag = (data: any) => {
 export const getTags = () => {
   return request({
     url: '/tags',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -22,7 +22,7 @@ export const updateTag = (id: number, data: any) => {
   return request({
     url: `/tags/${id}`,
     method: 'put',
-    data
+    data,
   })
 }
 
@@ -30,7 +30,7 @@ export const updateTag = (id: number, data: any) => {
 export const deleteTag = (id: number) => {
   return request({
     url: `/tags/${id}`,
-    method: 'delete'
+    method: 'delete',
   })
 }
 
@@ -39,7 +39,7 @@ export const addTagToTask = (taskId: number, tagId: number) => {
   return request({
     url: `/tags/tasks/${taskId}`,
     method: 'post',
-    params: { tagId }
+    params: { tagId },
   })
 }
 
@@ -48,7 +48,7 @@ export const removeTagFromTask = (taskId: number, tagId: number) => {
   return request({
     url: `/tags/tasks/${taskId}`,
     method: 'delete',
-    params: { tagId }
+    params: { tagId },
   })
 }
 
@@ -56,6 +56,6 @@ export const removeTagFromTask = (taskId: number, tagId: number) => {
 export const getTaskTags = (taskId: number) => {
   return request({
     url: `/tags/tasks/${taskId}`,
-    method: 'get'
+    method: 'get',
   })
 }

@@ -17,19 +17,11 @@
         v-for="subtask in subtasks"
         :key="subtask.id"
         class="subtask-item"
-        :class="{ 'completed': subtask.status === 1 }"
+        :class="{ completed: subtask.status === 1 }"
       >
-        <el-checkbox
-          :model-value="subtask.status === 1"
-          @change="handleCompleteSubtask(subtask)"
-        />
+        <el-checkbox :model-value="subtask.status === 1" @change="handleCompleteSubtask(subtask)" />
         <span class="subtask-title">{{ subtask.title }}</span>
-        <el-button
-          size="small"
-          type="danger"
-          link
-          @click="handleDeleteSubtask(subtask)"
-        >
+        <el-button size="small" type="danger" link @click="handleDeleteSubtask(subtask)">
           <el-icon><Delete /></el-icon>
         </el-button>
       </div>
@@ -66,7 +58,7 @@ const subtasks = ref<any[]>([])
 const showAddSubtask = ref(false)
 
 const subtaskForm = reactive({
-  title: ''
+  title: '',
 })
 
 // 加载子任务
@@ -91,7 +83,7 @@ const handleAddSubtask = async () => {
       title: subtaskForm.title,
       parentId: props.parentId,
       priority: 2,
-      status: 0
+      status: 0,
     })
     ElMessage.success('添加成功')
     showAddSubtask.value = false
@@ -127,7 +119,7 @@ const handleDeleteSubtask = async (subtask: any) => {
     await ElMessageBox.confirm('确定要删除这个子任务吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     })
 
     await taskApi.deleteTask(subtask.id)
@@ -142,9 +134,12 @@ const handleDeleteSubtask = async (subtask: any) => {
 }
 
 // 监听父任务ID变化
-watch(() => props.parentId, () => {
-  loadSubtasks()
-})
+watch(
+  () => props.parentId,
+  () => {
+    loadSubtasks()
+  },
+)
 
 onMounted(() => {
   loadSubtasks()

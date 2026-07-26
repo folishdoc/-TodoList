@@ -4,7 +4,7 @@ import request from '../utils/request'
 export const getLists = () => {
   return request({
     url: '/lists',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -12,7 +12,7 @@ export const getLists = () => {
 export const getListById = (id: number) => {
   return request({
     url: `/lists/${id}`,
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -21,7 +21,7 @@ export const createList = (data: any) => {
   return request({
     url: '/lists',
     method: 'post',
-    data
+    data,
   })
 }
 
@@ -30,7 +30,7 @@ export const updateList = (id: number, data: any) => {
   return request({
     url: `/lists/${id}`,
     method: 'put',
-    data
+    data,
   })
 }
 
@@ -38,6 +38,6 @@ export const updateList = (id: number, data: any) => {
 export const deleteList = (id: number) => {
   return request({
     url: `/lists/${id}`,
-    method: 'delete'
+    method: 'delete',
   })
 }

@@ -49,13 +49,9 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     }
 
     @Test
-    @DisplayName("检查提醒 - 禁用提醒的纪念日不触发")
-    void disabled_anniversary_notTriggered() {
-        Anniversary a = new Anniversary();
-        a.setId(1L);
-        a.setRemindEnabled(false);
-        a.setDate(LocalDate.now());
-        when(anniversaryRepository.findAll()).thenReturn(List.of(a));
+    @DisplayName("检查提醒 - 无启用提醒的纪念日不触发")
+    void noEnabledReminders_notTriggered() {
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
 
@@ -71,7 +67,7 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
         a.setDate(LocalDate.now().plusDays(7));
         a.setRemindDaysBefore("0");
         a.setRemindTime(LocalTime.of(9, 0));
-        when(anniversaryRepository.findAll()).thenReturn(List.of(a));
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
 
         service.checkAnniversaryReminders();
 
@@ -82,7 +78,7 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     @DisplayName("检查提醒 - 已过期的提醒应写入 ReminderLog")
     void overdueReminder_writesLog() {
         Anniversary a = pastReminderAnniversary(1L);
-        when(anniversaryRepository.findAll()).thenReturn(List.of(a));
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
         when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
@@ -98,7 +94,7 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     @DisplayName("检查提醒 - 已存在同时间日志则不重复")
     void duplicateReminder_deduped() {
         Anniversary a = pastReminderAnniversary(1L);
-        when(anniversaryRepository.findAll()).thenReturn(List.of(a));
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
         ReminderLog existing = new ReminderLog();
         when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of(existing));
 
@@ -116,7 +112,7 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
         a.setDate(LocalDate.now());
         a.setRemindDaysBefore("0,1");
         a.setRemindTime(LocalTime.of(0, 1));
-        when(anniversaryRepository.findAll()).thenReturn(List.of(a));
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
         when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
@@ -129,7 +125,7 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     void nullRemindDaysBefore_usesDefault() {
         Anniversary a = pastReminderAnniversary(1L);
         a.setRemindDaysBefore(null);
-        when(anniversaryRepository.findAll()).thenReturn(List.of(a));
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
         when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
@@ -142,7 +138,7 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     void invalidDaysFormat_ignored() {
         Anniversary a = pastReminderAnniversary(1L);
         a.setRemindDaysBefore("abc,xyz");
-        when(anniversaryRepository.findAll()).thenReturn(List.of(a));
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
 
         service.checkAnniversaryReminders();
 
@@ -158,7 +154,7 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
         );
         Anniversary a = pastReminderAnniversary(1L);
         a.setRemindTime(null);
-        when(anniversaryRepository.findAll()).thenReturn(List.of(a));
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
         when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
@@ -169,18 +165,15 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     }
 
     @Test
-    @DisplayName("检查提醒 - 混合启用和禁用纪念日")
-    void mixedEnabledAndDisabled() {
+    @DisplayName("检查提醒 - 多个启用纪念日分别检查")
+    void multipleEnabledAnniversaries() {
         Anniversary enabled = pastReminderAnniversary(1L);
-        Anniversary disabled = new Anniversary();
-        disabled.setId(2L);
-        disabled.setRemindEnabled(false);
-        disabled.setDate(LocalDate.now());
-        when(anniversaryRepository.findAll()).thenReturn(List.of(enabled, disabled));
+        Anniversary another = pastReminderAnniversary(2L);
+        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(enabled, another));
         when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
 
-        verify(reminderLogRepository, times(1)).save(any(ReminderLog.class));
+        verify(reminderLogRepository, times(2)).save(any(ReminderLog.class));
     }
 }

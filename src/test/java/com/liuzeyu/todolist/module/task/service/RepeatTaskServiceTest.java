@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -125,8 +124,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
 
     @Test
     @DisplayName("生成重复任务 - 无效 JSON 跳过该任务但不影响其他")
-    void generate_invalidJson_skipsThatTask() throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
+    void generate_invalidJson_skipsThatTask() {
         Task bad = new Task();
         bad.setId(1L);
         bad.setStatus(1);

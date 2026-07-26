@@ -38,7 +38,9 @@ describe('composables/useRepeatRule.ts', () => {
     })
 
     it('appends datetime when task has time', () => {
-      const label = getRepeatLabel('{"type":"DAILY","interval":1}', { dueDate: '2026-06-05T14:30:00' })
+      const label = getRepeatLabel('{"type":"DAILY","interval":1}', {
+        dueDate: '2026-06-05T14:30:00',
+      })
       expect(label).toContain('06/05 14:30')
     })
 

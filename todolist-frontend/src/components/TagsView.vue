@@ -13,7 +13,7 @@
 
       <!-- 空白显示 -->
       <el-empty v-if="tags.length === 0" description="暂无标签" />
-      
+
       <!-- 标签列表 -->
       <el-table v-else :data="tags" v-loading="loading" style="width: 100%">
         <el-table-column prop="name" label="标签名称" width="200" />
@@ -52,9 +52,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitLoading">
-          确定
-        </el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitLoading"> 确定 </el-button>
       </template>
     </el-dialog>
   </div>
@@ -77,13 +75,11 @@ const tags = ref<any[]>([])
 
 const tagForm = reactive({
   name: '',
-  color: '#409EFF'
+  color: '#409EFF',
 })
 
 const tagRules = {
-  name: [
-    { required: true, message: '请输入标签名称', trigger: 'blur' }
-  ]
+  name: [{ required: true, message: '请输入标签名称', trigger: 'blur' }],
 }
 
 // 加载标签列表
@@ -113,9 +109,9 @@ const handleDelete = async (tag: any) => {
     await ElMessageBox.confirm('确定要删除这个标签吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     })
-    
+
     await tagApi.deleteTag(tag.id)
     ElMessage.success('删除成功')
     loadTags()
@@ -129,7 +125,7 @@ const handleDelete = async (tag: any) => {
 // 提交标签
 const handleSubmit = async () => {
   if (!tagFormRef.value) return
-  
+
   await tagFormRef.value.validate(async (valid) => {
     if (valid) {
       submitLoading.value = true

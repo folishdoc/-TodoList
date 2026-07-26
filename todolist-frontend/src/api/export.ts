@@ -5,7 +5,7 @@ export const exportTasksCsv = () => {
   return request({
     url: '/export/tasks/csv',
     method: 'get',
-    responseType: 'blob'
+    responseType: 'blob',
   })
 }
 
@@ -14,6 +14,6 @@ export const exportTasksJson = () => {
   return request({
     url: '/export/tasks/json',
     method: 'get',
-    responseType: 'blob'
+    responseType: 'blob',
   })
 }

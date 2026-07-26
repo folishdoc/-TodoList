@@ -8,7 +8,7 @@ let shutdownSent = false
 export const registerShutdownListener = () => {
   // 监听页面卸载事件
   window.addEventListener('beforeunload', handleBeforeUnload)
-  
+
   // 监听页面隐藏（切换标签页也会触发，所以需要配合visibilitychange）
   document.addEventListener('visibilitychange', handleVisibilityChange)
 }
@@ -46,11 +46,11 @@ const handleVisibilityChange = () => {
 const sendShutdownRequest = () => {
   try {
     // 使用navigator.sendBeacon，即使页面关闭也能发送
-    const blob = new Blob([JSON.stringify({ action: 'shutdown' })], { 
-      type: 'application/json' 
+    const blob = new Blob([JSON.stringify({ action: 'shutdown' })], {
+      type: 'application/json',
     })
-    navigator.sendBeacon('http://localhost:8080/api/system/shutdown', blob)
-    console.log('Shutdown request sent')
+    const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/i, '') || 'http://localhost:8080'
+    navigator.sendBeacon(`${apiBase}/api/system/shutdown`, blob)
   } catch (error) {
     console.error('Failed to send shutdown request:', error)
   }

@@ -46,10 +46,10 @@ public class HabitService {
      */
     public Habit getHabit(Long userId, Long habitId) {
         Habit habit = habitRepository.findById(habitId)
-                .orElseThrow(() -> new BusinessException("习惯不存在"));
+                .orElseThrow(() -> new BusinessException(404, "习惯不存在"));
         
         if (!habit.getUserId().equals(userId)) {
-            throw new BusinessException("无权访问该习惯");
+            throw new BusinessException(403, "无权访问该习惯");
         }
         
         return habit;
@@ -103,7 +103,7 @@ public class HabitService {
         
         // 检查是否已经打卡
         if (!Boolean.TRUE.equals(isMakeup) && habitRecordRepository.findByHabitIdAndCheckDate(habitId, checkDate).isPresent()) {
-            throw new BusinessException("今天已经打卡过了");
+            throw new BusinessException(409, "今天已经打卡过了");
         }
         
         // 创建打卡记录
@@ -131,7 +131,7 @@ public class HabitService {
         Habit habit = getHabit(userId, habitId);
         
         HabitRecord record = habitRecordRepository.findByHabitIdAndCheckDate(habitId, checkDate)
-                .orElseThrow(() -> new BusinessException("未找到打卡记录"));
+                .orElseThrow(() -> new BusinessException(404, "未找到打卡记录"));
         
         habitRecordRepository.delete(record);
         

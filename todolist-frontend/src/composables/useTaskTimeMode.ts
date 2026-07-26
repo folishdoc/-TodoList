@@ -22,7 +22,7 @@ export function useTaskTimeMode(taskRef: Ref<any | null>) {
     if (!taskRef.value?.repeatRule) return
     try {
       await repeatApi.cancelRepeatRule(taskRef.value.id)
-    } catch {}
+    } catch (e) { console.error('取消循环规则失败', e) }
     taskRef.value.repeatRule = null
   }
 

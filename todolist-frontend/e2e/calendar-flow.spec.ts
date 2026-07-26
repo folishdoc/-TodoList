@@ -10,10 +10,12 @@ async function setupApiMocks(page: Page) {
     const url = new URL(route.request().url())
     const path = url.pathname
     const method = route.request().method()
-    const ok = (data: any) => route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ code: 200, message: 'success', data })
-    })
+    const ok = (data: any) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 200, message: 'success', data }),
+      })
     if (path === '/api/tasks' && method === 'GET') {
       return ok({ content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 })
     }

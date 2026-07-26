@@ -5,7 +5,7 @@ export const setRepeatRule = (taskId: number, rule: any) => {
   return request({
     url: `/tasks/repeat/${taskId}`,
     method: 'post',
-    data: rule
+    data: rule,
   })
 }
 
@@ -13,7 +13,7 @@ export const setRepeatRule = (taskId: number, rule: any) => {
 export const cancelRepeatRule = (taskId: number) => {
   return request({
     url: `/tasks/repeat/${taskId}`,
-    method: 'delete'
+    method: 'delete',
   })
 }
 
@@ -21,6 +21,6 @@ export const cancelRepeatRule = (taskId: number) => {
 export const generateRepeatTasks = () => {
   return request({
     url: '/tasks/repeat/generate',
-    method: 'post'
+    method: 'post',
   })
 }

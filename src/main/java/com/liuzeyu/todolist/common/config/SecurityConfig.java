@@ -65,10 +65,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             // 无状态会话
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // 授权规则（全部放行）
+            // 授权规则：所有请求需认证（通过匿名认证过滤器注入 userId=1）
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             )
             // 匿名认证过滤器：所有请求默认使用 userId=1
             .addFilterBefore(anonymousAuthFilter(), UsernamePasswordAuthenticationFilter.class);

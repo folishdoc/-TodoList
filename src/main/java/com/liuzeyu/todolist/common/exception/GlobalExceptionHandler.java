@@ -21,7 +21,6 @@ public class GlobalExceptionHandler {
      * 业务异常
      */
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.OK)
     public Result<?> handleBusinessException(BusinessException e) {
         return Result.error(e.getCode(), e.getMessage());
     }

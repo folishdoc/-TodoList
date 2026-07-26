@@ -21,7 +21,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
   }
 
   const key = e.key.toLowerCase()
-  
+
   // 检查是否有注册的快捷键
   if (shortcuts[key]) {
     e.preventDefault()
@@ -42,11 +42,11 @@ export const useKeyboardShortcuts = () => {
 
 // 常用快捷键
 export const CommonShortcuts = {
-  NEW_TASK: 'n',        // 新建任务
-  SEARCH: '/',          // 搜索
-  COMPLETE: 'c',        // 完成任务
-  DELETE: 'd',          // 删除任务
-  EDIT: 'e',            // 编辑任务
-  REFRESH: 'r',         // 刷新
-  THEME: 't',           // 切换主题
+  NEW_TASK: 'n', // 新建任务
+  SEARCH: '/', // 搜索
+  COMPLETE: 'c', // 完成任务
+  DELETE: 'd', // 删除任务
+  EDIT: 'e', // 编辑任务
+  REFRESH: 'r', // 刷新
+  THEME: 't', // 切换主题
 }

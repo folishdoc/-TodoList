@@ -4,14 +4,14 @@ import request from '../utils/request'
 export const uploadFile = (taskId: number, file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  
+
   return request({
     url: `/attachments/tasks/${taskId}`,
     method: 'post',
     data: formData,
     headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+      'Content-Type': 'multipart/form-data',
+    },
   })
 }
 
@@ -19,7 +19,7 @@ export const uploadFile = (taskId: number, file: File) => {
 export const getTaskAttachments = (taskId: number) => {
   return request({
     url: `/attachments/tasks/${taskId}`,
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -27,7 +27,7 @@ export const getTaskAttachments = (taskId: number) => {
 export const deleteAttachment = (attachmentId: number) => {
   return request({
     url: `/attachments/${attachmentId}`,
-    method: 'delete'
+    method: 'delete',
   })
 }
 
@@ -36,6 +36,6 @@ export const downloadAttachment = (fileName: string) => {
   return request({
     url: `/attachments/${fileName}`,
     method: 'get',
-    responseType: 'blob'
+    responseType: 'blob',
   })
 }

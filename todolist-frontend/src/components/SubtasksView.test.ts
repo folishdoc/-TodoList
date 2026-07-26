@@ -12,7 +12,7 @@ const ElMessageBoxConfirmMock = vi.fn()
 
 vi.mock('element-plus', () => ({
   ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
-  ElMessageBox: { confirm: (...args: unknown[]) => ElMessageBoxConfirmMock(...args) }
+  ElMessageBox: { confirm: (...args: unknown[]) => ElMessageBoxConfirmMock(...args) },
 }))
 
 vi.mock('../api/task', () => ({
@@ -20,36 +20,44 @@ vi.mock('../api/task', () => ({
   createTask: (...args: unknown[]) => createTaskMock(...args),
   completeTask: (...args: unknown[]) => completeTaskMock(...args),
   uncompleteTask: (...args: unknown[]) => uncompleteTaskMock(...args),
-  deleteTask: (...args: unknown[]) => deleteTaskMock(...args)
+  deleteTask: (...args: unknown[]) => deleteTaskMock(...args),
 }))
 
 vi.mock('@element-plus/icons-vue', () => ({
   Plus: { name: 'PlusStub' },
-  Delete: { name: 'DeleteStub' }
+  Delete: { name: 'DeleteStub' },
 }))
 
 import SubtasksView from './SubtasksView.vue'
 
-const makeStub = (name: string, render: any, props: string[] = [], emits: string[] = ['click', 'update:modelValue']) =>
+const makeStub = (
+  name: string,
+  render: any,
+  props: string[] = [],
+  emits: string[] = ['click', 'update:modelValue'],
+) =>
   defineComponent({
     name,
     props: props as PropType<string>[],
     emits,
     setup(p, { slots, emit, attrs }) {
       return () => render({ props: p, slots, emit, attrs })
-    }
+    },
   })
 
 const ElButtonStub = makeStub(
   'ElButtonStub',
   ({ props, slots, emit }) =>
     h('button', { type: 'button', onClick: () => emit('click') }, slots.default?.()),
-  ['type', 'size', 'link']
+  ['type', 'size', 'link'],
 )
 
 const ElIconStub = makeStub('ElIconStub', ({ slots }) => h('i', slots.default?.()))
 
-const ElEmptyStub = makeStub('ElEmptyStub', () => h('div', { class: 'el-empty' }), ['description', 'imageSize'])
+const ElEmptyStub = makeStub('ElEmptyStub', () => h('div', { class: 'el-empty' }), [
+  'description',
+  'imageSize',
+])
 
 const ElCheckboxStub = makeStub(
   'ElCheckboxStub',
@@ -57,9 +65,9 @@ const ElCheckboxStub = makeStub(
     h('input', {
       type: 'checkbox',
       checked: !!props.modelValue,
-      onChange: (e: Event) => emit('change', (e.target as HTMLInputElement).checked)
+      onChange: (e: Event) => emit('change', (e.target as HTMLInputElement).checked),
     }),
-  ['modelValue']
+  ['modelValue'],
 )
 
 const ElDialogStub = makeStub(
@@ -68,24 +76,28 @@ const ElDialogStub = makeStub(
     props.modelValue
       ? h('div', { 'data-testid': 'subtask-dialog' }, [
           slots.default?.(),
-          slots.footer ? h('div', { 'data-testid': 'subtask-dialog-footer' }, slots.footer()) : null
+          slots.footer
+            ? h('div', { 'data-testid': 'subtask-dialog-footer' }, slots.footer())
+            : null,
         ])
       : null,
-  ['modelValue', 'title', 'width']
+  ['modelValue', 'title', 'width'],
 )
 
 const ElFormStub = makeStub('ElFormStub', ({ slots }) => h('form', slots.default?.()))
 
-const ElFormItemStub = makeStub('ElFormItemStub', ({ slots }) => h('div', slots.default?.()), ['label'])
+const ElFormItemStub = makeStub('ElFormItemStub', ({ slots }) => h('div', slots.default?.()), [
+  'label',
+])
 
 const ElInputStub = makeStub(
   'ElInputStub',
   ({ props, emit }) =>
     h('input', {
       value: props.modelValue,
-      onInput: (e: Event) => emit('update:modelValue', (e.target as HTMLInputElement).value)
+      onInput: (e: Event) => emit('update:modelValue', (e.target as HTMLInputElement).value),
     }),
-  ['modelValue', 'placeholder']
+  ['modelValue', 'placeholder'],
 )
 
 function mountView(parentId = 1) {
@@ -100,9 +112,9 @@ function mountView(parentId = 1) {
         'el-dialog': ElDialogStub,
         'el-form': ElFormStub,
         'el-form-item': ElFormItemStub,
-        'el-input': ElInputStub
-      }
-    }
+        'el-input': ElInputStub,
+      },
+    },
   })
 }
 
@@ -145,7 +157,9 @@ describe('SubtasksView.vue', () => {
   it('opens add dialog when 添加子任务 button is clicked', async () => {
     const wrapper = mountView(1)
     await flushPromises()
-    const addButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('添加子任务'))!
+    const addButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('添加子任务'))!
     await addButton.trigger('click')
     await wrapper.vm.$nextTick()
     expect(wrapper.findComponent(ElDialogStub).props('modelValue')).toBe(true)
@@ -154,10 +168,14 @@ describe('SubtasksView.vue', () => {
   it('does not call createTask when title is empty (warning shown)', async () => {
     const wrapper = mountView(1)
     await flushPromises()
-    const addButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('添加子任务'))!
+    const addButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('添加子任务'))!
     await addButton.trigger('click')
     await wrapper.vm.$nextTick()
-    const confirmButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('确定') && !b.props('link'))!
+    const confirmButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('确定') && !b.props('link'))!
     await confirmButton.trigger('click')
     await flushPromises()
     expect(createTaskMock).not.toHaveBeenCalled()
@@ -166,21 +184,27 @@ describe('SubtasksView.vue', () => {
   it('creates subtask with parentId and resets form on success', async () => {
     const wrapper = mountView(5)
     await flushPromises()
-    getSubtasksMock.mockResolvedValue({ data: [{ id: 200, title: '新建', status: 0, parentId: 5 }] } as any)
-    const addButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('添加子任务'))!
+    getSubtasksMock.mockResolvedValue({
+      data: [{ id: 200, title: '新建', status: 0, parentId: 5 }],
+    } as any)
+    const addButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('添加子任务'))!
     await addButton.trigger('click')
     await wrapper.vm.$nextTick()
     const input = wrapper.findComponent(ElInputStub)
     await input.vm.$emit('update:modelValue', '新建')
     await wrapper.vm.$nextTick()
-    const confirmButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('确定') && !b.props('link'))!
+    const confirmButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('确定') && !b.props('link'))!
     await confirmButton.trigger('click')
     await flushPromises()
     expect(createTaskMock).toHaveBeenCalledWith({
       title: '新建',
       parentId: 5,
       priority: 2,
-      status: 0
+      status: 0,
     })
     expect(wrapper.findComponent(ElDialogStub).props('modelValue')).toBe(false)
     expect(wrapper.emitted('refresh')).toBeTruthy()
@@ -213,8 +237,8 @@ describe('SubtasksView.vue', () => {
     getSubtasksMock.mockResolvedValue({
       data: [
         { id: 1, title: '未完成', status: 0 },
-        { id: 2, title: '已完成', status: 1 }
-      ]
+        { id: 2, title: '已完成', status: 1 },
+      ],
     } as any)
     const wrapper = mountView(1)
     await flushPromises()

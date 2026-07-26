@@ -9,12 +9,12 @@ export const handleError = (error: any, defaultMessage: string = '操作失败')
   if (error === 'cancel') {
     return
   }
-  
+
   // Axios错误
   if (axios.isAxiosError(error)) {
     const status = error.response?.status
     const message = error.response?.data?.message
-    
+
     switch (status) {
       case 400:
         ElMessage.error(message || '请求参数错误')
@@ -39,7 +39,7 @@ export const handleError = (error: any, defaultMessage: string = '操作失败')
   } else {
     ElMessage.error(defaultMessage)
   }
-  
+
   console.error('Error:', error)
 }
 

@@ -13,7 +13,7 @@ const ElMessageBoxConfirmMock = vi.fn()
 
 vi.mock('element-plus', () => ({
   ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
-  ElMessageBox: { confirm: (...args: unknown[]) => ElMessageBoxConfirmMock(...args) }
+  ElMessageBox: { confirm: (...args: unknown[]) => ElMessageBoxConfirmMock(...args) },
 }))
 
 vi.mock('../api/habit', () => ({
@@ -23,7 +23,7 @@ vi.mock('../api/habit', () => ({
   updateHabit: (...args: unknown[]) => updateHabitMock(...args),
   deleteHabit: (...args: unknown[]) => deleteHabitMock(...args),
   checkIn: (...args: unknown[]) => checkInMock(...args),
-  getRecordsByRange: (...args: unknown[]) => getRecordsByRangeMock(...args)
+  getRecordsByRange: (...args: unknown[]) => getRecordsByRangeMock(...args),
 }))
 
 import HabitsView from './HabitsView.vue'
@@ -31,77 +31,80 @@ import HabitsView from './HabitsView.vue'
 const ElButtonStub = {
   name: 'ElButtonStub',
   template: '<button type="button" :disabled="disabled" @click="$emit(\'click\')"><slot/></button>',
-  props: ['type', 'size', 'disabled', 'link']
+  props: ['type', 'size', 'disabled', 'link'],
 }
 
 const ElIconStub = {
   name: 'ElIconStub',
-  template: '<i class="el-icon"><slot/></i>'
+  template: '<i class="el-icon"><slot/></i>',
 }
 
 const ElCardStub = {
   name: 'ElCardStub',
-  template: '<div class="el-card"><slot/></div>'
+  template: '<div class="el-card"><slot/></div>',
 }
 
 const ElEmptyStub = {
   name: 'ElEmptyStub',
   template: '<div class="el-empty"></div>',
-  props: ['description', 'imageSize']
+  props: ['description', 'imageSize'],
 }
 
 const ElRowStub = {
   name: 'ElRowStub',
   template: '<div class="el-row"><slot/></div>',
-  props: ['gutter']
+  props: ['gutter'],
 }
 
 const ElColStub = {
   name: 'ElColStub',
   template: '<div class="el-col"><slot/></div>',
-  props: ['xs', 'sm', 'md', 'lg']
+  props: ['xs', 'sm', 'md', 'lg'],
 }
 
 const ElProgressStub = {
   name: 'ElProgressStub',
   template: '<div class="el-progress" :data-percentage="percentage"></div>',
-  props: ['percentage', 'color', 'strokeWidth']
+  props: ['percentage', 'color', 'strokeWidth'],
 }
 
 const ElInputStub = {
   name: 'ElInputStub',
-  template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'type', 'rows']
+  template:
+    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'placeholder', 'type', 'rows'],
 }
 
 const ElInputNumberStub = {
   name: 'ElInputNumberStub',
-  template: '<input type="number" :value="modelValue" @input="$emit(\'update:modelValue\', Number($event.target.value))" />',
-  props: ['modelValue', 'min', 'step']
+  template:
+    '<input type="number" :value="modelValue" @input="$emit(\'update:modelValue\', Number($event.target.value))" />',
+  props: ['modelValue', 'min', 'step'],
 }
 
 const ElSelectStub = {
   name: 'ElSelectStub',
-  template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><slot/></select>',
-  props: ['modelValue', 'placeholder', 'valueKey']
+  template:
+    '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><slot/></select>',
+  props: ['modelValue', 'placeholder', 'valueKey'],
 }
 
 const ElOptionStub = {
   name: 'ElOptionStub',
   template: '<option :value="value"><slot/></option>',
-  props: ['value', 'label']
+  props: ['value', 'label'],
 }
 
 const ElFormStub = {
   name: 'ElFormStub',
   template: '<form><slot/></form>',
-  props: ['model']
+  props: ['model'],
 }
 
 const ElFormItemStub = {
   name: 'ElFormItemStub',
   template: '<div class="el-form-item"><slot/></div>',
-  props: ['label', 'required']
+  props: ['label', 'required'],
 }
 
 const ElDialogStub = {
@@ -114,61 +117,65 @@ const ElDialogStub = {
         <slot name="footer"/>
       </div>
     </div>
-  `
+  `,
 }
 
 const ElDatePickerStub = {
   name: 'ElDatePickerStub',
-  template: '<input :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'type']
+  template:
+    '<input :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'placeholder', 'type'],
 }
 
 const ElSwitchStub = {
   name: 'ElSwitchStub',
-  template: '<button role="switch" :aria-checked="String(modelValue)" @click="$emit(\'update:modelValue\', !modelValue)">{{ modelValue }}</button>',
-  props: ['modelValue']
+  template:
+    '<button role="switch" :aria-checked="String(modelValue)" @click="$emit(\'update:modelValue\', !modelValue)">{{ modelValue }}</button>',
+  props: ['modelValue'],
 }
 
 const ElRadioGroupStub = {
   name: 'ElRadioGroupStub',
   template: '<div class="el-radio-group"><slot/></div>',
-  props: ['modelValue', 'size']
+  props: ['modelValue', 'size'],
 }
 
 const ElRadioButtonStub = {
   name: 'ElRadioButtonStub',
-  template: '<button class="el-radio-button" :data-value="value" @click="$emit(\'click\', value)">{{ value }}<slot/></button>',
-  props: ['value']
+  template:
+    '<button class="el-radio-button" :data-value="value" @click="$emit(\'click\', value)">{{ value }}<slot/></button>',
+  props: ['value'],
 }
 
 const ElDropdownStub = {
   name: 'ElDropdownStub',
   template: '<div class="el-dropdown"><slot/></div>',
-  props: ['trigger']
+  props: ['trigger'],
 }
 
 const ElDropdownMenuStub = {
   name: 'ElDropdownMenuStub',
-  template: '<div class="el-dropdown-menu"><slot/></div>'
+  template: '<div class="el-dropdown-menu"><slot/></div>',
 }
 
 const ElDropdownItemStub = {
   name: 'ElDropdownItemStub',
   template: '<div class="el-dropdown-item" @click="$emit(\'click\')"><slot/></div>',
-  props: ['divided']
+  props: ['divided'],
 }
 
 const ElColorPickerStub = {
   name: 'ElColorPickerStub',
-  template: '<input type="color" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue']
+  template:
+    '<input type="color" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue'],
 }
 
 function mountView() {
   return mount(HabitsView, {
     global: {
       directives: {
-        loading: { mounted: () => {}, updated: () => {}, unmounted: () => {} }
+        loading: { mounted: () => {}, updated: () => {}, unmounted: () => {} },
       },
       stubs: {
         'el-button': ElButtonStub,
@@ -192,9 +199,9 @@ function mountView() {
         'el-dropdown': ElDropdownStub,
         'el-dropdown-menu': ElDropdownMenuStub,
         'el-dropdown-item': ElDropdownItemStub,
-        'el-color-picker': ElColorPickerStub
-      }
-    }
+        'el-color-picker': ElColorPickerStub,
+      },
+    },
   })
 }
 
@@ -212,7 +219,9 @@ describe('HabitsView.vue', () => {
   })
 
   it('loads habits and today records on mount', async () => {
-    getHabitsMock.mockResolvedValue({ data: [{ id: 1, name: '早起', targetValue: 1, targetType: 'count', color: '#f00' }] } as any)
+    getHabitsMock.mockResolvedValue({
+      data: [{ id: 1, name: '早起', targetValue: 1, targetType: 'count', color: '#f00' }],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     expect(getHabitsMock).toHaveBeenCalled()
@@ -229,7 +238,9 @@ describe('HabitsView.vue', () => {
   it('opens create dialog with reset form when 新建习惯 clicked', async () => {
     const wrapper = mountView()
     await flushPromises()
-    const newButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('新建习惯'))!
+    const newButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('新建习惯'))!
     await newButton.trigger('click')
     await flushPromises()
     expect((wrapper.vm as any).showCreateDialog).toBe(true)
@@ -289,10 +300,32 @@ describe('HabitsView.vue', () => {
   })
 
   it('handleEdit populates form and opens dialog', async () => {
-    getHabitsMock.mockResolvedValue({ data: [{ id: 7, name: '冥想', icon: '🧘', color: '#abc', targetType: 'duration', targetValue: 30, frequency: 'daily', timePeriod: 'morning' }] } as any)
+    getHabitsMock.mockResolvedValue({
+      data: [
+        {
+          id: 7,
+          name: '冥想',
+          icon: '🧘',
+          color: '#abc',
+          targetType: 'duration',
+          targetValue: 30,
+          frequency: 'daily',
+          timePeriod: 'morning',
+        },
+      ],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
-    ;(wrapper.vm as any).handleEdit({ id: 7, name: '冥想', icon: '🧘', color: '#abc', targetType: 'duration', targetValue: 30, frequency: 'daily', timePeriod: 'morning' })
+    ;(wrapper.vm as any).handleEdit({
+      id: 7,
+      name: '冥想',
+      icon: '🧘',
+      color: '#abc',
+      targetType: 'duration',
+      targetValue: 30,
+      frequency: 'daily',
+      timePeriod: 'morning',
+    })
     await flushPromises()
     expect((wrapper.vm as any).editingHabit.id).toBe(7)
     expect((wrapper.vm as any).habitForm.name).toBe('冥想')
@@ -338,15 +371,26 @@ describe('HabitsView.vue', () => {
   })
 
   it('handleCheckIn calls checkIn API for daily habit', async () => {
-    getHabitsMock.mockResolvedValue({ data: [{ id: 5, name: '阅读', targetValue: 1, targetType: 'count', frequency: 'daily' }] } as any)
+    getHabitsMock.mockResolvedValue({
+      data: [{ id: 5, name: '阅读', targetValue: 1, targetType: 'count', frequency: 'daily' }],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
-    await (wrapper.vm as any).handleCheckIn({ id: 5, name: '阅读', targetValue: 1, targetType: 'count', frequency: 'daily' })
+    await (wrapper.vm as any).handleCheckIn({
+      id: 5,
+      name: '阅读',
+      targetValue: 1,
+      targetType: 'count',
+      frequency: 'daily',
+    })
     await flushPromises()
-    expect(checkInMock).toHaveBeenCalledWith(5, expect.objectContaining({
-      completionValue: 1,
-      isMakeup: false
-    }))
+    expect(checkInMock).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({
+        completionValue: 1,
+        isMakeup: false,
+      }),
+    )
   })
 
   it('handleCheckIn shows warning on weekend for weekday-only habit', async () => {
@@ -383,9 +427,15 @@ describe('HabitsView.vue', () => {
   it('getTargetText returns localized text for target type', () => {
     const wrapper = mountView()
     expect((wrapper.vm as any).getTargetText({ targetType: 'count', targetValue: 3 })).toBe('3 次')
-    expect((wrapper.vm as any).getTargetText({ targetType: 'duration', targetValue: 30 })).toBe('30 分钟')
-    expect((wrapper.vm as any).getTargetText({ targetType: 'quantity', targetValue: 5 })).toBe('5 个')
-    expect((wrapper.vm as any).getTargetText({ targetType: 'unknown', targetValue: 1 })).toBe('1 次')
+    expect((wrapper.vm as any).getTargetText({ targetType: 'duration', targetValue: 30 })).toBe(
+      '30 分钟',
+    )
+    expect((wrapper.vm as any).getTargetText({ targetType: 'quantity', targetValue: 5 })).toBe(
+      '5 个',
+    )
+    expect((wrapper.vm as any).getTargetText({ targetType: 'unknown', targetValue: 1 })).toBe(
+      '1 次',
+    )
   })
 
   it('showTrend toggles trend section visibility', async () => {
@@ -398,9 +448,16 @@ describe('HabitsView.vue', () => {
   })
 
   it('loadTrendData aggregates records across habits and builds per-date counts', async () => {
-    getHabitsMock.mockResolvedValue({ data: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }] } as any)
+    getHabitsMock.mockResolvedValue({
+      data: [
+        { id: 1, name: 'A' },
+        { id: 2, name: 'B' },
+      ],
+    } as any)
     getRecordsByRangeMock
-      .mockResolvedValueOnce({ data: [{ checkDate: '2025-01-01' }, { checkDate: '2025-01-01' }] } as any)
+      .mockResolvedValueOnce({
+        data: [{ checkDate: '2025-01-01' }, { checkDate: '2025-01-01' }],
+      } as any)
       .mockResolvedValueOnce({ data: [{ checkDate: '2025-01-02' }] } as any)
     const wrapper = mountView()
     await flushPromises()
@@ -416,7 +473,7 @@ describe('HabitsView.vue', () => {
     const wrapper = mountView()
     ;(wrapper.vm as any).trendData = [
       { date: '2025-01-01', count: 0 },
-      { date: '2025-01-02', count: 5 }
+      { date: '2025-01-02', count: 5 },
     ]
     expect((wrapper.vm as any).getBarHeight(0)).toBe(4)
     expect((wrapper.vm as any).getBarHeight(5)).toBe(120)
@@ -442,7 +499,10 @@ describe('HabitsView.vue', () => {
     await flushPromises()
     const futureDate = new Date()
     futureDate.setDate(futureDate.getDate() - 1)
-    await (wrapper.vm as any).handleTrendMakeup({ date: futureDate.toISOString().slice(0, 10), count: 0 })
+    await (wrapper.vm as any).handleTrendMakeup({
+      date: futureDate.toISOString().slice(0, 10),
+      count: 0,
+    })
     await flushPromises()
     expect((wrapper.vm as any).showCheckInDialog).toBe(true)
     expect((wrapper.vm as any).checkInForm.isMakeup).toBe(true)

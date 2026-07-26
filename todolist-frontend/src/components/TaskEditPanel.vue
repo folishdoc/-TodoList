@@ -30,7 +30,7 @@ const taskForm = reactive({
   startDate: '',
   dueDate: '',
   listId: null as number | null,
-  subtasks: [] as any[]
+  subtasks: [] as any[],
 })
 
 const taskTags = ref<any[]>([])
@@ -43,13 +43,24 @@ const isSaving = ref(false)
 let autoSaveTimer: any = null
 
 // 重复规则
-const repeatForm = reactive({ type: '' as string, interval: 1, weekDays: [] as number[], dayOfMonth: 1, endDate: '' as string })
+const repeatForm = reactive({
+  type: '' as string,
+  interval: 1,
+  weekDays: [] as number[],
+  dayOfMonth: 1,
+  endDate: '' as string,
+})
 const editRepeatEndDate = ref('')
 const showRepeatForm = ref(false)
 
 // 时间模式：普通任务 / 循环任务（互斥）
 const taskRef = toRef(props, 'task')
-const { mode: taskTimeMode, initFromTask, switchToRepeat, switchToNormal } = useTaskTimeMode(taskRef)
+const {
+  mode: taskTimeMode,
+  initFromTask,
+  switchToRepeat,
+  switchToNormal,
+} = useTaskTimeMode(taskRef)
 
 const onModeChange = async (newMode: 'normal' | 'repeat') => {
   const ctx = { taskForm, showRepeatForm, repeatForm, editRepeatEndDate }
@@ -101,7 +112,7 @@ const init = async () => {
     try {
       const rule = JSON.parse(task.repeatRule)
       editRepeatEndDate.value = rule.endDate || ''
-    } catch { editRepeatEndDate.value = '' }
+    } catch (e) { console.warn('解析循环规则失败', e); editRepeatEndDate.value = '' }
   } else {
     editRepeatEndDate.value = ''
   }
@@ -110,31 +121,37 @@ const init = async () => {
   try {
     const listsRes: any = await listApi.getLists()
     taskLists.value = listsRes?.data || []
-  } catch {}
+  } catch (e) { console.error('加载清单列表失败', e) }
 
   try {
     const subtasksRes: any = await taskApi.getSubtasks(task.id)
     taskForm.subtasks = (subtasksRes?.data || []).map((st: any) => ({
       ...st,
-      completed: st.status === 1
+      completed: st.status === 1,
     }))
-  } catch { taskForm.subtasks = [] }
+  } catch (e) { console.warn('加载子任务失败', e); taskForm.subtasks = [] }
 
   try {
     const tagsRes = await tagApi.getTaskTags(task.id)
     taskTags.value = tagsRes?.data || []
     selectedTagIds.value = taskTags.value.map((t: any) => t.id)
-  } catch { taskTags.value = []; selectedTagIds.value = [] }
+  } catch (e) { console.warn('加载标签失败', e); taskTags.value = []; selectedTagIds.value = [] }
 
   try {
     const attachmentsRes: any = await attachmentApi.getTaskAttachments(task.id)
     taskAttachments.value = attachmentsRes?.data || []
-  } catch { taskAttachments.value = [] }
+  } catch (e) { console.warn('加载附件失败', e); taskAttachments.value = [] }
 }
 
-watch(() => props.task?.id, () => { if (props.task) init() }, { immediate: true })
+watch(
+  () => props.task?.id,
+  () => {
+    if (props.task) init()
+  },
+  { immediate: true },
+)
 
-  // 自动保存
+// 自动保存
 const doSave = async () => {
   if (!props.task || !taskForm.title.trim()) return
   isSaving.value = true
@@ -149,7 +166,7 @@ const doSave = async () => {
       startDate,
       dueDate: taskForm.dueDate,
       listId: taskForm.listId,
-      parentId: props.task.parentId
+      parentId: props.task.parentId,
     })
 
     // 子任务同步
@@ -166,7 +183,7 @@ const doSave = async () => {
 
     for (const subtask of subtasksSnapshot) {
       const match = existingSubtasks.find(
-        (db: any) => db.title === subtask.title || (subtask.id && db.id === subtask.id)
+        (db: any) => db.title === subtask.title || (subtask.id && db.id === subtask.id),
       )
       if (match) {
         const newStatus = subtask.completed ? 1 : 0
@@ -179,7 +196,7 @@ const doSave = async () => {
           title: subtask.title.trim(),
           parentId: taskId,
           status: subtask.completed ? 1 : 0,
-          priority: 0
+          priority: 0,
         })
       }
     }
@@ -214,7 +231,7 @@ const loadAllTags = async () => {
   try {
     const res = await tagApi.getTags()
     allTags.value = res?.data || []
-  } catch {}
+  } catch (e) { console.error('加载全部标签失败', e) }
 }
 
 const handleTagChange = async () => {
@@ -229,16 +246,18 @@ const handleTagChange = async () => {
     }
     const res = await tagApi.getTaskTags(props.task.id)
     taskTags.value = res?.data || []
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 const handleRemoveTag = async (tagId: number) => {
   if (!props.task) return
   try {
     await tagApi.removeTagFromTask(props.task.id, tagId)
-    selectedTagIds.value = selectedTagIds.value.filter(id => id !== tagId)
+    selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId)
     taskTags.value = taskTags.value.filter((t: any) => t.id !== tagId)
-  } catch {}
+  } catch (e) { console.error('移除标签失败', e); ElMessage.error('移除标签失败') }
 }
 
 // 附件
@@ -256,12 +275,15 @@ const handleUploadAttachment = async (e: Event) => {
     const res: any = await attachmentApi.getTaskAttachments(props.task.id)
     taskAttachments.value = res?.data || []
     ElMessage.success('上传成功')
-  } catch { ElMessage.error('上传失败') }
+  } catch {
+    ElMessage.error('上传失败')
+  }
   input.value = ''
 }
 
 const handleDownloadAttachment = (att: any) => {
-  const url = `http://localhost:18080/api/attachments/${encodeURIComponent(att.fileName)}`
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:18080/api'
+  const url = `${baseUrl}/attachments/${encodeURIComponent(att.fileName)}`
   window.open(url)
 }
 
@@ -270,7 +292,7 @@ const handleDeleteAttachment = async (att: any) => {
   try {
     await attachmentApi.deleteAttachment(att.id)
     taskAttachments.value = taskAttachments.value.filter((a: any) => a.fileName !== att.fileName)
-  } catch {}
+  } catch (e) { console.error('删除附件失败', e); ElMessage.error('删除附件失败') }
 }
 
 // 子任务
@@ -281,7 +303,9 @@ const addSubtask = () => {
 const removeSubtask = async (index: number) => {
   const st = taskForm.subtasks[index]
   if (st.id) {
-    try { await taskApi.deleteTask(st.id) } catch {}
+    try {
+      await taskApi.deleteTask(st.id)
+    } catch (e) { console.error('删除子任务失败', e) }
   }
   taskForm.subtasks.splice(index, 1)
   autoSave()
@@ -316,7 +340,9 @@ const handleUpdateRepeatEndDate = async () => {
     await repeatApi.setRepeatRule(props.task.id, rule)
     props.task.repeatRule = JSON.stringify(rule)
     ElMessage.success('循环结束日期已更新')
-  } catch { ElMessage.error('更新失败') }
+  } catch {
+    ElMessage.error('更新失败')
+  }
 }
 
 const handleCancelRepeat = async () => {
@@ -326,7 +352,9 @@ const handleCancelRepeat = async () => {
     props.task.repeatRule = null
     editRepeatEndDate.value = ''
     ElMessage.success('已取消循环')
-  } catch { ElMessage.error('取消失败') }
+  } catch {
+    ElMessage.error('取消失败')
+  }
 }
 
 const handleAddRepeatInPanel = async () => {
@@ -337,7 +365,7 @@ const handleAddRepeatInPanel = async () => {
       interval: repeatForm.interval,
       weekDays: repeatForm.weekDays.length > 0 ? repeatForm.weekDays.join(',') : null,
       dayOfMonth: repeatForm.type === 'MONTHLY' ? repeatForm.dayOfMonth : null,
-      endDate: repeatForm.endDate || null
+      endDate: repeatForm.endDate || null,
     }
     await repeatApi.setRepeatRule(props.task.id, rule)
     props.task.repeatRule = JSON.stringify(rule)
@@ -345,7 +373,9 @@ const handleAddRepeatInPanel = async () => {
     showRepeatForm.value = false
     ElMessage.success('已设置循环')
     resetRepeatForm()
-  } catch { ElMessage.error('设置循环失败') }
+  } catch {
+    ElMessage.error('设置循环失败')
+  }
 }
 
 // 删除
@@ -356,7 +386,9 @@ const handleDeleteTask = async () => {
     ElMessage.success('已删除')
     emit('close')
     emit('changed')
-  } catch { ElMessage.error('删除失败') }
+  } catch {
+    ElMessage.error('删除失败')
+  }
 }
 
 // 渲染 Markdown
@@ -364,7 +396,9 @@ const renderMarkdown = (text: string) => {
   if (!text) return ''
   try {
     return marked(text, { breaks: true, gfm: true }) as string
-  } catch { return text }
+  } catch {
+    return text
+  }
 }
 
 // 子任务聚焦
@@ -399,7 +433,11 @@ const handleSubtaskEnter = () => {
     <div class="meta-row">
       <!-- 优先级 -->
       <el-dropdown @command="(p: number) => handlePriorityChange(p)" trigger="click">
-        <el-tag :type="getPriorityType(taskForm.priority) || undefined" size="default" class="meta-tag clickable">
+        <el-tag
+          :type="getPriorityType(taskForm.priority) || undefined"
+          size="default"
+          class="meta-tag clickable"
+        >
           <el-icon><Flag /></el-icon>
           {{ getPriorityText(taskForm.priority) }}优先级
         </el-tag>
@@ -416,13 +454,24 @@ const handleSubtaskEnter = () => {
       <!-- 时间设置 -->
       <el-popover trigger="click" placement="bottom" :width="380" @hide="showRepeatForm = false">
         <template #reference>
-          <el-tag size="default" class="meta-tag clickable" :type="(taskForm.startDate || taskForm.dueDate || task?.repeatRule) ? 'warning' : undefined">
+          <el-tag
+            size="default"
+            class="meta-tag clickable"
+            :type="
+              taskForm.startDate || taskForm.dueDate || task?.repeatRule ? 'warning' : undefined
+            "
+          >
             <el-icon><Calendar /></el-icon>
             {{ getTimeSummary() }}
           </el-tag>
         </template>
         <div style="padding: 4px 0">
-          <el-radio-group v-model="taskTimeMode" size="small" style="margin-bottom: 12px" @change="onModeChange">
+          <el-radio-group
+            v-model="taskTimeMode"
+            size="small"
+            style="margin-bottom: 12px"
+            @change="onModeChange"
+          >
             <el-radio-button label="normal">🕒 普通任务</el-radio-button>
             <el-radio-button label="repeat">🔄 循环任务</el-radio-button>
           </el-radio-group>
@@ -431,12 +480,28 @@ const handleSubtaskEnter = () => {
           <template v-if="taskTimeMode === 'normal'">
             <el-form label-width="80px" size="small">
               <el-form-item label="开始时间">
-                <el-date-picker v-model="taskForm.startDate" type="datetime" placeholder="未设置"
-                  :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" @change="autoSave" />
+                <el-date-picker
+                  v-model="taskForm.startDate"
+                  type="datetime"
+                  placeholder="未设置"
+                  :format="datePickerFormat"
+                  value-format="YYYY-MM-DDTHH:mm:ss"
+                  style="width: 100%"
+                  :teleported="false"
+                  @change="autoSave"
+                />
               </el-form-item>
               <el-form-item label="截止时间">
-                <el-date-picker v-model="taskForm.dueDate" type="datetime" placeholder="未设置"
-                  :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" @change="autoSave" />
+                <el-date-picker
+                  v-model="taskForm.dueDate"
+                  type="datetime"
+                  placeholder="未设置"
+                  :format="datePickerFormat"
+                  value-format="YYYY-MM-DDTHH:mm:ss"
+                  style="width: 100%"
+                  :teleported="false"
+                  @change="autoSave"
+                />
               </el-form-item>
             </el-form>
           </template>
@@ -445,58 +510,127 @@ const handleSubtaskEnter = () => {
           <template v-else>
             <el-form label-width="90px" size="small">
               <el-form-item label="周期基准">
-                <el-date-picker v-model="taskForm.dueDate" type="datetime" placeholder="未设置"
-                  :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" @change="autoSave" />
-                <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">首次发生时间，下次循环以此为基准</div>
+                <el-date-picker
+                  v-model="taskForm.dueDate"
+                  type="datetime"
+                  placeholder="未设置"
+                  :format="datePickerFormat"
+                  value-format="YYYY-MM-DDTHH:mm:ss"
+                  style="width: 100%"
+                  :teleported="false"
+                  @change="autoSave"
+                />
+                <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">
+                  首次发生时间，下次循环以此为基准
+                </div>
               </el-form-item>
             </el-form>
             <el-divider style="margin: 8px 0">循环规则</el-divider>
             <div v-if="task?.repeatRule">
-              <div style="margin-bottom: 8px; font-size: 13px; color: #e6a23c">🔄 {{ getRepeatLabel(task.repeatRule, task) }}</div>
+              <div style="margin-bottom: 8px; font-size: 13px; color: #e6a23c">
+                🔄 {{ getRepeatLabel(task.repeatRule, task) }}
+              </div>
               <el-form label-width="90px" size="small">
                 <el-form-item label="循环结束">
-                  <el-date-picker v-model="editRepeatEndDate" type="datetime" placeholder="永不结束"
-                    :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
-                  <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">该日期之后不再生成新循环任务</div>
+                  <el-date-picker
+                    v-model="editRepeatEndDate"
+                    type="datetime"
+                    placeholder="永不结束"
+                    :format="datePickerFormat"
+                    value-format="YYYY-MM-DDTHH:mm:ss"
+                    style="width: 100%"
+                    :teleported="false"
+                  />
+                  <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">
+                    该日期之后不再生成新循环任务
+                  </div>
                 </el-form-item>
               </el-form>
               <div style="text-align: right; margin-top: 8px">
-                <el-button size="small" type="danger" @click="handleCancelRepeat">取消循环</el-button>
-                <el-button size="small" type="primary" @click="handleUpdateRepeatEndDate">更新</el-button>
+                <el-button size="small" type="danger" @click="handleCancelRepeat"
+                  >取消循环</el-button
+                >
+                <el-button size="small" type="primary" @click="handleUpdateRepeatEndDate"
+                  >更新</el-button
+                >
               </div>
             </div>
             <div v-else>
               <div v-if="!showRepeatForm" style="text-align: center">
-                <el-button size="small" @click="showRepeatForm = true; resetRepeatForm()">+ 设置循环</el-button>
+                <el-button
+                  size="small"
+                  @click="showRepeatForm = true; resetRepeatForm()"
+                  >+ 设置循环</el-button
+                >
               </div>
               <div v-else>
                 <el-form label-width="90px" size="small">
                   <el-form-item label="类型">
-                    <el-select v-model="repeatForm.type" placeholder="选择" style="width: 100%" :teleported="false" @change="onRepeatTypeChange">
-                      <el-option label="每天" value="DAILY" /><el-option label="每周" value="WEEKLY" /><el-option label="每月" value="MONTHLY" /><el-option label="每年" value="YEARLY" />
+                    <el-select
+                      v-model="repeatForm.type"
+                      placeholder="选择"
+                      style="width: 100%"
+                      :teleported="false"
+                      @change="onRepeatTypeChange"
+                    >
+                      <el-option label="每天" value="DAILY" /><el-option
+                        label="每周"
+                        value="WEEKLY"
+                      /><el-option label="每月" value="MONTHLY" /><el-option
+                        label="每年"
+                        value="YEARLY"
+                      />
                     </el-select>
                   </el-form-item>
                   <el-form-item v-if="repeatForm.type" label="间隔">
-                    <el-input-number v-model="repeatForm.interval" :min="1" :max="365" style="width: 100%" size="small" />
+                    <el-input-number
+                      v-model="repeatForm.interval"
+                      :min="1"
+                      :max="365"
+                      style="width: 100%"
+                      size="small"
+                    />
                   </el-form-item>
                   <el-form-item v-if="repeatForm.type === 'WEEKLY'" label="星期">
                     <el-checkbox-group v-model="repeatForm.weekDays" size="small">
-                      <el-checkbox :value="1">一</el-checkbox><el-checkbox :value="2">二</el-checkbox><el-checkbox :value="3">三</el-checkbox>
-                      <el-checkbox :value="4">四</el-checkbox><el-checkbox :value="5">五</el-checkbox><el-checkbox :value="6">六</el-checkbox><el-checkbox :value="7">日</el-checkbox>
+                      <el-checkbox :value="1">一</el-checkbox
+                      ><el-checkbox :value="2">二</el-checkbox
+                      ><el-checkbox :value="3">三</el-checkbox>
+                      <el-checkbox :value="4">四</el-checkbox
+                      ><el-checkbox :value="5">五</el-checkbox
+                      ><el-checkbox :value="6">六</el-checkbox
+                      ><el-checkbox :value="7">日</el-checkbox>
                     </el-checkbox-group>
                   </el-form-item>
                   <el-form-item v-if="repeatForm.type === 'MONTHLY'" label="日期">
-                    <el-input-number v-model="repeatForm.dayOfMonth" :min="1" :max="31" style="width: 100%" size="small" />
+                    <el-input-number
+                      v-model="repeatForm.dayOfMonth"
+                      :min="1"
+                      :max="31"
+                      style="width: 100%"
+                      size="small"
+                    />
                   </el-form-item>
                   <el-form-item v-if="repeatForm.type" label="循环结束">
-                    <el-date-picker v-model="repeatForm.endDate" type="datetime" placeholder="永不结束"
-                      :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
-                    <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">该日期之后不再生成新循环任务</div>
+                    <el-date-picker
+                      v-model="repeatForm.endDate"
+                      type="datetime"
+                      placeholder="永不结束"
+                      :format="datePickerFormat"
+                      value-format="YYYY-MM-DDTHH:mm:ss"
+                      style="width: 100%"
+                      :teleported="false"
+                    />
+                    <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">
+                      该日期之后不再生成新循环任务
+                    </div>
                   </el-form-item>
                 </el-form>
                 <div style="text-align: right; margin-top: 8px">
                   <el-button size="small" @click="showRepeatForm = false">取消</el-button>
-                  <el-button size="small" type="primary" @click="handleAddRepeatInPanel">确定</el-button>
+                  <el-button size="small" type="primary" @click="handleAddRepeatInPanel"
+                    >确定</el-button
+                  >
                 </div>
               </div>
             </div>
@@ -508,12 +642,18 @@ const handleSubtaskEnter = () => {
       <el-dropdown @command="handleListChange" trigger="click">
         <el-tag size="default" class="meta-tag clickable" type="success">
           <el-icon><Folder /></el-icon>
-          {{ taskForm.listId ? taskLists.find((l: any) => l.id === taskForm.listId)?.name || '清单' : '无清单' }}
+          {{
+            taskForm.listId
+              ? taskLists.find((l: any) => l.id === taskForm.listId)?.name || '清单'
+              : '无清单'
+          }}
         </el-tag>
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item command="null">无清单</el-dropdown-item>
-            <el-dropdown-item v-for="list in taskLists" :key="list.id" :command="list.id">{{ list.name }}</el-dropdown-item>
+            <el-dropdown-item v-for="list in taskLists" :key="list.id" :command="list.id">{{
+              list.name
+            }}</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -526,9 +666,28 @@ const handleSubtaskEnter = () => {
             {{ taskTags.length > 0 ? `${taskTags.length}个标签` : '标签' }}
           </el-tag>
         </template>
-        <el-select v-model="selectedTagIds" multiple filterable placeholder="选择标签" style="width: 100%" :teleported="false" @change="handleTagChange" @visible-change="loadAllTags">
+        <el-select
+          v-model="selectedTagIds"
+          multiple
+          filterable
+          placeholder="选择标签"
+          style="width: 100%"
+          :teleported="false"
+          @change="handleTagChange"
+          @visible-change="loadAllTags"
+        >
           <el-option v-for="tag in allTags" :key="tag.id" :label="tag.name" :value="tag.id">
-            <span :style="{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: tag.color, marginRight: '8px', verticalAlign: 'middle' }" />
+            <span
+              :style="{
+                display: 'inline-block',
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                backgroundColor: tag.color,
+                marginRight: '8px',
+                verticalAlign: 'middle',
+              }"
+            />
             {{ tag.name }}
           </el-option>
         </el-select>
@@ -537,8 +696,15 @@ const handleSubtaskEnter = () => {
 
     <!-- 标签展示 -->
     <div v-if="taskTags.length > 0" class="tags-row">
-      <el-tag v-for="tag in taskTags" :key="tag.id" :color="tag.color" size="small" closable @close="handleRemoveTag(tag.id)"
-        :style="{ color: '#fff', marginRight: '6px', marginBottom: '4px' }">
+      <el-tag
+        v-for="tag in taskTags"
+        :key="tag.id"
+        :color="tag.color"
+        size="small"
+        closable
+        @close="handleRemoveTag(tag.id)"
+        :style="{ color: '#fff', marginRight: '6px', marginBottom: '4px' }"
+      >
         {{ tag.name }}
       </el-tag>
     </div>
@@ -547,9 +713,21 @@ const handleSubtaskEnter = () => {
     <div class="panel-section">
       <div class="section-header">
         <h4 class="section-title">描述</h4>
-        <el-switch v-model="descriptionPreview" active-text="预览" inactive-text="编辑" size="small" />
+        <el-switch
+          v-model="descriptionPreview"
+          active-text="预览"
+          inactive-text="编辑"
+          size="small"
+        />
       </div>
-      <el-input v-if="!descriptionPreview" v-model="taskForm.description" type="textarea" :rows="4" placeholder="输入描述（支持 Markdown）" @blur="autoSave" />
+      <el-input
+        v-if="!descriptionPreview"
+        v-model="taskForm.description"
+        type="textarea"
+        :rows="4"
+        placeholder="输入描述（支持 Markdown）"
+        @blur="autoSave"
+      />
       <div v-else class="markdown-preview" v-html="renderMarkdown(taskForm.description)" />
     </div>
 
@@ -561,8 +739,17 @@ const handleSubtaskEnter = () => {
       </div>
       <div v-for="(st, idx) in taskForm.subtasks" :key="idx" class="subtask-row">
         <el-checkbox :model-value="st.completed" @change="handleSubtaskToggle(st)" />
-        <el-input v-model="st.title" size="small" placeholder="子任务标题" class="subtask-input" @blur="autoSave" @keyup.enter="handleSubtaskEnter" />
-        <el-button size="small" type="danger" text @click="removeSubtask(idx)"><el-icon><Delete /></el-icon></el-button>
+        <el-input
+          v-model="st.title"
+          size="small"
+          placeholder="子任务标题"
+          class="subtask-input"
+          @blur="autoSave"
+          @keyup.enter="handleSubtaskEnter"
+        />
+        <el-button size="small" type="danger" text @click="removeSubtask(idx)"
+          ><el-icon><Delete /></el-icon
+        ></el-button>
       </div>
     </div>
 
@@ -571,15 +758,21 @@ const handleSubtaskEnter = () => {
       <div class="section-header">
         <h4 class="section-title">附件</h4>
         <label style="cursor: pointer">
-          <el-button size="small" tag="span"><el-icon><Upload /></el-icon> 上传</el-button>
+          <el-button size="small" tag="span"
+            ><el-icon><Upload /></el-icon> 上传</el-button
+          >
           <input type="file" style="display: none" @change="handleUploadAttachment" />
         </label>
       </div>
       <div v-for="att in taskAttachments" :key="att.fileName" class="attachment-item">
         <span class="att-name">{{ att.originalName }}</span>
         <span class="att-size">{{ (att.fileSize / 1024).toFixed(1) }} KB</span>
-        <el-button size="small" text @click="handleDownloadAttachment(att)"><el-icon><Download /></el-icon></el-button>
-        <el-button size="small" text type="danger" @click="handleDeleteAttachment(att)"><el-icon><Delete /></el-icon></el-button>
+        <el-button size="small" text @click="handleDownloadAttachment(att)"
+          ><el-icon><Download /></el-icon
+        ></el-button>
+        <el-button size="small" text type="danger" @click="handleDeleteAttachment(att)"
+          ><el-icon><Delete /></el-icon
+        ></el-button>
       </div>
     </div>
 
@@ -592,7 +785,11 @@ const handleSubtaskEnter = () => {
 </template>
 
 <style scoped>
-.task-edit-panel { display: flex; flex-direction: column; gap: 12px; }
+.task-edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
 .panel-mode {
   height: 100%;
@@ -614,16 +811,38 @@ const handleSubtaskEnter = () => {
   background: transparent;
 }
 
-.meta-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.meta-tag { cursor: pointer; }
-.meta-tag.clickable:hover { opacity: 0.8; }
-.tags-row { display: flex; flex-wrap: wrap; }
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.meta-tag {
+  cursor: pointer;
+}
+.meta-tag.clickable:hover {
+  opacity: 0.8;
+}
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+}
 
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.section-title { margin: 0; font-size: 13px; color: inherit; opacity: 0.7; }
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.section-title {
+  margin: 0;
+  font-size: 13px;
+  color: inherit;
+  opacity: 0.7;
+}
 
 .markdown-preview {
-  border: 1px solid rgba(128,128,128,0.2);
+  border: 1px solid rgba(128, 128, 128, 0.2);
   border-radius: 4px;
   padding: 8px;
   min-height: 60px;
@@ -632,12 +851,35 @@ const handleSubtaskEnter = () => {
   color: inherit;
 }
 
-.subtask-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
-.subtask-input { flex: 1; }
+.subtask-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.subtask-input {
+  flex: 1;
+}
 
-.attachment-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; }
-.att-name { flex: 1; }
-.att-size { color: var(--text-secondary, #888); white-space: nowrap; }
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.att-name {
+  flex: 1;
+}
+.att-size {
+  color: var(--text-secondary, #888);
+  white-space: nowrap;
+}
 
-.panel-footer { display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); }
+.panel-footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+}
 </style>

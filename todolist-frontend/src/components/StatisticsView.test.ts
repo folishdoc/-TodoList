@@ -9,19 +9,19 @@ const exportTasksCsvMock = vi.fn()
 const exportTasksJsonMock = vi.fn()
 
 vi.mock('element-plus', () => ({
-  ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() }
+  ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }))
 
 vi.mock('../api/statistics', () => ({
   getOverview: (...args: unknown[]) => getOverviewMock(...args),
   getByPriority: (...args: unknown[]) => getByPriorityMock(...args),
   getByList: (...args: unknown[]) => getByListMock(...args),
-  getTrend: (...args: unknown[]) => getTrendMock(...args)
+  getTrend: (...args: unknown[]) => getTrendMock(...args),
 }))
 
 vi.mock('../api/export', () => ({
   exportTasksCsv: (...args: unknown[]) => exportTasksCsvMock(...args),
-  exportTasksJson: (...args: unknown[]) => exportTasksJsonMock(...args)
+  exportTasksJson: (...args: unknown[]) => exportTasksJsonMock(...args),
 }))
 
 import StatisticsView from './StatisticsView.vue'
@@ -29,47 +29,47 @@ import StatisticsView from './StatisticsView.vue'
 const ElButtonStub = {
   name: 'ElButtonStub',
   template: '<button type="button" @click="$emit(\'click\')"><slot/></button>',
-  props: ['type', 'size']
+  props: ['type', 'size'],
 }
 
 const ElIconStub = {
   name: 'ElIconStub',
-  template: '<i class="el-icon"><slot/></i>'
+  template: '<i class="el-icon"><slot/></i>',
 }
 
 const ElRowStub = {
   name: 'ElRowStub',
   template: '<div class="el-row"><slot/></div>',
-  props: ['gutter']
+  props: ['gutter'],
 }
 
 const ElColStub = {
   name: 'ElColStub',
   template: '<div class="el-col"><slot/></div>',
-  props: ['span']
+  props: ['span'],
 }
 
 const ElCardStub = {
   name: 'ElCardStub',
-  template: '<div class="el-card"><slot name="header"/><slot/></div>'
+  template: '<div class="el-card"><slot name="header"/><slot/></div>',
 }
 
 const ElStatisticStub = {
   name: 'ElStatisticStub',
   template: '<div class="el-statistic" :data-value="value">{{ title }}: {{ value }}</div>',
-  props: ['title', 'value', 'suffix']
+  props: ['title', 'value', 'suffix'],
 }
 
 const ElProgressStub = {
   name: 'ElProgressStub',
   template: '<div class="el-progress" :data-percentage="percentage" :data-color="color"></div>',
-  props: ['percentage', 'color', 'strokeWidth']
+  props: ['percentage', 'color', 'strokeWidth'],
 }
 
 const ElEmptyStub = {
   name: 'ElEmptyStub',
   template: '<div class="el-empty"></div>',
-  props: ['description']
+  props: ['description'],
 }
 
 function mountView() {
@@ -83,16 +83,18 @@ function mountView() {
         'el-card': ElCardStub,
         'el-statistic': ElStatisticStub,
         'el-progress': ElProgressStub,
-        'el-empty': ElEmptyStub
-      }
-    }
+        'el-empty': ElEmptyStub,
+      },
+    },
   })
 }
 
 describe('StatisticsView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getOverviewMock.mockResolvedValue({ data: { totalTasks: 10, completedTasks: 5, pendingTasks: 5, completionRate: 50 } } as any)
+    getOverviewMock.mockResolvedValue({
+      data: { totalTasks: 10, completedTasks: 5, pendingTasks: 5, completionRate: 50 },
+    } as any)
     getByPriorityMock.mockResolvedValue({ data: [] } as any)
     getByListMock.mockResolvedValue({ data: [] } as any)
     getTrendMock.mockResolvedValue({ data: [] } as any)
@@ -124,31 +126,37 @@ describe('StatisticsView.vue', () => {
   })
 
   it('renders priority distribution when data exists', async () => {
-    getByPriorityMock.mockResolvedValue({ data: [
-      { name: '高', count: 3, color: '#f56c6c' },
-      { name: '中', count: 5, color: '#e6a23c' },
-      { name: '低', count: 2, color: '#67c23a' }
-    ] } as any)
+    getByPriorityMock.mockResolvedValue({
+      data: [
+        { name: '高', count: 3, color: '#f56c6c' },
+        { name: '中', count: 5, color: '#e6a23c' },
+        { name: '低', count: 2, color: '#67c23a' },
+      ],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     expect((wrapper.vm as any).priorityData.length).toBe(3)
   })
 
   it('renders list distribution when data exists', async () => {
-    getByListMock.mockResolvedValue({ data: [
-      { name: '工作', count: 8, color: '#409eff' },
-      { name: '生活', count: 4, color: '#67c23a' }
-    ] } as any)
+    getByListMock.mockResolvedValue({
+      data: [
+        { name: '工作', count: 8, color: '#409eff' },
+        { name: '生活', count: 4, color: '#67c23a' },
+      ],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     expect((wrapper.vm as any).listData.length).toBe(2)
   })
 
   it('getPercentage calculates correct percentage based on priority data total', async () => {
-    getByPriorityMock.mockResolvedValue({ data: [
-      { name: '高', count: 2, color: '#f00' },
-      { name: '中', count: 3, color: '#0f0' }
-    ] } as any)
+    getByPriorityMock.mockResolvedValue({
+      data: [
+        { name: '高', count: 2, color: '#f00' },
+        { name: '中', count: 3, color: '#0f0' },
+      ],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     expect((wrapper.vm as any).getPercentage(2)).toBe(40)
@@ -252,10 +260,12 @@ describe('StatisticsView.vue', () => {
   })
 
   it('renders trend chart when trend data exists', async () => {
-    getTrendMock.mockResolvedValue({ data: [
-      { date: '2025-06-09', created: 3, completed: 2 },
-      { date: '2025-06-10', created: 5, completed: 4 }
-    ] } as any)
+    getTrendMock.mockResolvedValue({
+      data: [
+        { date: '2025-06-09', created: 3, completed: 2 },
+        { date: '2025-06-10', created: 5, completed: 4 },
+      ],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     expect((wrapper.vm as any).trendData.length).toBe(2)
@@ -265,7 +275,9 @@ describe('StatisticsView.vue', () => {
     const wrapper = mountView()
     await flushPromises()
     getTrendMock.mockClear()
-    const refreshBtn = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('刷新'))!
+    const refreshBtn = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('刷新'))!
     await refreshBtn.trigger('click')
     await flushPromises()
     expect(getTrendMock).toHaveBeenCalled()

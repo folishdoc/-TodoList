@@ -5,7 +5,7 @@ import {
   registerShortcut,
   unregisterShortcut,
   useKeyboardShortcuts,
-  CommonShortcuts
+  CommonShortcuts,
 } from './keyboard'
 
 function dispatchKey(key: string, target: EventTarget = document.body) {
@@ -19,7 +19,7 @@ const Host = defineComponent({
   setup() {
     useKeyboardShortcuts()
     return () => null
-  }
+  },
 })
 
 describe('utils/keyboard.ts', () => {

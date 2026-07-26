@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import { setRepeatRule, cancelRepeatRule, generateRepeatTasks } from './repeat'
@@ -19,7 +19,7 @@ describe('api/repeat.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tasks/repeat/3',
       method: 'post',
-      data: rule
+      data: rule,
     })
   })
 

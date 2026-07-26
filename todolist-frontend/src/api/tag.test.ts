@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import {
@@ -12,7 +12,7 @@ import {
   deleteTag,
   addTagToTask,
   removeTagFromTask,
-  getTaskTags
+  getTaskTags,
 } from './tag'
 
 describe('api/tag.ts', () => {
@@ -27,7 +27,7 @@ describe('api/tag.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tags',
       method: 'post',
-      data: payload
+      data: payload,
     })
   })
 
@@ -44,7 +44,7 @@ describe('api/tag.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tags/3',
       method: 'put',
-      data: payload
+      data: payload,
     })
   })
 
@@ -60,7 +60,7 @@ describe('api/tag.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tags/tasks/1',
       method: 'post',
-      params: { tagId: 5 }
+      params: { tagId: 5 },
     })
   })
 
@@ -70,7 +70,7 @@ describe('api/tag.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/tags/tasks/2',
       method: 'delete',
-      params: { tagId: 6 }
+      params: { tagId: 6 },
     })
   })
 

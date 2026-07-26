@@ -3,20 +3,17 @@ import { ElMessage } from 'element-plus'
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 10000
+  timeout: 10000,
 })
 
-// 请求拦截器 - 个人使用，使用固定token
+// 请求拦截器 - 个人使用，无需认证（后端匿名认证注入 userId=1）
 request.interceptors.request.use(
   (config) => {
-    // 使用配置的personal token（与后端app.personal.token保持一致）
-    const token = import.meta.env.VITE_PERSONAL_TOKEN || 'dev-personal-token-2026-secure-key'
-    config.headers.Authorization = `Bearer ${token}`
     return config
   },
   (error) => {
     return Promise.reject(error)
-  }
+  },
 )
 
 // 响应拦截器
@@ -34,13 +31,9 @@ request.interceptors.response.use(
     return res
   },
   (error) => {
-    if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请检查后端服务')
-    } else {
-      ElMessage.error(error.message || '网络错误')
-    }
+    ElMessage.error(error.message || '网络错误')
     return Promise.reject(error)
-  }
+  },
 )
 
 export default request

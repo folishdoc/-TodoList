@@ -8,12 +8,12 @@ const cancelRepeatRuleMock = vi.fn()
 vi.mock('../api/repeat', () => ({
   setRepeatRule: (...args: unknown[]) => setRepeatRuleMock(...args),
   cancelRepeatRule: (...args: unknown[]) => cancelRepeatRuleMock(...args),
-  generateRepeatTasks: vi.fn()
+  generateRepeatTasks: vi.fn(),
 }))
 
 vi.mock('@element-plus/icons-vue', () => ({
   Plus: { name: 'PlusStub' },
-  Delete: { name: 'DeleteStub' }
+  Delete: { name: 'DeleteStub' },
 }))
 
 import RepeatRuleDialog from './RepeatRuleDialog.vue'
@@ -25,7 +25,7 @@ const makeStub = (name: string, render: any, props: string[] = []) =>
     emits: ['click', 'update:modelValue'],
     setup(p, { slots, emit }) {
       return () => render({ props: p, slots, emit })
-    }
+    },
   })
 
 const ElDialogStub = makeStub(
@@ -34,10 +34,10 @@ const ElDialogStub = makeStub(
     props.modelValue
       ? h('div', { 'data-testid': 'dialog' }, [
           slots.default?.(),
-          slots.footer ? h('div', { 'data-testid': 'dialog-footer' }, slots.footer()) : null
+          slots.footer ? h('div', { 'data-testid': 'dialog-footer' }, slots.footer()) : null,
         ])
       : null,
-  ['modelValue', 'title', 'width']
+  ['modelValue', 'title', 'width'],
 )
 
 const ElFormStub = makeStub('ElFormStub', ({ slots }) => h('form', slots.default?.()))
@@ -45,23 +45,27 @@ const ElFormStub = makeStub('ElFormStub', ({ slots }) => h('form', slots.default
 const ElFormItemStub = makeStub(
   'ElFormItemStub',
   ({ slots }) => h('div', { class: 'el-form-item' }, slots.default?.()),
-  ['label']
+  ['label'],
 )
 
 const ElSelectStub = makeStub(
   'ElSelectStub',
   ({ props, slots, emit }) =>
-    h('select', {
-      value: props.modelValue,
-      onChange: (e: Event) => emit('update:modelValue', (e.target as HTMLSelectElement).value)
-    }, slots.default?.()),
-  ['modelValue', 'placeholder']
+    h(
+      'select',
+      {
+        value: props.modelValue,
+        onChange: (e: Event) => emit('update:modelValue', (e.target as HTMLSelectElement).value),
+      },
+      slots.default?.(),
+    ),
+  ['modelValue', 'placeholder'],
 )
 
 const ElOptionStub = makeStub(
   'ElOptionStub',
   ({ props }) => h('option', { value: props.value }, props.label),
-  ['value', 'label']
+  ['value', 'label'],
 )
 
 const ElInputNumberStub = makeStub(
@@ -70,9 +74,10 @@ const ElInputNumberStub = makeStub(
     h('input', {
       type: 'number',
       value: props.modelValue,
-      onInput: (e: Event) => emit('update:modelValue', Number((e.target as HTMLInputElement).value))
+      onInput: (e: Event) =>
+        emit('update:modelValue', Number((e.target as HTMLInputElement).value)),
     }),
-  ['modelValue', 'min', 'max']
+  ['modelValue', 'min', 'max'],
 )
 
 const ElRadioGroupStub = makeStub(
@@ -85,14 +90,14 @@ const ElRadioGroupStub = makeStub(
           return h(child.type, {
             ...child.props,
             modelValue: props.modelValue,
-            'onUpdate:modelValue': (v: unknown) => emit('update:modelValue', v)
+            'onUpdate:modelValue': (v: unknown) => emit('update:modelValue', v),
           })
         }
         return child
       })
     return h('div', renderWithForward())
   },
-  ['modelValue']
+  ['modelValue'],
 )
 
 const ElRadioStub = makeStub(
@@ -102,11 +107,11 @@ const ElRadioStub = makeStub(
       h('input', {
         type: 'radio',
         checked: props.modelValue === props.label,
-        onChange: () => emit('update:modelValue', props.label)
+        onChange: () => emit('update:modelValue', props.label),
       }),
-      props.label
+      props.label,
     ]),
-  ['label', 'modelValue']
+  ['label', 'modelValue'],
 )
 
 const ElDatePickerStub = makeStub(
@@ -115,25 +120,27 @@ const ElDatePickerStub = makeStub(
     h('input', {
       type: 'date',
       value: props.modelValue,
-      onChange: (e: Event) => emit('update:modelValue', (e.target as HTMLInputElement).valueAsDate)
+      onChange: (e: Event) => emit('update:modelValue', (e.target as HTMLInputElement).valueAsDate),
     }),
-  ['modelValue', 'type', 'placeholder']
+  ['modelValue', 'type', 'placeholder'],
 )
 
 const ElAlertStub = makeStub(
   'ElAlertStub',
   ({ slots }) => h('div', { class: 'el-alert' }, slots.default?.()),
-  ['title', 'type', 'closable', 'showIcon']
+  ['title', 'type', 'closable', 'showIcon'],
 )
 
 const ElButtonStub = makeStub(
   'ElButtonStub',
   ({ props, slots, emit }) =>
     h('button', { disabled: props.loading, onClick: () => emit('click') }, slots.default?.()),
-  ['type', 'loading', 'size']
+  ['type', 'loading', 'size'],
 )
 
-function mountDialog(props: { modelValue: boolean; taskId: number | null } = { modelValue: true, taskId: 1 }) {
+function mountDialog(
+  props: { modelValue: boolean; taskId: number | null } = { modelValue: true, taskId: 1 },
+) {
   return mount(RepeatRuleDialog, {
     props,
     global: {
@@ -148,9 +155,9 @@ function mountDialog(props: { modelValue: boolean; taskId: number | null } = { m
         'el-radio': ElRadioStub,
         'el-date-picker': ElDatePickerStub,
         'el-alert': ElAlertStub,
-        'el-button': ElButtonStub
-      }
-    }
+        'el-button': ElButtonStub,
+      },
+    },
   })
 }
 
@@ -163,7 +170,9 @@ describe('RepeatRuleDialog.vue', () => {
   it('emits update:modelValue=false when dialog closes', async () => {
     const wrapper = mountDialog({ modelValue: true, taskId: 1 })
     await flushPromises()
-    const cancelButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('取消'))
+    const cancelButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('取消'))
     expect(cancelButton).toBeTruthy()
     await cancelButton!.trigger('click')
     expect(wrapper.emitted('update:modelValue')).toBeTruthy()
@@ -179,14 +188,16 @@ describe('RepeatRuleDialog.vue', () => {
     await flushPromises()
     expect(setRepeatRuleMock).toHaveBeenCalledWith(5, {
       type: 'DAILY',
-      interval: 1
+      interval: 1,
     })
   })
 
   it('emits success after successful submit', async () => {
     const wrapper = mountDialog({ modelValue: true, taskId: 5 })
     await flushPromises()
-    const submitBtn = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('确定'))!
+    const submitBtn = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('确定'))!
     await submitBtn.trigger('click')
     await flushPromises()
     expect(wrapper.emitted('success')).toBeTruthy()
@@ -200,7 +211,9 @@ describe('RepeatRuleDialog.vue', () => {
     const countRadio = radios.find((r) => r.props('label') === 'count')!
     await countRadio.vm.$emit('update:modelValue', 'count')
     await wrapper.vm.$nextTick()
-    const submitBtn = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('确定'))!
+    const submitBtn = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('确定'))!
     await submitBtn.trigger('click')
     await flushPromises()
     const call = setRepeatRuleMock.mock.calls[0]
@@ -211,7 +224,9 @@ describe('RepeatRuleDialog.vue', () => {
   it('handleSubmit does nothing when taskId is null', async () => {
     const wrapper = mountDialog({ modelValue: true, taskId: null })
     await flushPromises()
-    const submitBtn = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('确定'))!
+    const submitBtn = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('确定'))!
     await submitBtn.trigger('click')
     await flushPromises()
     expect(setRepeatRuleMock).not.toHaveBeenCalled()
@@ -221,7 +236,9 @@ describe('RepeatRuleDialog.vue', () => {
     setRepeatRuleMock.mockRejectedValue(new Error('network'))
     const wrapper = mountDialog({ modelValue: true, taskId: 5 })
     await flushPromises()
-    const submitBtn = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('确定'))!
+    const submitBtn = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('确定'))!
     await submitBtn.trigger('click')
     await flushPromises()
     expect(wrapper.emitted('success')).toBeFalsy()
@@ -234,7 +251,9 @@ describe('RepeatRuleDialog.vue', () => {
     const countRadio = radios.find((r) => r.props('label') === 'count')!
     await countRadio.vm.$emit('update:modelValue', 'count')
     await wrapper.vm.$nextTick()
-    const cancelBtn = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('取消'))!
+    const cancelBtn = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('取消'))!
     await cancelBtn.trigger('click')
     await flushPromises()
     expect(wrapper.emitted('update:modelValue')!.at(-1)![0]).toBe(false)

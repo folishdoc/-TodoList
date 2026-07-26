@@ -3,8 +3,10 @@
 export function isOverdue(task: any): boolean {
   if (task.status === 1) return false
   if (!task.dueDate) return false
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const dueDay = new Date(task.dueDate); dueDay.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dueDay = new Date(task.dueDate)
+  dueDay.setHours(0, 0, 0, 0)
   return dueDay <= today
 }
 

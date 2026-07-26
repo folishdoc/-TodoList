@@ -37,8 +37,15 @@
             <div class="bar-container">
               <div
                 class="bar"
-                :style="{ height: getBarHeight(item.count) + 'px', background: getBarColor(item.count) }"
-                :title="item.count === 0 && item.date !== formatLocalDate(new Date()) ? `${item.date}: 未打卡，点击补签` : `${item.date}: ${item.count}次打卡`"
+                :style="{
+                  height: getBarHeight(item.count) + 'px',
+                  background: getBarColor(item.count),
+                }"
+                :title="
+                  item.count === 0 && item.date !== formatLocalDate(new Date())
+                    ? `${item.date}: 未打卡，点击补签`
+                    : `${item.date}: ${item.count}次打卡`
+                "
               />
             </div>
             <div class="bar-label">{{ formatTrendDate(item.date) }}</div>
@@ -51,7 +58,7 @@
     <!-- 习惯列表 -->
     <div v-loading="loading" class="habits-list">
       <el-empty v-if="habits.length === 0" description="还没有习惯，创建一个吧！" />
-      
+
       <el-row v-else :gutter="16">
         <el-col v-for="habit in habits" :key="habit.id" :xs="24" :sm="12" :md="8" :lg="6">
           <el-card class="habit-card" :style="{ borderLeft: `4px solid ${habit.color}` }">
@@ -93,9 +100,7 @@
                 :color="habit.color"
                 :stroke-width="8"
               />
-              <div class="progress-text">
-                今日目标: {{ getTargetText(habit) }}
-              </div>
+              <div class="progress-text">今日目标: {{ getTargetText(habit) }}</div>
             </div>
 
             <el-button
@@ -121,7 +126,7 @@
         <el-form-item label="习惯名称" required>
           <el-input v-model="habitForm.name" placeholder="例如：早起、跑步、阅读" />
         </el-form-item>
-        
+
         <el-form-item label="图标">
           <div class="icon-picker">
             <div
@@ -130,14 +135,16 @@
               class="icon-option"
               :class="{ selected: habitForm.icon === icon }"
               @click="habitForm.icon = icon"
-            >{{ icon }}</div>
+            >
+              {{ icon }}
+            </div>
           </div>
         </el-form-item>
-        
+
         <el-form-item label="颜色">
           <el-color-picker v-model="habitForm.color" />
         </el-form-item>
-        
+
         <el-form-item label="目标类型">
           <el-select v-model="habitForm.targetType" style="width: 100%">
             <el-option label="次数" value="count" />
@@ -145,11 +152,11 @@
             <el-option label="数量" value="quantity" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="目标值">
           <el-input-number v-model="habitForm.targetValue" :min="1" style="width: 100%" />
         </el-form-item>
-        
+
         <el-form-item label="执行频率">
           <el-select v-model="habitForm.frequency" style="width: 100%">
             <el-option label="每天" value="daily" />
@@ -158,7 +165,7 @@
             <el-option label="每周" value="weekly" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="时段">
           <el-select v-model="habitForm.timePeriod" style="width: 100%">
             <el-option label="早上" value="morning" />
@@ -168,7 +175,7 @@
           </el-select>
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <el-button @click="showCreateDialog = false">取消</el-button>
         <el-button type="primary" @click="handleSubmit">确定</el-button>
@@ -192,7 +199,7 @@
             style="width: 100%"
           />
         </el-form-item>
-        
+
         <el-form-item label="备注">
           <el-input
             v-model="checkInForm.note"
@@ -201,14 +208,14 @@
             placeholder="记录一下今天的心得..."
           />
         </el-form-item>
-        
+
         <el-form-item label="补卡">
           <el-switch v-model="checkInForm.isMakeup" />
           <span style="margin-left: 10px; color: #909399; font-size: 12px">
             补卡不计入连续天数
           </span>
         </el-form-item>
-        
+
         <el-form-item v-if="checkInForm.isMakeup" label="日期">
           <el-date-picker
             v-model="checkInForm.checkDate"
@@ -218,7 +225,7 @@
           />
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <el-button @click="showCheckInDialog = false">取消</el-button>
         <el-button type="primary" @click="submitCheckIn">确定</el-button>
@@ -249,16 +256,47 @@ const habitForm = reactive({
   targetType: 'count',
   targetValue: 1,
   frequency: 'daily',
-  timePeriod: 'all_day'
+  timePeriod: 'all_day',
 })
 
-const iconOptions = ['🎯','📚','💪','🏃','🧘','💧','🍎','😴','⏰','📝','💻','🎨','🎵','🚶','🏊','🚴','📖','✍️','🧹','🌱','💊','☕','🍽️','🛏️','🎮','📱','💼','🗂️','🐾','🌟']
+const iconOptions = [
+  '🎯',
+  '📚',
+  '💪',
+  '🏃',
+  '🧘',
+  '💧',
+  '🍎',
+  '😴',
+  '⏰',
+  '📝',
+  '💻',
+  '🎨',
+  '🎵',
+  '🚶',
+  '🏊',
+  '🚴',
+  '📖',
+  '✍️',
+  '🧹',
+  '🌱',
+  '💊',
+  '☕',
+  '🍽️',
+  '🛏️',
+  '🎮',
+  '📱',
+  '💼',
+  '🗂️',
+  '🐾',
+  '🌟',
+]
 
 const checkInForm = reactive({
   completionValue: 1,
   note: '',
   isMakeup: false,
-  checkDate: new Date()
+  checkDate: new Date(),
 })
 
 // 加载习惯列表
@@ -287,8 +325,8 @@ const loadTodayRecords = async () => {
 // 获取今日进度
 const getTodayProgress = (habit: any) => {
   const today = formatLocalDate(new Date())
-  const completed = todayRecords.value.some((r: any) => 
-    r.habitId === habit.id && r.checkDate === today
+  const completed = todayRecords.value.some(
+    (r: any) => r.habitId === habit.id && r.checkDate === today,
   )
   return completed ? 100 : 0
 }
@@ -325,7 +363,7 @@ const handleCheckIn = async (habit: any) => {
     await habitApi.checkIn(habit.id, {
       completionValue: habit.targetValue,
       note: '',
-      isMakeup: false
+      isMakeup: false,
     })
     ElMessage.success('打卡成功')
     await loadHabits()
@@ -339,7 +377,10 @@ const handleCheckIn = async (habit: any) => {
 const handleTrendMakeup = (item: { date: string; count: number }) => {
   const today = formatLocalDate(new Date())
   if (item.count > 0 || item.date === today) return
-  if (habits.value.length === 0) { ElMessage.warning('没有可补签的习惯'); return }
+  if (habits.value.length === 0) {
+    ElMessage.warning('没有可补签的习惯')
+    return
+  }
   checkingHabit.value = habits.value[0]
   checkInForm.completionValue = habits.value[0].targetValue
   checkInForm.note = ''
@@ -355,7 +396,7 @@ const submitCheckIn = async () => {
     const params: any = {
       completionValue: checkInForm.completionValue,
       note: checkInForm.note,
-      isMakeup: checkInForm.isMakeup
+      isMakeup: checkInForm.isMakeup,
     }
     if (checkInForm.isMakeup) {
       params.checkDate = formatLocalDate(new Date(checkInForm.checkDate))
@@ -389,9 +430,9 @@ const handleDelete = async (habit: any) => {
     await ElMessageBox.confirm('确定要删除这个习惯吗？相关的打卡记录也会被删除。', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     })
-    
+
     await habitApi.deleteHabit(habit.id)
     ElMessage.success('删除成功')
     await loadHabits()
@@ -408,7 +449,7 @@ const handleSubmit = async () => {
     ElMessage.warning('请输入习惯名称')
     return
   }
-  
+
   try {
     if (editingHabit.value) {
       await habitApi.updateHabit(editingHabit.value.id, habitForm)
@@ -417,7 +458,7 @@ const handleSubmit = async () => {
       await habitApi.createHabit(habitForm)
       ElMessage.success('创建成功')
     }
-    
+
     showCreateDialog.value = false
     resetForm()
     await loadHabits()
@@ -461,7 +502,7 @@ const loadTrendData = async () => {
         if (res.data) {
           allRecords.push(...(Array.isArray(res.data) ? res.data : []))
         }
-      } catch { /* skip */ }
+      } catch (e) { console.warn('获取习惯打卡记录失败', e) }
     }
 
     // 按日期聚合
@@ -475,13 +516,13 @@ const loadTrendData = async () => {
     }
 
     trendData.value = Array.from(dateMap.entries()).map(([date, count]) => ({ date, count }))
-  } catch { /* skip */ } finally {
+  } catch (e) { console.error('加载趋势数据失败', e) } finally {
     trendLoading.value = false
   }
 }
 
 const getBarHeight = (count: number) => {
-  const max = Math.max(...trendData.value.map(d => d.count), 1)
+  const max = Math.max(...trendData.value.map((d) => d.count), 1)
   return Math.max(4, (count / max) * 120)
 }
 
@@ -702,7 +743,7 @@ onMounted(() => {
 }
 
 .icon-option.selected {
-  border-color: #409EFF;
+  border-color: #409eff;
   background: #ecf5ff;
 }
 
@@ -712,7 +753,7 @@ onMounted(() => {
 }
 .chart-bar-group.clickable:hover .bar {
   filter: brightness(1.3);
-  outline: 2px dashed #E6A23C;
+  outline: 2px dashed #e6a23c;
   outline-offset: 2px;
 }
 </style>

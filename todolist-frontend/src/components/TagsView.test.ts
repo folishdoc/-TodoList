@@ -12,18 +12,18 @@ const validateMock = vi.fn((cb: any) => cb(validateResult))
 
 vi.mock('element-plus', () => ({
   ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
-  ElMessageBox: { confirm: (...args: unknown[]) => ElMessageBoxConfirmMock(...args) }
+  ElMessageBox: { confirm: (...args: unknown[]) => ElMessageBoxConfirmMock(...args) },
 }))
 
 vi.mock('../api/tag', () => ({
   getTags: (...args: unknown[]) => getTagsMock(...args),
   createTag: (...args: unknown[]) => createTagMock(...args),
   updateTag: (...args: unknown[]) => updateTagMock(...args),
-  deleteTag: (...args: unknown[]) => deleteTagMock(...args)
+  deleteTag: (...args: unknown[]) => deleteTagMock(...args),
 }))
 
 vi.mock('@element-plus/icons-vue', () => ({
-  Plus: { template: '<i class="icon-plus" />' }
+  Plus: { template: '<i class="icon-plus" />' },
 }))
 
 import TagsView from './TagsView.vue'
@@ -31,41 +31,41 @@ import TagsView from './TagsView.vue'
 const ElButtonStub = {
   name: 'ElButtonStub',
   template: '<button type="button" @click="$emit(\'click\')"><slot/></button>',
-  props: ['type', 'size']
+  props: ['type', 'size'],
 }
 
 const ElIconStub = {
   name: 'ElIconStub',
-  template: '<i><slot/></i>'
+  template: '<i><slot/></i>',
 }
 
 const ElCardStub = {
   name: 'ElCardStub',
-  template: '<div class="el-card"><slot name="header"/><slot/></div>'
+  template: '<div class="el-card"><slot name="header"/><slot/></div>',
 }
 
 const ElEmptyStub = {
   name: 'ElEmptyStub',
   template: '<div class="el-empty"></div>',
-  props: ['description']
+  props: ['description'],
 }
 
 const ElTableStub = {
   name: 'ElTableStub',
   props: ['data', 'loading'],
-  template: '<table data-testid="tags-table"><tbody><slot/></tbody></table>'
+  template: '<table data-testid="tags-table"><tbody><slot/></tbody></table>',
 }
 
 const ElTableColumnStub = {
   name: 'ElTableColumnStub',
   template: '<td class="el-table-column"></td>',
-  props: ['prop', 'label', 'width', 'fixed']
+  props: ['prop', 'label', 'width', 'fixed'],
 }
 
 const ElTagStub = {
   name: 'ElTagStub',
   template: '<span class="el-tag" :style="{ background: color }"><slot/></span>',
-  props: ['color', 'effect']
+  props: ['color', 'effect'],
 }
 
 const ElDialogStub = {
@@ -78,7 +78,7 @@ const ElDialogStub = {
         <slot name="footer"/>
       </div>
     </div>
-  `
+  `,
 }
 
 const ElFormStub = {
@@ -87,37 +87,39 @@ const ElFormStub = {
   template: '<form><slot/></form>',
   setup(_, { expose }: any) {
     expose({
-      validate: (cb: any) => validateMock(cb)
+      validate: (cb: any) => validateMock(cb),
     })
-  }
+  },
 }
 
 const ElFormItemStub = {
   name: 'ElFormItemStub',
   template: '<div class="el-form-item"><slot/></div>',
-  props: ['label', 'prop']
+  props: ['label', 'prop'],
 }
 
 const ElInputStub = {
   name: 'ElInputStub',
-  template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder']
+  template:
+    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'placeholder'],
 }
 
 const ElColorPickerStub = {
   name: 'ElColorPickerStub',
-  template: '<input type="color" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue']
+  template:
+    '<input type="color" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue'],
 }
 
 function mountView() {
   return mount(TagsView, {
     global: {
       directives: {
-        loading: { mounted: () => {}, updated: () => {}, unmounted: () => {} }
+        loading: { mounted: () => {}, updated: () => {}, unmounted: () => {} },
       },
       components: {
-        'el-button-stub': ElButtonStub
+        'el-button-stub': ElButtonStub,
       },
       stubs: {
         'el-button': ElButtonStub,
@@ -131,9 +133,9 @@ function mountView() {
         'el-form': ElFormStub,
         'el-form-item': ElFormItemStub,
         'el-input': ElInputStub,
-        'el-color-picker': ElColorPickerStub
-      }
-    }
+        'el-color-picker': ElColorPickerStub,
+      },
+    },
   })
 }
 
@@ -169,7 +171,9 @@ describe('TagsView.vue', () => {
   it('opens create dialog when 新建标签 button is clicked', async () => {
     const wrapper = mountView()
     await flushPromises()
-    const newButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('新建标签'))!
+    const newButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('新建标签'))!
     await newButton.trigger('click')
     await wrapper.vm.$nextTick()
     expect(wrapper.findComponent(ElDialogStub).props('modelValue')).toBe(true)
@@ -178,7 +182,9 @@ describe('TagsView.vue', () => {
   it('opens create dialog and renders form (verifies form data binding)', async () => {
     const wrapper = mountView()
     await flushPromises()
-    const newButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('新建标签'))!
+    const newButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('新建标签'))!
     await newButton.trigger('click')
     await flushPromises()
     const tagForm = (wrapper.vm as any).tagForm
@@ -219,7 +225,9 @@ describe('TagsView.vue', () => {
   it('does not submit when validation fails', async () => {
     const wrapper = mountView()
     await flushPromises()
-    const newButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('新建标签'))!
+    const newButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('新建标签'))!
     await newButton.trigger('click')
     await flushPromises()
     const formRef = (wrapper.vm as any).$.setupState.tagFormRef
@@ -255,10 +263,14 @@ describe('TagsView.vue', () => {
   it('closes dialog and resets form on cancel', async () => {
     const wrapper = mountView()
     await flushPromises()
-    const newButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('新建标签'))!
+    const newButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('新建标签'))!
     await newButton.trigger('click')
     await wrapper.vm.$nextTick()
-    const cancelButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().trim() === '取消')!
+    const cancelButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().trim() === '取消')!
     await cancelButton.trigger('click')
     await wrapper.vm.$nextTick()
     expect(wrapper.findComponent(ElDialogStub).props('modelValue')).toBe(false)

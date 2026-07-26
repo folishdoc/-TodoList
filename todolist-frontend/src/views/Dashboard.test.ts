@@ -14,7 +14,13 @@ vi.mock('element-plus', async () => {
 })
 
 vi.mock('../api/task', () => ({
-  getTasks: vi.fn().mockResolvedValue({ data: { content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 }, code: 200, message: 'success' }),
+  getTasks: vi
+    .fn()
+    .mockResolvedValue({
+      data: { content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 },
+      code: 200,
+      message: 'success',
+    }),
   getTask: vi.fn().mockResolvedValue({ data: null, code: 200, message: 'success' }),
   createTask: vi.fn().mockResolvedValue({ data: { id: 1 }, code: 200, message: 'success' }),
   updateTask: vi.fn().mockResolvedValue({ data: null, code: 200, message: 'success' }),
@@ -26,7 +32,13 @@ vi.mock('../api/task', () => ({
   getSubtasks: vi.fn().mockResolvedValue({ data: [], code: 200, message: 'success' }),
   getTodayTasks: vi.fn().mockResolvedValue({ data: [], code: 200, message: 'success' }),
   getUpcomingTasks: vi.fn().mockResolvedValue({ data: [], code: 200, message: 'success' }),
-  searchTasks: vi.fn().mockResolvedValue({ data: { content: [], totalElements: 0, totalPages: 0 }, code: 200, message: 'success' }),
+  searchTasks: vi
+    .fn()
+    .mockResolvedValue({
+      data: { content: [], totalElements: 0, totalPages: 0 },
+      code: 200,
+      message: 'success',
+    }),
 }))
 vi.mock('../api/batch', () => ({
   batchDelete: vi.fn().mockResolvedValue({ code: 200, message: 'success' }),
@@ -100,72 +112,342 @@ const stubElDialog = defineComponent({
   name: 'ElDialog',
   props: ['modelValue'],
   setup(props, { slots }) {
-    return () => props.modelValue
-      ? h('div', { 'data-testid': 'el-dialog' }, [slots.default?.(), slots.footer ? h('div', { 'data-testid': 'dialog-footer' }, slots.footer()) : null])
-      : null
+    return () =>
+      props.modelValue
+        ? h('div', { 'data-testid': 'el-dialog' }, [
+            slots.default?.(),
+            slots.footer ? h('div', { 'data-testid': 'dialog-footer' }, slots.footer()) : null,
+          ])
+        : null
   },
 })
-const stubElEmpty = defineComponent({ name: 'ElEmpty', setup: () => () => h('div', { 'data-testid': 'el-empty' }) })
-const stubElPopover = defineComponent({ name: 'ElPopover', setup: (_, { slots }) => () => slots.default?.() })
-const stubElBadge = defineComponent({ name: 'ElBadge', setup: (_, { slots }) => () => h('span', { 'data-testid': 'el-badge' }, slots.default?.()) })
-const stubElDropdown = defineComponent({ name: 'ElDropdown', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-dropdown' }, slots.default?.()) })
-const stubElDropdownMenu = defineComponent({ name: 'ElDropdownMenu', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-dropdown-menu' }, slots.default?.()) })
-const stubElDropdownItem = defineComponent({ name: 'ElDropdownItem', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-dropdown-item' }, slots.default?.()) })
-const stubElDivider = defineComponent({ name: 'ElDivider', setup: () => () => h('hr', { 'data-testid': 'el-divider' }) })
-const stubElForm = defineComponent({ name: 'ElForm', setup: (_, { slots }) => () => h('form', { 'data-testid': 'el-form' }, slots.default?.()) })
-const stubElFormItem = defineComponent({ name: 'ElFormItem', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-form-item' }, slots.default?.()) })
-const stubElInput = defineComponent({ name: 'ElInput', props: ['modelValue'], setup: (props, { emit }) => () => h('input', { 'data-testid': 'el-input', value: props.modelValue, onInput: (e: any) => emit('update:modelValue', e.target.value) }) })
-const stubElSelect = defineComponent({ name: 'ElSelect', props: ['modelValue'], setup: (props, { emit, slots }) => () => h('select', { 'data-testid': 'el-select', value: props.modelValue, onChange: (e: any) => emit('update:modelValue', e.target.value) }, slots.default?.()) })
-const stubElOption = defineComponent({ name: 'ElOption', props: ['label', 'value'], setup: (props) => () => h('option', { value: props.value }, props.label) })
-const stubElCheckbox = defineComponent({ name: 'ElCheckbox', props: ['modelValue'], setup: (props, { emit }) => () => h('input', { type: 'checkbox', 'data-testid': 'el-checkbox', checked: props.modelValue, onChange: (e: any) => emit('update:modelValue', e.target.checked) }) })
-const stubElCheckboxGroup = defineComponent({ name: 'ElCheckboxGroup', props: ['modelValue'], setup: (props, { emit, slots }) => () => h('div', { 'data-testid': 'el-checkbox-group' }, slots.default?.()) })
-const stubElRadioGroup = defineComponent({ name: 'ElRadioGroup', props: ['modelValue'], setup: (props, { emit, slots }) => () => h('div', { 'data-testid': 'el-radio-group' }, slots.default?.()) })
-const stubElRadioButton = defineComponent({ name: 'ElRadioButton', props: ['value'], setup: (props) => () => h('button', { 'data-testid': 'el-radio-button', 'data-value': props.value }) })
-const stubElRadio = defineComponent({ name: 'ElRadio', props: ['value'], setup: (props) => () => h('button', { 'data-testid': 'el-radio', 'data-value': props.value }) })
-const stubElTag = defineComponent({ name: 'ElTag', setup: (_, { slots }) => () => h('span', { 'data-testid': 'el-tag' }, slots.default?.()) })
-const stubElTooltip = defineComponent({ name: 'ElTooltip', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-tooltip' }, slots.default?.()) })
-const stubElMenu = defineComponent({ name: 'ElMenu', props: ['defaultActive'], setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-menu' }, slots.default?.()) })
-const stubElMenuItem = defineComponent({ name: 'ElMenuItem', props: ['index'], setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-menu-item', 'data-index': _.index }, slots.default?.()) })
-const stubElContainer = defineComponent({ name: 'ElContainer', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-container' }, slots.default?.()) })
-const stubElAside = defineComponent({ name: 'ElAside', setup: (_, { slots }) => () => h('aside', { 'data-testid': 'el-aside' }, slots.default?.()) })
-const stubElHeader = defineComponent({ name: 'ElHeader', setup: (_, { slots }) => () => h('header', { 'data-testid': 'el-header' }, slots.default?.()) })
-const stubElMain = defineComponent({ name: 'ElMain', setup: (_, { slots }) => () => h('main', { 'data-testid': 'el-main' }, slots.default?.()) })
-const stubElDatePicker = defineComponent({ name: 'ElDatePicker', props: ['modelValue'], setup: (props, { emit }) => () => h('input', { 'data-testid': 'el-date-picker', value: props.modelValue, onInput: (e: any) => emit('update:modelValue', e.target.value) }) })
-const stubElTimePicker = defineComponent({ name: 'ElTimePicker', props: ['modelValue'], setup: (props, { emit }) => () => h('input', { 'data-testid': 'el-time-picker', value: props.modelValue, onInput: (e: any) => emit('update:modelValue', e.target.value) }) })
-const stubElButtonGroup = defineComponent({ name: 'ElButtonGroup', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-button-group' }, slots.default?.()) })
-const stubElSkeleton = defineComponent({ name: 'ElSkeleton', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-skeleton' }, slots.default?.()) })
-const stubElSkeletonItem = defineComponent({ name: 'ElSkeletonItem', setup: () => () => h('div', { 'data-testid': 'el-skeleton-item' }) })
-const stubElInputNumber = defineComponent({ name: 'ElInputNumber', props: ['modelValue'], setup: (props, { emit }) => () => h('input', { 'data-testid': 'el-input-number', value: props.modelValue, onInput: (e: any) => emit('update:modelValue', Number(e.target.value)) }) })
-const stubElSwitch = defineComponent({ name: 'ElSwitch', props: ['modelValue'], setup: (props, { emit }) => () => h('input', { type: 'checkbox', 'data-testid': 'el-switch', checked: props.modelValue, onChange: (e: any) => emit('update:modelValue', e.target.checked) }) })
-const stubElStatistic = defineComponent({ name: 'ElStatistic', props: ['value', 'title'], setup: (props) => () => h('div', { 'data-testid': 'el-statistic' }, `${props.title}: ${props.value}`) })
-const stubElCard = defineComponent({ name: 'ElCard', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-card' }, slots.default?.()) })
-const stubElSpace = defineComponent({ name: 'ElSpace', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-space' }, slots.default?.()) })
-const stubElAlert = defineComponent({ name: 'ElAlert', setup: (_, { slots }) => () => h('div', { 'data-testid': 'el-alert' }, slots.default?.()) })
+const stubElEmpty = defineComponent({
+  name: 'ElEmpty',
+  setup: () => () => h('div', { 'data-testid': 'el-empty' }),
+})
+const stubElPopover = defineComponent({
+  name: 'ElPopover',
+  setup:
+    (_, { slots }) =>
+    () =>
+      slots.default?.(),
+})
+const stubElBadge = defineComponent({
+  name: 'ElBadge',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('span', { 'data-testid': 'el-badge' }, slots.default?.()),
+})
+const stubElDropdown = defineComponent({
+  name: 'ElDropdown',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-dropdown' }, slots.default?.()),
+})
+const stubElDropdownMenu = defineComponent({
+  name: 'ElDropdownMenu',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-dropdown-menu' }, slots.default?.()),
+})
+const stubElDropdownItem = defineComponent({
+  name: 'ElDropdownItem',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-dropdown-item' }, slots.default?.()),
+})
+const stubElDivider = defineComponent({
+  name: 'ElDivider',
+  setup: () => () => h('hr', { 'data-testid': 'el-divider' }),
+})
+const stubElForm = defineComponent({
+  name: 'ElForm',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('form', { 'data-testid': 'el-form' }, slots.default?.()),
+})
+const stubElFormItem = defineComponent({
+  name: 'ElFormItem',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-form-item' }, slots.default?.()),
+})
+const stubElInput = defineComponent({
+  name: 'ElInput',
+  props: ['modelValue'],
+  setup:
+    (props, { emit }) =>
+    () =>
+      h('input', {
+        'data-testid': 'el-input',
+        value: props.modelValue,
+        onInput: (e: any) => emit('update:modelValue', e.target.value),
+      }),
+})
+const stubElSelect = defineComponent({
+  name: 'ElSelect',
+  props: ['modelValue'],
+  setup:
+    (props, { emit, slots }) =>
+    () =>
+      h(
+        'select',
+        {
+          'data-testid': 'el-select',
+          value: props.modelValue,
+          onChange: (e: any) => emit('update:modelValue', e.target.value),
+        },
+        slots.default?.(),
+      ),
+})
+const stubElOption = defineComponent({
+  name: 'ElOption',
+  props: ['label', 'value'],
+  setup: (props) => () => h('option', { value: props.value }, props.label),
+})
+const stubElCheckbox = defineComponent({
+  name: 'ElCheckbox',
+  props: ['modelValue'],
+  setup:
+    (props, { emit }) =>
+    () =>
+      h('input', {
+        type: 'checkbox',
+        'data-testid': 'el-checkbox',
+        checked: props.modelValue,
+        onChange: (e: any) => emit('update:modelValue', e.target.checked),
+      }),
+})
+const stubElCheckboxGroup = defineComponent({
+  name: 'ElCheckboxGroup',
+  props: ['modelValue'],
+  setup:
+    (props, { emit, slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-checkbox-group' }, slots.default?.()),
+})
+const stubElRadioGroup = defineComponent({
+  name: 'ElRadioGroup',
+  props: ['modelValue'],
+  setup:
+    (props, { emit, slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-radio-group' }, slots.default?.()),
+})
+const stubElRadioButton = defineComponent({
+  name: 'ElRadioButton',
+  props: ['value'],
+  setup: (props) => () =>
+    h('button', { 'data-testid': 'el-radio-button', 'data-value': props.value }),
+})
+const stubElRadio = defineComponent({
+  name: 'ElRadio',
+  props: ['value'],
+  setup: (props) => () => h('button', { 'data-testid': 'el-radio', 'data-value': props.value }),
+})
+const stubElTag = defineComponent({
+  name: 'ElTag',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('span', { 'data-testid': 'el-tag' }, slots.default?.()),
+})
+const stubElTooltip = defineComponent({
+  name: 'ElTooltip',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-tooltip' }, slots.default?.()),
+})
+const stubElMenu = defineComponent({
+  name: 'ElMenu',
+  props: ['defaultActive'],
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-menu' }, slots.default?.()),
+})
+const stubElMenuItem = defineComponent({
+  name: 'ElMenuItem',
+  props: ['index'],
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-menu-item', 'data-index': _.index }, slots.default?.()),
+})
+const stubElContainer = defineComponent({
+  name: 'ElContainer',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-container' }, slots.default?.()),
+})
+const stubElAside = defineComponent({
+  name: 'ElAside',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('aside', { 'data-testid': 'el-aside' }, slots.default?.()),
+})
+const stubElHeader = defineComponent({
+  name: 'ElHeader',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('header', { 'data-testid': 'el-header' }, slots.default?.()),
+})
+const stubElMain = defineComponent({
+  name: 'ElMain',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('main', { 'data-testid': 'el-main' }, slots.default?.()),
+})
+const stubElDatePicker = defineComponent({
+  name: 'ElDatePicker',
+  props: ['modelValue'],
+  setup:
+    (props, { emit }) =>
+    () =>
+      h('input', {
+        'data-testid': 'el-date-picker',
+        value: props.modelValue,
+        onInput: (e: any) => emit('update:modelValue', e.target.value),
+      }),
+})
+const stubElTimePicker = defineComponent({
+  name: 'ElTimePicker',
+  props: ['modelValue'],
+  setup:
+    (props, { emit }) =>
+    () =>
+      h('input', {
+        'data-testid': 'el-time-picker',
+        value: props.modelValue,
+        onInput: (e: any) => emit('update:modelValue', e.target.value),
+      }),
+})
+const stubElButtonGroup = defineComponent({
+  name: 'ElButtonGroup',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-button-group' }, slots.default?.()),
+})
+const stubElSkeleton = defineComponent({
+  name: 'ElSkeleton',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-skeleton' }, slots.default?.()),
+})
+const stubElSkeletonItem = defineComponent({
+  name: 'ElSkeletonItem',
+  setup: () => () => h('div', { 'data-testid': 'el-skeleton-item' }),
+})
+const stubElInputNumber = defineComponent({
+  name: 'ElInputNumber',
+  props: ['modelValue'],
+  setup:
+    (props, { emit }) =>
+    () =>
+      h('input', {
+        'data-testid': 'el-input-number',
+        value: props.modelValue,
+        onInput: (e: any) => emit('update:modelValue', Number(e.target.value)),
+      }),
+})
+const stubElSwitch = defineComponent({
+  name: 'ElSwitch',
+  props: ['modelValue'],
+  setup:
+    (props, { emit }) =>
+    () =>
+      h('input', {
+        type: 'checkbox',
+        'data-testid': 'el-switch',
+        checked: props.modelValue,
+        onChange: (e: any) => emit('update:modelValue', e.target.checked),
+      }),
+})
+const stubElStatistic = defineComponent({
+  name: 'ElStatistic',
+  props: ['value', 'title'],
+  setup: (props) => () =>
+    h('div', { 'data-testid': 'el-statistic' }, `${props.title}: ${props.value}`),
+})
+const stubElCard = defineComponent({
+  name: 'ElCard',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-card' }, slots.default?.()),
+})
+const stubElSpace = defineComponent({
+  name: 'ElSpace',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-space' }, slots.default?.()),
+})
+const stubElAlert = defineComponent({
+  name: 'ElAlert',
+  setup:
+    (_, { slots }) =>
+    () =>
+      h('div', { 'data-testid': 'el-alert' }, slots.default?.()),
+})
 
 const stubTaskEditPanel = defineComponent({
   name: 'TaskEditPanel',
   props: ['task', 'taskForm', 'taskLists', 'allTags', 'mode', 'visible'],
   emits: ['update:task', 'update:taskForm', 'save', 'close', 'delete'],
   setup(props, { emit }) {
-    return () => h('div', { 'data-testid': 'task-edit-panel' }, [
-      h('button', { 'data-testid': 'panel-close', onClick: () => emit('close') }, '关闭'),
-      h('button', { 'data-testid': 'panel-save', onClick: () => emit('save') }, '保存'),
-      h('button', { 'data-testid': 'panel-delete', onClick: () => emit('delete') }, '删除'),
-    ])
+    return () =>
+      h('div', { 'data-testid': 'task-edit-panel' }, [
+        h('button', { 'data-testid': 'panel-close', onClick: () => emit('close') }, '关闭'),
+        h('button', { 'data-testid': 'panel-save', onClick: () => emit('save') }, '保存'),
+        h('button', { 'data-testid': 'panel-delete', onClick: () => emit('delete') }, '删除'),
+      ])
   },
 })
 
-const stubSubtasksView = defineComponent({ name: 'SubtasksView', setup: () => () => h('div', { 'data-testid': 'subtasks-view' }) })
-const stubTagsView = defineComponent({ name: 'TagsView', setup: () => () => h('div', { 'data-testid': 'tags-view' }) })
-const stubCalendarView = defineComponent({ name: 'CalendarView', setup: () => () => h('div', { 'data-testid': 'calendar-view' }) })
-const stubHabitsView = defineComponent({ name: 'HabitsView', setup: () => () => h('div', { 'data-testid': 'habits-view' }) })
-const stubAnniversaryList = defineComponent({ name: 'AnniversaryList', setup: () => () => h('div', { 'data-testid': 'anniversary-list' }) })
-const stubStatisticsView = defineComponent({ name: 'StatisticsView', setup: () => () => h('div', { 'data-testid': 'statistics-view' }) })
-
-const stubChild = (name: string) => defineComponent({
-  name,
-  setup: () => () => h('div', { 'data-testid': name.toLowerCase() }),
+const stubSubtasksView = defineComponent({
+  name: 'SubtasksView',
+  setup: () => () => h('div', { 'data-testid': 'subtasks-view' }),
 })
+const stubTagsView = defineComponent({
+  name: 'TagsView',
+  setup: () => () => h('div', { 'data-testid': 'tags-view' }),
+})
+const stubCalendarView = defineComponent({
+  name: 'CalendarView',
+  setup: () => () => h('div', { 'data-testid': 'calendar-view' }),
+})
+const stubHabitsView = defineComponent({
+  name: 'HabitsView',
+  setup: () => () => h('div', { 'data-testid': 'habits-view' }),
+})
+const stubAnniversaryList = defineComponent({
+  name: 'AnniversaryList',
+  setup: () => () => h('div', { 'data-testid': 'anniversary-list' }),
+})
+const stubStatisticsView = defineComponent({
+  name: 'StatisticsView',
+  setup: () => () => h('div', { 'data-testid': 'statistics-view' }),
+})
+
+const stubChild = (name: string) =>
+  defineComponent({
+    name,
+    setup: () => () => h('div', { 'data-testid': name.toLowerCase() }),
+  })
 
 const elementPlusStubs: Record<string, any> = {
   'el-button': stubElButton,
@@ -210,7 +492,21 @@ const elementPlusStubs: Record<string, any> = {
 }
 
 const iconStubs: Record<string, any> = {}
-;['List', 'Calendar', 'Clock', 'Plus', 'Folder', 'Delete', 'DataAnalysis', 'PriceTag', 'TrendCharts', 'Flag', 'Bell', 'Upload', 'Download'].forEach((name) => {
+;[
+  'List',
+  'Calendar',
+  'Clock',
+  'Plus',
+  'Folder',
+  'Delete',
+  'DataAnalysis',
+  'PriceTag',
+  'TrendCharts',
+  'Flag',
+  'Bell',
+  'Upload',
+  'Download',
+].forEach((name) => {
   iconStubs[`el-icon-${name}`] = stubChild(`el-icon-${name}`)
 })
 
@@ -289,7 +585,16 @@ describe('Dashboard.vue', () => {
   it('loadTasks 填充 tasks 数组', async () => {
     const { getTasks } = await import('../api/task')
     ;(getTasks as any).mockResolvedValue({
-      data: { content: [{ id: 1, title: 'T1' }, { id: 2, title: 'T2' }], totalElements: 2, totalPages: 1, size: 1000, number: 0 },
+      data: {
+        content: [
+          { id: 1, title: 'T1' },
+          { id: 2, title: 'T2' },
+        ],
+        totalElements: 2,
+        totalPages: 1,
+        size: 1000,
+        number: 0,
+      },
       code: 200,
       message: 'success',
     })
@@ -303,7 +608,10 @@ describe('Dashboard.vue', () => {
   it('loadLists 填充 taskLists 数组', async () => {
     const { getLists } = await import('../api/list')
     ;(getLists as any).mockResolvedValue({
-      data: [{ id: 1, name: 'List 1' }, { id: 2, name: 'List 2' }],
+      data: [
+        { id: 1, name: 'List 1' },
+        { id: 2, name: 'List 2' },
+      ],
       code: 200,
       message: 'success',
     })
@@ -375,7 +683,7 @@ describe('Dashboard.vue', () => {
     setupState.handleSelectAll()
     expect(setupState.selectedTaskIds.size).toBe(2)
     expect(setupState.selectedTaskIds.has(1)).toBe(true)
-    expect(setupState.selectedTaskIds.has(2)).toBe(false)  // 级联跳过
+    expect(setupState.selectedTaskIds.has(2)).toBe(false) // 级联跳过
     expect(setupState.selectedTaskIds.has(3)).toBe(true)
   })
 
@@ -494,7 +802,10 @@ describe('Dashboard.vue', () => {
     it('无 dueDate 时返回空', async () => {
       const w = await mountDashboard()
       const setupState = (w.vm as any).$.setupState
-      expect(setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate: null })).toEqual({ text: '', type: 'empty' })
+      expect(setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate: null })).toEqual({
+        text: '',
+        type: 'empty',
+      })
       expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate: null })).toBe('')
     })
 
@@ -502,7 +813,10 @@ describe('Dashboard.vue', () => {
       const w = await mountDashboard()
       const setupState = (w.vm as any).$.setupState
       const future = buildDate(3)
-      expect(setupState.getDueDaysBadge({ status: 1, startDate: null, dueDate: future })).toEqual({ text: '', type: 'empty' })
+      expect(setupState.getDueDaysBadge({ status: 1, startDate: null, dueDate: future })).toEqual({
+        text: '',
+        type: 'empty',
+      })
       expect(setupState.getDueDaysClass({ status: 1, startDate: null, dueDate: future })).toBe('')
     })
 
@@ -511,7 +825,10 @@ describe('Dashboard.vue', () => {
       const setupState = (w.vm as any).$.setupState
       const startDate = buildDate(3)
       const dueDate = buildDate(5)
-      expect(setupState.getDueDaysBadge({ status: 0, startDate, dueDate })).toEqual({ text: '', type: 'empty' })
+      expect(setupState.getDueDaysBadge({ status: 0, startDate, dueDate })).toEqual({
+        text: '',
+        type: 'empty',
+      })
       expect(setupState.getDueDaysClass({ status: 0, startDate, dueDate })).toBe('')
     })
 
@@ -522,7 +839,9 @@ describe('Dashboard.vue', () => {
       const badge = setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate })
       expect(badge.type).toBe('overdue')
       expect(badge.text).toBe('已过期 2 天')
-      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe('due-days-badge-overdue')
+      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe(
+        'due-days-badge-overdue',
+      )
     })
 
     it('截止日期是今天显示今天到期', async () => {
@@ -532,7 +851,9 @@ describe('Dashboard.vue', () => {
       const badge = setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate })
       expect(badge.type).toBe('today')
       expect(badge.text).toBe('今天到期')
-      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe('due-days-badge-today')
+      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe(
+        'due-days-badge-today',
+      )
     })
 
     it('截止日期在将来显示还剩 N 天', async () => {
@@ -542,7 +863,9 @@ describe('Dashboard.vue', () => {
       const badge = setupState.getDueDaysBadge({ status: 0, startDate: null, dueDate })
       expect(badge.type).toBe('upcoming')
       expect(badge.text).toBe('还剩 7 天')
-      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe('due-days-badge-upcoming')
+      expect(setupState.getDueDaysClass({ status: 0, startDate: null, dueDate })).toBe(
+        'due-days-badge-upcoming',
+      )
     })
 
     it('开始日期已过、截止日期在未来时正常显示结束天数', async () => {

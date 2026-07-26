@@ -8,6 +8,7 @@ import com.liuzeyu.todolist.module.task.dto.TaskWithSubtasks;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 /**
  * 任务服务
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskService {
@@ -30,7 +32,7 @@ public class TaskService {
     private void validateDateRange(TaskRequest request) {
         if (request.getStartDate() != null && request.getDueDate() != null
                 && request.getDueDate().isBefore(request.getStartDate())) {
-            throw new BusinessException("结束时间不能早于开始时间");
+            throw new BusinessException(400, "结束时间不能早于开始时间");
         }
     }
 
@@ -71,10 +73,10 @@ public class TaskService {
      */
     public Task getTask(Long userId, Long taskId) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new BusinessException("任务不存在"));
+                .orElseThrow(() -> new BusinessException(404, "任务不存在"));
         
         if (!task.getUserId().equals(userId)) {
-            throw new BusinessException("无权访问该任务");
+            throw new BusinessException(403, "无权访问该任务");
         }
         
         return task;
@@ -124,7 +126,7 @@ public class TaskService {
         LocalDateTime newDue = request.getDueDate() != null ? request.getDueDate() : task.getDueDate();
 
         if (newStart != null && newDue != null && newDue.isBefore(newStart)) {
-            throw new BusinessException("结束时间不能早于开始时间");
+            throw new BusinessException(400, "结束时间不能早于开始时间");
         }
 
         if (request.getStartDate() != null) {
@@ -280,7 +282,7 @@ public class TaskService {
                 taskPage.getTotalElements()
             );
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("获取任务列表失败", e);
             throw new RuntimeException("获取任务列表失败: " + e.getMessage(), e);
         }
     }

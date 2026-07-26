@@ -14,14 +14,14 @@
             <el-col :span="6">
               <el-statistic title="已完成" :value="overview.completedTasks || 0">
                 <template #suffix>
-                  <span style="color: #67C23A">✓</span>
+                  <span style="color: #67c23a">✓</span>
                 </template>
               </el-statistic>
             </el-col>
             <el-col :span="6">
               <el-statistic title="待完成" :value="overview.pendingTasks || 0">
                 <template #suffix>
-                  <span style="color: #E6A23C">⏳</span>
+                  <span style="color: #e6a23c">⏳</span>
                 </template>
               </el-statistic>
             </el-col>
@@ -46,8 +46,8 @@
                 <span>{{ item.name }}</span>
                 <span>{{ item.count }} 个任务</span>
               </div>
-              <el-progress 
-                :percentage="getPercentage(item.count)" 
+              <el-progress
+                :percentage="getPercentage(item.count)"
                 :color="item.color"
                 :stroke-width="20"
               />
@@ -69,8 +69,8 @@
                 <span>{{ item.name }}</span>
                 <span>{{ item.count }} 个任务</span>
               </div>
-              <el-progress 
-                :percentage="getPercentage(item.count)" 
+              <el-progress
+                :percentage="getPercentage(item.count)"
                 :color="item.color"
                 :stroke-width="20"
               />
@@ -95,14 +95,14 @@
             <div v-for="item in trendData" :key="item.date" class="trend-bar">
               <div class="trend-date">{{ formatDate(item.date) }}</div>
               <div class="trend-bars">
-                <div 
-                  class="trend-created" 
-                  :style="{ height: (item.created * 20) + 'px' }"
+                <div
+                  class="trend-created"
+                  :style="{ height: item.created * 20 + 'px' }"
                   title="创建"
                 ></div>
-                <div 
-                  class="trend-completed" 
-                  :style="{ height: (item.completed * 20) + 'px' }"
+                <div
+                  class="trend-completed"
+                  :style="{ height: item.completed * 20 + 'px' }"
                   title="完成"
                 ></div>
               </div>
@@ -151,13 +151,13 @@ const loadStatistics = async () => {
     const [overviewRes, priorityRes, listRes] = await Promise.all([
       statisticsApi.getOverview(),
       statisticsApi.getByPriority(),
-      statisticsApi.getByList()
+      statisticsApi.getByList(),
     ])
-    
+
     overview.value = overviewRes.data
     priorityData.value = priorityRes.data
     listData.value = listRes.data
-    
+
     await loadTrend()
   } catch (error) {
     console.error('加载统计数据失败:', error)
@@ -190,7 +190,7 @@ const formatDate = (date: string) => {
 // 导出CSV
 const handleExportCsv = async () => {
   try {
-    const blob = await exportApi.exportTasksCsv() as unknown as Blob
+    const blob = (await exportApi.exportTasksCsv()) as unknown as Blob
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -206,7 +206,7 @@ const handleExportCsv = async () => {
 // 导出JSON
 const handleExportJson = async () => {
   try {
-    const blob = await exportApi.exportTasksJson() as unknown as Blob
+    const blob = (await exportApi.exportTasksJson()) as unknown as Blob
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -283,14 +283,14 @@ onMounted(() => {
 
 .trend-created {
   width: 20px;
-  background: linear-gradient(to top, #409EFF, #79BBFF);
+  background: linear-gradient(to top, #409eff, #79bbff);
   border-radius: 3px 3px 0 0;
   transition: height 0.3s;
 }
 
 .trend-completed {
   width: 20px;
-  background: linear-gradient(to top, #67C23A, #95D475);
+  background: linear-gradient(to top, #67c23a, #95d475);
   border-radius: 3px 3px 0 0;
   transition: height 0.3s;
 }
@@ -302,11 +302,11 @@ onMounted(() => {
 }
 
 .created-count {
-  color: #409EFF;
+  color: #409eff;
 }
 
 .completed-count {
-  color: #67C23A;
+  color: #67c23a;
 }
 
 /* 让统计卡片可以滚动 */

@@ -4,24 +4,24 @@
       <!-- 图标导航栏 -->
       <el-aside width="60px" class="icon-sidebar">
         <div class="icon-nav">
-          <div 
-            class="nav-item" 
+          <div
+            class="nav-item"
             :class="{ active: currentModule === 'tasks' }"
             @click="currentModule = 'tasks'"
             title="清单"
           >
             <el-icon :size="24"><List /></el-icon>
           </div>
-          <div 
-            class="nav-item" 
+          <div
+            class="nav-item"
             :class="{ active: currentModule === 'calendar' }"
             @click="currentModule = 'calendar'"
             title="日历"
           >
             <el-icon :size="24"><Calendar /></el-icon>
           </div>
-          <div 
-            class="nav-item" 
+          <div
+            class="nav-item"
             :class="{ active: currentModule === 'habits' }"
             @click="currentModule = 'habits'"
             title="习惯"
@@ -48,7 +48,12 @@
               <h4>纪念日提醒</h4>
               <el-empty v-if="reminders.length === 0" description="暂无提醒" :image-size="40" />
               <div v-else class="reminder-list">
-                <div v-for="r in reminders" :key="r.id" class="reminder-item" @click="handleReminderClick(r)">
+                <div
+                  v-for="r in reminders"
+                  :key="r.id"
+                  class="reminder-item"
+                  @click="handleReminderClick(r)"
+                >
                   <div class="reminder-name">{{ getReminderName(r.anniversaryId) }}</div>
                   <div class="reminder-time">{{ formatReminderTime(r.remindDatetime) }}</div>
                 </div>
@@ -62,314 +67,297 @@
       <el-container>
         <!-- 侧边栏（仅清单模块显示） -->
         <el-aside v-if="currentModule === 'tasks'" width="250px" class="sidebar">
-        <div class="logo">
-          <h2>📝 Todolist</h2>
-        </div>
-        
-        <el-menu :default-active="activeMenu" @select="handleMenuSelect">
-          <el-menu-item index="all">
-            <el-icon><List /></el-icon>
-            <span>全部任务</span>
-          </el-menu-item>
-          <el-menu-item index="today">
-            <el-icon><Calendar /></el-icon>
-            <span>今日任务</span>
-          </el-menu-item>
-          <el-menu-item index="upcoming">
-            <el-icon><Clock /></el-icon>
-            <span>未来任务</span>
-          </el-menu-item>
-          
-          <el-divider />
-          
-          <div class="list-header">
-            <span>我的清单</span>
-            <el-button type="primary" size="small" circle @click="showCreateListDialog = true">
-              <el-icon><Plus /></el-icon>
-            </el-button>
+          <div class="logo">
+            <h2>📝 Todolist</h2>
           </div>
-          
-          <el-menu-item
-            v-for="list in taskLists"
-            :key="list.id"
-            :index="`list-${list.id}`"
-            class="list-item"
-          >
-            <el-icon><Folder /></el-icon>
-            <span class="list-name">{{ list.name }}</span>
-            <el-button
-              size="small"
-              type="danger"
-              link
-              @click.stop="handleDeleteList(list)"
-              class="delete-list-btn"
-            >
-              <el-icon><Delete /></el-icon>
-            </el-button>
-          </el-menu-item>
-          
-          <el-divider />
-          
-          <el-menu-item index="statistics">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>数据统计</span>
-          </el-menu-item>
-          
-          <el-menu-item index="tags">
-            <el-icon><PriceTag /></el-icon>
-            <span>标签管理</span>
-          </el-menu-item>
-        </el-menu>
-      </el-aside>
 
-      <!-- 主内容区 -->
-      <el-main class="main-content" @click="handleMainContentClick">
-        <!-- 清单模块 -->
-        <div v-if="currentModule === 'tasks'">
-          <!-- 任务视图 -->
-          <div v-if="!['statistics', 'tags'].includes(activeMenu)">
-          <div class="content-header">
-            <h2>{{ pageTitle }}</h2>
-            <div class="content-header-actions">
-              <template v-if="batchMode">
-                <el-button type="danger" :disabled="selectedTaskIds.size === 0" @click="handleBatchDelete">
-                  <el-icon><Delete /></el-icon>
-                  删除选中 ({{ selectedTaskIds.size }})
-                </el-button>
-                <el-button @click="handleSelectAll">全选</el-button>
-                <el-button @click="selectedTaskIds.clear()">取消选择</el-button>
-                <el-button @click="exitBatchMode">退出批量模式</el-button>
-              </template>
-              <template v-else>
-                <el-button @click="enterBatchMode">批量操作</el-button>
-                <el-button type="primary" @click="openCreateTaskDialog">
-                  <el-icon><Plus /></el-icon>
-                  新建任务
-                </el-button>
-              </template>
+          <el-menu :default-active="activeMenu" @select="handleMenuSelect">
+            <el-menu-item index="all">
+              <el-icon><List /></el-icon>
+              <span>全部任务</span>
+            </el-menu-item>
+            <el-menu-item index="today">
+              <el-icon><Calendar /></el-icon>
+              <span>今日任务</span>
+            </el-menu-item>
+            <el-menu-item index="upcoming">
+              <el-icon><Clock /></el-icon>
+              <span>未来任务</span>
+            </el-menu-item>
+
+            <el-divider />
+
+            <div class="list-header">
+              <span>我的清单</span>
+              <el-button type="primary" size="small" circle @click="showCreateListDialog = true">
+                <el-icon><Plus /></el-icon>
+              </el-button>
             </div>
-          </div>
 
-          <!-- 搜索框 -->
-          <el-input
-            v-if="activeMenu === 'all'"
-            v-model="searchKeyword"
-            placeholder="搜索任务..."
-            prefix-icon="Search"
-            clearable
-            @input="handleSearch"
-            style="margin-bottom: 20px"
-          />
-
-          <!-- 任务列表 -->
-          <el-card v-loading="loading" class="task-card">
-            <div class="task-card-inner">
-            <el-empty v-if="tasks.length === 0" description="暂无任务" />
-            <div v-else class="task-list">
-              <div
-                v-for="task in tasks"
-                :key="task.id"
-                class="task-item"
-                :class="{
-                  'completed': task.status === 1,
-                  'subtask': task.parentId != null,
-                  'batch-selected': batchMode && selectedTaskIds.has(task.id)
-                }"
-                :style="{ paddingLeft: (20 + (task.level || 0) * 30) + 'px' }"
-                @click.stop="batchMode ? toggleTaskSelection(task.id) : handleEditTask(task)"
+            <el-menu-item
+              v-for="list in taskLists"
+              :key="list.id"
+              :index="`list-${list.id}`"
+              class="list-item"
+            >
+              <el-icon><Folder /></el-icon>
+              <span class="list-name">{{ list.name }}</span>
+              <el-button
+                size="small"
+                type="danger"
+                link
+                @click.stop="handleDeleteList(list)"
+                class="delete-list-btn"
               >
-                <el-checkbox
-                  v-if="batchMode"
-                  :model-value="selectedTaskIds.has(task.id)"
-                  @click.stop
-                  @change="toggleTaskSelection(task.id)"
-                />
-                <el-checkbox
-                  v-else
-                  :model-value="task.status === 1"
-                  @click.stop
-                  @change="handleCompleteTask(task)"
-                  :class="'priority-' + task.priority"
-                />
-                <div class="task-content">
-                  <div class="task-title">{{ task.title }}</div>
-                </div>
-                <div v-if="!batchMode" class="task-actions">
-                  <!-- 时间提示 -->
-                  <span :class="['time-status', getTimeStatusClass(task)]" :style="{ visibility: getTimeStatus(task) ? 'visible' : 'hidden' }">
-                    {{ getTimeStatus(task) || ' ' }}
-                  </span>
-                  <!-- 距离结束剩余天数 -->
-                  <span v-if="getDueDaysBadge(task).text" :class="['due-days-badge', getDueDaysClass(task)]">
-                    {{ getDueDaysBadge(task).text }}
-                  </span>
-                  <el-button v-if="isOverdue(task)" size="small" type="warning" text @click.stop="handlePostponeTask(task)" title="顺延至今天">
-                    顺延
-                  </el-button>
-                  <el-button size="small" @click.stop="handleDeleteTask(task)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </el-menu-item>
+
+            <el-divider />
+
+            <el-menu-item index="statistics">
+              <el-icon><DataAnalysis /></el-icon>
+              <span>数据统计</span>
+            </el-menu-item>
+
+            <el-menu-item index="tags">
+              <el-icon><PriceTag /></el-icon>
+              <span>标签管理</span>
+            </el-menu-item>
+          </el-menu>
+        </el-aside>
+
+        <!-- 主内容区 -->
+        <el-main class="main-content" @click="handleMainContentClick">
+          <!-- 清单模块 -->
+          <div v-if="currentModule === 'tasks'">
+            <!-- 任务视图 -->
+            <div v-if="!['statistics', 'tags'].includes(activeMenu)">
+              <div class="content-header">
+                <h2>{{ pageTitle }}</h2>
+                <div class="content-header-actions">
+                  <template v-if="batchMode">
+                    <el-button
+                      type="danger"
+                      :disabled="selectedTaskIds.size === 0"
+                      @click="handleBatchDelete"
+                    >
+                      <el-icon><Delete /></el-icon>
+                      删除选中 ({{ selectedTaskIds.size }})
+                    </el-button>
+                    <el-button @click="handleSelectAll">全选</el-button>
+                    <el-button @click="selectedTaskIds.clear()">取消选择</el-button>
+                    <el-button @click="exitBatchMode">退出批量模式</el-button>
+                  </template>
+                  <template v-else>
+                    <el-button @click="enterBatchMode">批量操作</el-button>
+                    <el-button type="primary" @click="openCreateTaskDialog">
+                      <el-icon><Plus /></el-icon>
+                      新建任务
+                    </el-button>
+                  </template>
                 </div>
               </div>
-            </div>
-            </div>
-          </el-card>
-        </div>
 
-        <!-- 数据统计视图 -->
-        <div v-else-if="activeMenu === 'statistics'" class="statistics-view">
-          <StatisticsView />
-        </div>
+              <!-- 搜索框 -->
+              <el-input
+                v-if="activeMenu === 'all'"
+                v-model="searchKeyword"
+                placeholder="搜索任务..."
+                prefix-icon="Search"
+                clearable
+                @input="handleSearch"
+                style="margin-bottom: 20px"
+              />
 
-        <!-- 标签管理视图 -->
-        <div v-else-if="activeMenu === 'tags'" class="tags-view">
-          <TagsView />
-        </div>
-        </div>
-        
-        <!-- 日历模块 -->
-        <div v-else-if="currentModule === 'calendar'" class="calendar-module">
-          <CalendarView @task-click="handleCalendarTaskClick" />
-        </div>
-        
-        <!-- 习惯模块（占位） -->
-        <div v-else-if="currentModule === 'habits'" class="habits-module">
-          <HabitsView />
-        </div>
-        
-        <!-- 纪念日模块 -->
-        <div v-else-if="currentModule === 'anniversaries'" class="anniversaries-module">
-          <AnniversaryList />
-        </div>
-      </el-main>
-      
-      <!-- 右侧编辑面板（固定显示） -->
-      <aside v-if="editingTask" class="edit-panel">
-        <div class="memo-content">
-          <!-- 标题区域 - 可直接编辑 -->
-          <div class="memo-header">
-            <el-input
-              v-model="taskForm.title"
-              placeholder="输入任务标题..."
-              class="memo-title-input"
-              @blur="autoSave"
-            />
-          </div>
-          
-          <!-- 元数据标签区域 -->
-          <div class="memo-meta">
-            <!-- 优先级 -->
-            <el-dropdown @command="handlePriorityChange" trigger="click">
-              <el-tag 
-                :type="getPriorityType(taskForm.priority) || undefined" 
-                size="default"
-                class="meta-tag clickable"
-              >
-                <el-icon><Flag /></el-icon>
-                {{ getPriorityText(taskForm.priority) }}优先级
-              </el-tag>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="0">无优先级</el-dropdown-item>
-                  <el-dropdown-item command="1">低优先级</el-dropdown-item>
-                  <el-dropdown-item command="2">中优先级</el-dropdown-item>
-                  <el-dropdown-item command="3">高优先级</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            
-            <!-- 时间设置 -->
-            <el-popover trigger="click" placement="bottom" :width="380" @hide="showRepeatForm = false">
-              <template #reference>
-                <el-tag size="default" class="meta-tag clickable" :type="(taskForm.startDate || taskForm.dueDate || editingTask?.repeatRule) ? 'warning' : undefined" style="transition: none">
-                  <el-icon><Calendar /></el-icon>
-                  {{ getTimeSummary() }}
-                </el-tag>
-              </template>
-              <div style="padding: 4px 0">
-                <el-form label-width="70px" size="small">
-                  <el-form-item label="开始时间">
-                    <el-date-picker
-                      v-model="taskForm.startDate"
-                      type="datetime"
-                      placeholder="未设置"
-                      :format="datePickerFormat"
-                      value-format="YYYY-MM-DDTHH:mm:ss"
-                      style="width: 100%"
-                      :teleported="false"
-                      @change="autoSave"
-                    />
-                  </el-form-item>
-                  <el-form-item label="截止时间">
-                    <el-date-picker
-                      v-model="taskForm.dueDate"
-                      type="datetime"
-                      placeholder="未设置"
-                      :format="datePickerFormat"
-                      value-format="YYYY-MM-DDTHH:mm:ss"
-                      style="width: 100%"
-                      :teleported="false"
-                      @change="autoSave"
-                    />
-                  </el-form-item>
-                </el-form>
-                <el-divider style="margin: 8px 0">循环</el-divider>
-                <div v-if="editingTask?.repeatRule">
-                  <div style="margin-bottom: 8px; font-size: 13px; color: #e6a23c">
-                    🔄 {{ getRepeatLabel(editingTask.repeatRule, editingTask) }}
+              <!-- 任务列表 -->
+              <el-card v-loading="loading" class="task-card">
+                <div class="task-card-inner">
+                  <el-empty v-if="tasks.length === 0" description="暂无任务" />
+                  <div v-else class="task-list">
+                    <div
+                      v-for="task in tasks"
+                      :key="task.id"
+                      class="task-item"
+                      :class="{
+                        completed: task.status === 1,
+                        subtask: task.parentId != null,
+                        'batch-selected': batchMode && selectedTaskIds.has(task.id),
+                      }"
+                      :style="{ paddingLeft: 20 + (task.level || 0) * 30 + 'px' }"
+                      @click.stop="batchMode ? toggleTaskSelection(task.id) : handleEditTask(task)"
+                    >
+                      <el-checkbox
+                        v-if="batchMode"
+                        :model-value="selectedTaskIds.has(task.id)"
+                        @click.stop
+                        @change="toggleTaskSelection(task.id)"
+                      />
+                      <el-checkbox
+                        v-else
+                        :model-value="task.status === 1"
+                        @click.stop
+                        @change="handleCompleteTask(task)"
+                        :class="'priority-' + task.priority"
+                      />
+                      <div class="task-content">
+                        <div class="task-title">{{ task.title }}</div>
+                      </div>
+                      <div v-if="!batchMode" class="task-actions">
+                        <!-- 时间提示 -->
+                        <span
+                          :class="['time-status', getTimeStatusClass(task)]"
+                          :style="{ visibility: getTimeStatus(task) ? 'visible' : 'hidden' }"
+                        >
+                          {{ getTimeStatus(task) || ' ' }}
+                        </span>
+                        <!-- 距离结束剩余天数 -->
+                        <span
+                          v-if="getDueDaysBadge(task).text"
+                          :class="['due-days-badge', getDueDaysClass(task)]"
+                        >
+                          {{ getDueDaysBadge(task).text }}
+                        </span>
+                        <el-button
+                          v-if="isOverdue(task)"
+                          size="small"
+                          type="warning"
+                          text
+                          @click.stop="handlePostponeTask(task)"
+                          title="顺延至今天"
+                        >
+                          顺延
+                        </el-button>
+                        <el-button size="small" @click.stop="handleDeleteTask(task)">
+                          <el-icon><Delete /></el-icon>
+                        </el-button>
+                      </div>
+                    </div>
                   </div>
+                </div>
+              </el-card>
+            </div>
+
+            <!-- 数据统计视图 -->
+            <div v-else-if="activeMenu === 'statistics'" class="statistics-view">
+              <StatisticsView />
+            </div>
+
+            <!-- 标签管理视图 -->
+            <div v-else-if="activeMenu === 'tags'" class="tags-view">
+              <TagsView />
+            </div>
+          </div>
+
+          <!-- 日历模块 -->
+          <div v-else-if="currentModule === 'calendar'" class="calendar-module">
+            <CalendarView @task-click="handleCalendarTaskClick" />
+          </div>
+
+          <!-- 习惯模块（占位） -->
+          <div v-else-if="currentModule === 'habits'" class="habits-module">
+            <HabitsView />
+          </div>
+
+          <!-- 纪念日模块 -->
+          <div v-else-if="currentModule === 'anniversaries'" class="anniversaries-module">
+            <AnniversaryList />
+          </div>
+        </el-main>
+
+        <!-- 右侧编辑面板（固定显示） -->
+        <aside v-if="editingTask" class="edit-panel">
+          <div class="memo-content">
+            <!-- 标题区域 - 可直接编辑 -->
+            <div class="memo-header">
+              <el-input
+                v-model="taskForm.title"
+                placeholder="输入任务标题..."
+                class="memo-title-input"
+                @blur="autoSave"
+              />
+            </div>
+
+            <!-- 元数据标签区域 -->
+            <div class="memo-meta">
+              <!-- 优先级 -->
+              <el-dropdown @command="handlePriorityChange" trigger="click">
+                <el-tag
+                  :type="getPriorityType(taskForm.priority) || undefined"
+                  size="default"
+                  class="meta-tag clickable"
+                >
+                  <el-icon><Flag /></el-icon>
+                  {{ getPriorityText(taskForm.priority) }}优先级
+                </el-tag>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="0">无优先级</el-dropdown-item>
+                    <el-dropdown-item command="1">低优先级</el-dropdown-item>
+                    <el-dropdown-item command="2">中优先级</el-dropdown-item>
+                    <el-dropdown-item command="3">高优先级</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+
+              <!-- 时间设置 -->
+              <el-popover
+                trigger="click"
+                placement="bottom"
+                :width="380"
+                @hide="showRepeatForm = false"
+              >
+                <template #reference>
+                  <el-tag
+                    size="default"
+                    class="meta-tag clickable"
+                    :type="
+                      taskForm.startDate || taskForm.dueDate || editingTask?.repeatRule
+                        ? 'warning'
+                        : undefined
+                    "
+                    style="transition: none"
+                  >
+                    <el-icon><Calendar /></el-icon>
+                    {{ getTimeSummary() }}
+                  </el-tag>
+                </template>
+                <div style="padding: 4px 0">
                   <el-form label-width="70px" size="small">
-                    <el-form-item label="结束日期">
+                    <el-form-item label="开始时间">
                       <el-date-picker
-                        v-model="editRepeatEndDate"
+                        v-model="taskForm.startDate"
                         type="datetime"
-                        placeholder="永不结束"
+                        placeholder="未设置"
                         :format="datePickerFormat"
                         value-format="YYYY-MM-DDTHH:mm:ss"
                         style="width: 100%"
                         :teleported="false"
+                        @change="autoSave"
+                      />
+                    </el-form-item>
+                    <el-form-item label="截止时间">
+                      <el-date-picker
+                        v-model="taskForm.dueDate"
+                        type="datetime"
+                        placeholder="未设置"
+                        :format="datePickerFormat"
+                        value-format="YYYY-MM-DDTHH:mm:ss"
+                        style="width: 100%"
+                        :teleported="false"
+                        @change="autoSave"
                       />
                     </el-form-item>
                   </el-form>
-                  <div style="text-align: right; margin-top: 8px">
-                    <el-button size="small" type="danger" @click="handleCancelRepeat">取消循环</el-button>
-                    <el-button size="small" type="primary" @click="handleUpdateRepeatEndDate">更新</el-button>
-                  </div>
-                </div>
-                <div v-else>
-                  <div v-if="!showRepeatForm" style="text-align: center">
-                    <el-button size="small" @click="showRepeatForm = true; resetRepeatForm()">+ 设置循环</el-button>
-                  </div>
-                  <div v-else>
+                  <el-divider style="margin: 8px 0">循环</el-divider>
+                  <div v-if="editingTask?.repeatRule">
+                    <div style="margin-bottom: 8px; font-size: 13px; color: #e6a23c">
+                      🔄 {{ getRepeatLabel(editingTask.repeatRule, editingTask) }}
+                    </div>
                     <el-form label-width="70px" size="small">
-                      <el-form-item label="类型">
-                        <el-select v-model="repeatForm.type" placeholder="选择" style="width: 100%" :teleported="false" @change="onRepeatTypeChange">
-                          <el-option label="每天" value="DAILY" />
-                          <el-option label="每周" value="WEEKLY" />
-                          <el-option label="每月" value="MONTHLY" />
-                          <el-option label="每年" value="YEARLY" />
-                        </el-select>
-                      </el-form-item>
-                      <el-form-item v-if="repeatForm.type" label="间隔">
-                        <el-input-number v-model="repeatForm.interval" :min="1" :max="365" style="width: 100%" size="small" />
-                      </el-form-item>
-                      <el-form-item v-if="repeatForm.type === 'WEEKLY'" label="星期">
-                        <el-checkbox-group v-model="repeatForm.weekDays" size="small">
-                          <el-checkbox :value="1">一</el-checkbox>
-                          <el-checkbox :value="2">二</el-checkbox>
-                          <el-checkbox :value="3">三</el-checkbox>
-                          <el-checkbox :value="4">四</el-checkbox>
-                          <el-checkbox :value="5">五</el-checkbox>
-                          <el-checkbox :value="6">六</el-checkbox>
-                          <el-checkbox :value="7">日</el-checkbox>
-                        </el-checkbox-group>
-                      </el-form-item>
-                      <el-form-item v-if="repeatForm.type === 'MONTHLY'" label="日期">
-                        <el-input-number v-model="repeatForm.dayOfMonth" :min="1" :max="31" style="width: 100%" size="small" />
-                      </el-form-item>
-                      <el-form-item v-if="repeatForm.type" label="结束日期">
+                      <el-form-item label="结束日期">
                         <el-date-picker
-                          v-model="repeatForm.endDate"
+                          v-model="editRepeatEndDate"
                           type="datetime"
                           placeholder="永不结束"
                           :format="datePickerFormat"
@@ -380,174 +368,255 @@
                       </el-form-item>
                     </el-form>
                     <div style="text-align: right; margin-top: 8px">
-                      <el-button size="small" @click="showRepeatForm = false">取消</el-button>
-                      <el-button size="small" type="primary" @click="handleAddRepeatInPanel">确定</el-button>
+                      <el-button size="small" type="danger" @click="handleCancelRepeat"
+                        >取消循环</el-button
+                      >
+                      <el-button size="small" type="primary" @click="handleUpdateRepeatEndDate"
+                        >更新</el-button
+                      >
+                    </div>
+                  </div>
+                  <div v-else>
+                    <div v-if="!showRepeatForm" style="text-align: center">
+                      <el-button
+                        size="small"
+                        @click="showRepeatForm = true; resetRepeatForm()"
+                        >+ 设置循环</el-button
+                      >
+                    </div>
+                    <div v-else>
+                      <el-form label-width="70px" size="small">
+                        <el-form-item label="类型">
+                          <el-select
+                            v-model="repeatForm.type"
+                            placeholder="选择"
+                            style="width: 100%"
+                            :teleported="false"
+                            @change="onRepeatTypeChange"
+                          >
+                            <el-option label="每天" value="DAILY" />
+                            <el-option label="每周" value="WEEKLY" />
+                            <el-option label="每月" value="MONTHLY" />
+                            <el-option label="每年" value="YEARLY" />
+                          </el-select>
+                        </el-form-item>
+                        <el-form-item v-if="repeatForm.type" label="间隔">
+                          <el-input-number
+                            v-model="repeatForm.interval"
+                            :min="1"
+                            :max="365"
+                            style="width: 100%"
+                            size="small"
+                          />
+                        </el-form-item>
+                        <el-form-item v-if="repeatForm.type === 'WEEKLY'" label="星期">
+                          <el-checkbox-group v-model="repeatForm.weekDays" size="small">
+                            <el-checkbox :value="1">一</el-checkbox>
+                            <el-checkbox :value="2">二</el-checkbox>
+                            <el-checkbox :value="3">三</el-checkbox>
+                            <el-checkbox :value="4">四</el-checkbox>
+                            <el-checkbox :value="5">五</el-checkbox>
+                            <el-checkbox :value="6">六</el-checkbox>
+                            <el-checkbox :value="7">日</el-checkbox>
+                          </el-checkbox-group>
+                        </el-form-item>
+                        <el-form-item v-if="repeatForm.type === 'MONTHLY'" label="日期">
+                          <el-input-number
+                            v-model="repeatForm.dayOfMonth"
+                            :min="1"
+                            :max="31"
+                            style="width: 100%"
+                            size="small"
+                          />
+                        </el-form-item>
+                        <el-form-item v-if="repeatForm.type" label="结束日期">
+                          <el-date-picker
+                            v-model="repeatForm.endDate"
+                            type="datetime"
+                            placeholder="永不结束"
+                            :format="datePickerFormat"
+                            value-format="YYYY-MM-DDTHH:mm:ss"
+                            style="width: 100%"
+                            :teleported="false"
+                          />
+                        </el-form-item>
+                      </el-form>
+                      <div style="text-align: right; margin-top: 8px">
+                        <el-button size="small" @click="showRepeatForm = false">取消</el-button>
+                        <el-button size="small" type="primary" @click="handleAddRepeatInPanel"
+                          >确定</el-button
+                        >
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </el-popover>
+              </el-popover>
 
-            
-            <!-- 清单 -->
-            <el-dropdown @command="handleListChange" trigger="click">
-              <el-tag size="default" class="meta-tag clickable" type="success">
-                <el-icon><Folder /></el-icon>
-                {{ getSelectedListName() }}
-              </el-tag>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="null">无清单</el-dropdown-item>
-                  <el-dropdown-item 
-                    v-for="list in taskLists" 
-                    :key="list.id" 
-                    :command="list.id"
-                  >
-                    {{ list.name }}
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <!-- 标签 -->
-            <el-popover trigger="click" placement="bottom" :width="280">
-              <template #reference>
-                <el-tag size="default" class="meta-tag clickable" type="info">
-                  <el-icon><PriceTag /></el-icon>
-                  {{ taskTags.length > 0 ? `${taskTags.length}个标签` : '标签' }}
+              <!-- 清单 -->
+              <el-dropdown @command="handleListChange" trigger="click">
+                <el-tag size="default" class="meta-tag clickable" type="success">
+                  <el-icon><Folder /></el-icon>
+                  {{ getSelectedListName() }}
                 </el-tag>
-              </template>
-              <el-select
-                v-model="selectedTagIds"
-                multiple
-                filterable
-                placeholder="选择标签"
-                style="width: 100%"
-                :teleported="false"
-                @change="handleTagChange"
-                @visible-change="loadAllTags"
-              >
-                <el-option
-                  v-for="tag in allTags"
-                  :key="tag.id"
-                  :label="tag.name"
-                  :value="tag.id"
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="null">无清单</el-dropdown-item>
+                    <el-dropdown-item v-for="list in taskLists" :key="list.id" :command="list.id">
+                      {{ list.name }}
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <!-- 标签 -->
+              <el-popover trigger="click" placement="bottom" :width="280">
+                <template #reference>
+                  <el-tag size="default" class="meta-tag clickable" type="info">
+                    <el-icon><PriceTag /></el-icon>
+                    {{ taskTags.length > 0 ? `${taskTags.length}个标签` : '标签' }}
+                  </el-tag>
+                </template>
+                <el-select
+                  v-model="selectedTagIds"
+                  multiple
+                  filterable
+                  placeholder="选择标签"
+                  style="width: 100%"
+                  :teleported="false"
+                  @change="handleTagChange"
+                  @visible-change="loadAllTags"
                 >
-                  <span :style="{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: tag.color, marginRight: '8px', verticalAlign: 'middle' }"></span>
-                  {{ tag.name }}
-                </el-option>
-              </el-select>
-            </el-popover>
-          </div>
+                  <el-option v-for="tag in allTags" :key="tag.id" :label="tag.name" :value="tag.id">
+                    <span
+                      :style="{
+                        display: 'inline-block',
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        backgroundColor: tag.color,
+                        marginRight: '8px',
+                        verticalAlign: 'middle',
+                      }"
+                    ></span>
+                    {{ tag.name }}
+                  </el-option>
+                </el-select>
+              </el-popover>
+            </div>
 
-          <!-- 已选标签展示 -->
-          <div v-if="taskTags.length > 0" class="task-tags-row">
-            <el-tag
-              v-for="tag in taskTags"
-              :key="tag.id"
-              :color="tag.color"
-              :style="{ backgroundColor: tag.color, borderColor: tag.color, color: '#fff', marginRight: '6px', marginBottom: '4px' }"
-              size="small"
-              closable
-              @close="handleRemoveTag(tag.id)"
-            >
-              {{ tag.name }}
-            </el-tag>
-          </div>
-
-
-          <!-- 描述区域 -->
-          <div class="memo-description">
-            <div class="section-header">
-              <h4 class="section-title">描述</h4>
-              <el-switch
-                v-model="descriptionPreview"
+            <!-- 已选标签展示 -->
+            <div v-if="taskTags.length > 0" class="task-tags-row">
+              <el-tag
+                v-for="tag in taskTags"
+                :key="tag.id"
+                :color="tag.color"
+                :style="{
+                  backgroundColor: tag.color,
+                  borderColor: tag.color,
+                  color: '#fff',
+                  marginRight: '6px',
+                  marginBottom: '4px',
+                }"
                 size="small"
-                active-text="预览"
-                inactive-text="编辑"
-              />
+                closable
+                @close="handleRemoveTag(tag.id)"
+              >
+                {{ tag.name }}
+              </el-tag>
             </div>
-            <el-input
-              v-if="!descriptionPreview"
-              v-model="taskForm.description"
-              type="textarea"
-              :rows="8"
-              placeholder="添加详细描述...（支持 Markdown）"
-              class="memo-textarea"
-              @blur="autoSave"
-            />
-            <div
-              v-else
-              class="markdown-preview"
-              v-html="renderMarkdown(taskForm.description)"
-            />
-          </div>
-          
-          <!-- 子任务区域 -->
-          <div class="memo-subtasks">
-            <h4 class="section-title">子任务</h4>
-            <el-empty v-if="!taskForm.subtasks || taskForm.subtasks.length === 0" description="暂无子任务" :image-size="60" />
-            <div v-else class="subtask-list">
-              <div v-for="(subtask, index) in taskForm.subtasks" :key="index" class="subtask-item">
-                <el-checkbox v-model="subtask.completed" @change="autoSave" />
-                <el-input
-                  v-model="subtask.title"
-                  size="small"
-                  class="subtask-input"
-                  @blur="autoSave"
-                  @keyup.enter="handleSubtaskEnter(index)"
-                />
-                <el-button size="small" type="danger" link @click="removeSubtask(index)">
-                  <el-icon><Delete /></el-icon>
-                </el-button>
-              </div>
-            </div>
-            <el-button type="primary" text @click="addSubtask" style="margin-top: 10px">
-              <el-icon><Plus /></el-icon>
-              添加子任务
-            </el-button>
-          </div>
 
-          <!-- 附件区域 -->
-          <div class="memo-attachments">
-            <h4 class="section-title">附件</h4>
-            <div class="attachment-upload">
-              <input
-                ref="fileInputRef"
-                type="file"
-                style="display: none"
-                @change="handleFileSelect"
-              />
-              <el-button size="small" @click="triggerFileUpload" :loading="attachmentUploading">
-                <el-icon><Upload /></el-icon>
-                上传文件
-              </el-button>
-              <span class="upload-hint">最大 10MB</span>
-            </div>
-            <div v-if="taskAttachments.length > 0" class="attachment-list">
-              <div v-for="att in taskAttachments" :key="att.id" class="attachment-item">
-                <span class="attachment-name">{{ att.fileName }}</span>
-                <span class="attachment-size">{{ formatFileSize(att.fileSize) }}</span>
-                <el-button size="small" type="primary" link @click="downloadAttachment(att)">
-                  <el-icon><Download /></el-icon>
-                </el-button>
-                <el-button size="small" type="danger" link @click="handleDeleteAttachment(att)">
-                  <el-icon><Delete /></el-icon>
-                </el-button>
+            <!-- 描述区域 -->
+            <div class="memo-description">
+              <div class="section-header">
+                <h4 class="section-title">描述</h4>
+                <el-switch
+                  v-model="descriptionPreview"
+                  size="small"
+                  active-text="预览"
+                  inactive-text="编辑"
+                />
               </div>
+              <el-input
+                v-if="!descriptionPreview"
+                v-model="taskForm.description"
+                type="textarea"
+                :rows="8"
+                placeholder="添加详细描述...（支持 Markdown）"
+                class="memo-textarea"
+                @blur="autoSave"
+              />
+              <div v-else class="markdown-preview" v-html="renderMarkdown(taskForm.description)" />
             </div>
-            <el-empty v-else description="暂无附件" :image-size="40" />
+
+            <!-- 子任务区域 -->
+            <div class="memo-subtasks">
+              <h4 class="section-title">子任务</h4>
+              <el-empty
+                v-if="!taskForm.subtasks || taskForm.subtasks.length === 0"
+                description="暂无子任务"
+                :image-size="60"
+              />
+              <div v-else class="subtask-list">
+                <div
+                  v-for="(subtask, index) in taskForm.subtasks"
+                  :key="index"
+                  class="subtask-item"
+                >
+                  <el-checkbox v-model="subtask.completed" @change="autoSave" />
+                  <el-input
+                    v-model="subtask.title"
+                    size="small"
+                    class="subtask-input"
+                    @blur="autoSave"
+                    @keyup.enter="handleSubtaskEnter(index)"
+                  />
+                  <el-button size="small" type="danger" link @click="removeSubtask(index)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
+              </div>
+              <el-button type="primary" text @click="addSubtask" style="margin-top: 10px">
+                <el-icon><Plus /></el-icon>
+                添加子任务
+              </el-button>
+            </div>
+
+            <!-- 附件区域 -->
+            <div class="memo-attachments">
+              <h4 class="section-title">附件</h4>
+              <div class="attachment-upload">
+                <input
+                  ref="fileInputRef"
+                  type="file"
+                  style="display: none"
+                  @change="handleFileSelect"
+                />
+                <el-button size="small" @click="triggerFileUpload" :loading="attachmentUploading">
+                  <el-icon><Upload /></el-icon>
+                  上传文件
+                </el-button>
+                <span class="upload-hint">最大 10MB</span>
+              </div>
+              <div v-if="taskAttachments.length > 0" class="attachment-list">
+                <div v-for="att in taskAttachments" :key="att.id" class="attachment-item">
+                  <span class="attachment-name">{{ att.fileName }}</span>
+                  <span class="attachment-size">{{ formatFileSize(att.fileSize) }}</span>
+                  <el-button size="small" type="primary" link @click="downloadAttachment(att)">
+                    <el-icon><Download /></el-icon>
+                  </el-button>
+                  <el-button size="small" type="danger" link @click="handleDeleteAttachment(att)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
+              </div>
+              <el-empty v-else description="暂无附件" :image-size="40" />
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
       </el-container>
     </el-container>
 
     <!-- 新建任务对话框（保持对话框形式） -->
-    <el-dialog
-      v-model="showCreateTaskDialog"
-      title="新建任务"
-      width="600px"
-    >
+    <el-dialog v-model="showCreateTaskDialog" title="新建任务" width="600px">
       <el-form :model="taskForm" :rules="taskRules" ref="taskFormRef" label-width="80px">
         <el-form-item label="标题" prop="title">
           <el-input v-model="taskForm.title" placeholder="请输入任务标题" />
@@ -569,15 +638,31 @@
           </el-select>
         </el-form-item>
         <el-form-item label="时间设置">
-          <el-popover trigger="click" placement="bottom" :width="380" @hide="showRepeatForm = false">
+          <el-popover
+            trigger="click"
+            placement="bottom"
+            :width="380"
+            @hide="showRepeatForm = false"
+          >
             <template #reference>
-              <el-tag size="default" :type="(taskForm.startDate || taskForm.dueDate || repeatForm.type) ? 'warning' : 'info'" style="cursor: pointer">
+              <el-tag
+                size="default"
+                :type="
+                  taskForm.startDate || taskForm.dueDate || repeatForm.type ? 'warning' : 'info'
+                "
+                style="cursor: pointer"
+              >
                 <el-icon><Calendar /></el-icon>
                 {{ getCreateTimeSummary() }}
               </el-tag>
             </template>
             <div style="padding: 4px 0">
-              <el-radio-group v-model="taskTimeMode" size="small" style="margin-bottom: 12px" @change="onModeChange">
+              <el-radio-group
+                v-model="taskTimeMode"
+                size="small"
+                style="margin-bottom: 12px"
+                @change="onModeChange"
+              >
                 <el-radio-button label="normal">🕒 普通任务</el-radio-button>
                 <el-radio-button label="repeat">🔄 循环任务</el-radio-button>
               </el-radio-group>
@@ -586,12 +671,26 @@
               <template v-if="taskTimeMode === 'normal'">
                 <el-form label-width="80px" size="small">
                   <el-form-item label="开始时间">
-                    <el-date-picker v-model="taskForm.startDate" type="datetime" placeholder="未设置"
-                      :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
+                    <el-date-picker
+                      v-model="taskForm.startDate"
+                      type="datetime"
+                      placeholder="未设置"
+                      :format="datePickerFormat"
+                      value-format="YYYY-MM-DDTHH:mm:ss"
+                      style="width: 100%"
+                      :teleported="false"
+                    />
                   </el-form-item>
                   <el-form-item label="截止时间">
-                    <el-date-picker v-model="taskForm.dueDate" type="datetime" placeholder="未设置"
-                      :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
+                    <el-date-picker
+                      v-model="taskForm.dueDate"
+                      type="datetime"
+                      placeholder="未设置"
+                      :format="datePickerFormat"
+                      value-format="YYYY-MM-DDTHH:mm:ss"
+                      style="width: 100%"
+                      :teleported="false"
+                    />
                   </el-form-item>
                 </el-form>
               </template>
@@ -600,44 +699,113 @@
               <template v-else>
                 <el-form label-width="90px" size="small">
                   <el-form-item label="周期基准">
-                    <el-date-picker v-model="taskForm.dueDate" type="datetime" placeholder="未设置"
-                      :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
-                    <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">首次发生时间，下次循环以此为基准</div>
+                    <el-date-picker
+                      v-model="taskForm.dueDate"
+                      type="datetime"
+                      placeholder="未设置"
+                      :format="datePickerFormat"
+                      value-format="YYYY-MM-DDTHH:mm:ss"
+                      style="width: 100%"
+                      :teleported="false"
+                    />
+                    <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">
+                      首次发生时间，下次循环以此为基准
+                    </div>
                   </el-form-item>
                 </el-form>
                 <el-divider style="margin: 8px 0">循环规则</el-divider>
                 <div v-if="!repeatForm.type" style="text-align: center">
-                  <el-button size="small" @click="repeatForm.type = 'DAILY'; onRepeatTypeChange()">+ 设置循环</el-button>
+                  <el-button
+                    size="small"
+                    @click="repeatForm.type = 'DAILY'; onRepeatTypeChange()"
+                    >+ 设置循环</el-button
+                  >
                 </div>
                 <div v-else>
                   <el-form label-width="90px" size="small">
                     <el-form-item label="类型">
-                      <el-select v-model="repeatForm.type" style="width: 100%" :teleported="false" @change="onRepeatTypeChange">
-                        <el-option label="每天" value="DAILY" /><el-option label="每周" value="WEEKLY" /><el-option label="每月" value="MONTHLY" /><el-option label="每年" value="YEARLY" />
+                      <el-select
+                        v-model="repeatForm.type"
+                        style="width: 100%"
+                        :teleported="false"
+                        @change="onRepeatTypeChange"
+                      >
+                        <el-option label="每天" value="DAILY" /><el-option
+                          label="每周"
+                          value="WEEKLY"
+                        /><el-option label="每月" value="MONTHLY" /><el-option
+                          label="每年"
+                          value="YEARLY"
+                        />
                       </el-select>
-                      <el-button size="small" type="danger" text style="margin-left: 4px" @click="repeatForm.type = ''; resetRepeatForm()">取消循环</el-button>
+                      <el-button
+                        size="small"
+                        type="danger"
+                        text
+                        style="margin-left: 4px"
+                        @click="repeatForm.type = ''; resetRepeatForm()"
+                        >取消循环</el-button
+                      >
                     </el-form-item>
                     <el-form-item v-if="repeatForm.type" label="间隔">
-                      <el-input-number v-model="repeatForm.interval" :min="1" :max="365" style="width: 100%" size="small" />
+                      <el-input-number
+                        v-model="repeatForm.interval"
+                        :min="1"
+                        :max="365"
+                        style="width: 100%"
+                        size="small"
+                      />
                     </el-form-item>
                     <el-form-item v-if="repeatForm.type === 'WEEKLY'" label="星期">
                       <el-checkbox-group v-model="repeatForm.weekDays" size="small">
-                        <el-checkbox :value="1">一</el-checkbox><el-checkbox :value="2">二</el-checkbox><el-checkbox :value="3">三</el-checkbox>
-                        <el-checkbox :value="4">四</el-checkbox><el-checkbox :value="5">五</el-checkbox><el-checkbox :value="6">六</el-checkbox><el-checkbox :value="7">日</el-checkbox>
+                        <el-checkbox :value="1">一</el-checkbox
+                        ><el-checkbox :value="2">二</el-checkbox
+                        ><el-checkbox :value="3">三</el-checkbox>
+                        <el-checkbox :value="4">四</el-checkbox
+                        ><el-checkbox :value="5">五</el-checkbox
+                        ><el-checkbox :value="6">六</el-checkbox
+                        ><el-checkbox :value="7">日</el-checkbox>
                       </el-checkbox-group>
                     </el-form-item>
                     <el-form-item v-if="repeatForm.type === 'MONTHLY'" label="日期">
-                      <el-input-number v-model="repeatForm.dayOfMonth" :min="1" :max="31" style="width: 100%" size="small" />
+                      <el-input-number
+                        v-model="repeatForm.dayOfMonth"
+                        :min="1"
+                        :max="31"
+                        style="width: 100%"
+                        size="small"
+                      />
                     </el-form-item>
                     <el-form-item v-if="repeatForm.type" label="循环结束">
-                      <el-date-picker v-model="repeatForm.endDate" type="datetime" placeholder="永不结束"
-                        :format="datePickerFormat" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%" :teleported="false" />
-                      <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">该日期之后不再生成新循环任务</div>
+                      <el-date-picker
+                        v-model="repeatForm.endDate"
+                        type="datetime"
+                        placeholder="永不结束"
+                        :format="datePickerFormat"
+                        value-format="YYYY-MM-DDTHH:mm:ss"
+                        style="width: 100%"
+                        :teleported="false"
+                      />
+                      <div
+                        style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px"
+                      >
+                        该日期之后不再生成新循环任务
+                      </div>
                     </el-form-item>
                   </el-form>
                   <div style="text-align: right; margin-top: 8px">
-                    <el-button size="small" @click="repeatForm.type = ''; resetRepeatForm()">取消</el-button>
-                    <el-button size="small" type="primary" @click="handleSubmitTask" :loading="submitLoading">确定</el-button>
+                    <el-button
+                      size="small"
+                      @click="repeatForm.type = ''; resetRepeatForm()"
+                      >取消</el-button
+                    >
+                    <el-button
+                      size="small"
+                      type="primary"
+                      @click="handleSubmitTask"
+                      :loading="submitLoading"
+                      >确定</el-button
+                    >
                   </div>
                 </div>
               </template>
@@ -655,7 +823,7 @@
           </el-select>
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <el-button @click="showCreateTaskDialog = false">取消</el-button>
         <el-button type="primary" @click="handleSubmitTask" :loading="submitLoading">
@@ -681,14 +849,27 @@
         </el-button>
       </template>
     </el-dialog>
-
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { List, Calendar, Clock, Plus, Folder, Delete, DataAnalysis, PriceTag, TrendCharts, Flag, Bell, Upload, Download } from '@element-plus/icons-vue'
+import {
+  List,
+  Calendar,
+  Clock,
+  Plus,
+  Folder,
+  Delete,
+  DataAnalysis,
+  PriceTag,
+  TrendCharts,
+  Flag,
+  Bell,
+  Upload,
+  Download,
+} from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
 import { marked } from 'marked'
 import * as taskApi from '../api/task'
@@ -752,7 +933,7 @@ const loadReminders = async () => {
     const res = await anniversaryApi.getPendingReminders()
     reminders.value = res.data || []
     unreadReminderCount.value = reminders.value.filter((r: any) => !r.isRead).length
-  } catch { /* 静默失败 */ }
+  } catch (e) { console.warn('加载提醒失败', e) }
 }
 
 const getReminderName = (anniversaryId: number) => {
@@ -762,7 +943,7 @@ const getReminderName = (anniversaryId: number) => {
 const formatReminderTime = (time: string) => {
   if (!time) return ''
   const d = new Date(time)
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 const handleReminderClick = async (r: any) => {
@@ -780,12 +961,12 @@ const taskForm = reactive({
   startDate: '',
   dueDate: '',
   listId: null as number | null,
-  subtasks: [] as any[]
+  subtasks: [] as any[],
 })
 
 const listForm = reactive({
   name: '',
-  color: '#409EFF'
+  color: '#409EFF',
 })
 
 const repeatForm = reactive({
@@ -793,7 +974,7 @@ const repeatForm = reactive({
   interval: 1,
   weekDays: [] as number[],
   dayOfMonth: 1,
-  endDate: '' as string
+  endDate: '' as string,
 })
 
 const editRepeatEndDate = ref('')
@@ -816,9 +997,7 @@ let autoSaveTimer: any = null
 const isSaving = ref(false)
 
 const taskRules = {
-  title: [
-    { required: true, message: '请输入任务标题', trigger: 'blur' }
-  ],
+  title: [{ required: true, message: '请输入任务标题', trigger: 'blur' }],
   dueDate: [
     {
       validator: (_rule: any, value: string, callback: any) => {
@@ -830,8 +1009,8 @@ const taskRules = {
         }
         callback()
       },
-      trigger: 'change'
-    }
+      trigger: 'change',
+    },
   ],
   startDate: [
     {
@@ -844,15 +1023,13 @@ const taskRules = {
         }
         callback()
       },
-      trigger: 'change'
-    }
-  ]
+      trigger: 'change',
+    },
+  ],
 }
 
 const listRules = {
-  name: [
-    { required: true, message: '请输入清单名称', trigger: 'blur' }
-  ]
+  name: [{ required: true, message: '请输入清单名称', trigger: 'blur' }],
 }
 
 const pageTitle = computed(() => {
@@ -861,11 +1038,11 @@ const pageTitle = computed(() => {
     today: '今日任务',
     upcoming: '未来任务',
     statistics: '数据统计',
-    tags: '标签管理'
+    tags: '标签管理',
   }
   if (activeMenu.value.startsWith('list-')) {
     const listId = parseInt(activeMenu.value.split('-')[1])
-    const list = taskLists.value.find(l => l.id === listId)
+    const list = taskLists.value.find((l) => l.id === listId)
     return list ? list.name : '清单'
   }
   return titles[activeMenu.value] || '全部任务'
@@ -877,7 +1054,11 @@ const loadTasks = async () => {
   try {
     let res
     if (searchKeyword.value) {
-      res = await taskApi.searchTasks({ keyword: searchKeyword.value, page: currentPage.value - 1, size: pageSize.value })
+      res = await taskApi.searchTasks({
+        keyword: searchKeyword.value,
+        page: currentPage.value - 1,
+        size: pageSize.value,
+      })
       tasks.value = res.data.content
       total.value = res.data.totalElements
     } else {
@@ -887,7 +1068,7 @@ const loadTasks = async () => {
 
       // 构建映射
       const taskMap = new Map<number, any>()
-      allFlat.forEach(t => taskMap.set(t.id, { ...t, level: 0 }))
+      allFlat.forEach((t) => taskMap.set(t.id, { ...t, level: 0 }))
 
       // 递归计算层级
       const calcLevel = (id: number): number => {
@@ -895,7 +1076,9 @@ const loadTasks = async () => {
         if (!t || !t.parentId) return 0
         return calcLevel(t.parentId) + 1
       }
-      taskMap.forEach(t => { t.level = calcLevel(t.id) })
+      taskMap.forEach((t) => {
+        t.level = calcLevel(t.id)
+      })
 
       // 构建展平的树
       const buildFlatTree = (roots: any[]) => {
@@ -903,7 +1086,9 @@ const loadTasks = async () => {
         const addChildren = (task: any) => {
           result.push(task)
           const children = Array.from(taskMap.values()).filter((t: any) => t.parentId === task.id)
-          children.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          children.sort(
+            (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+          )
           children.forEach(addChildren)
         }
         roots.forEach(addChildren)
@@ -919,9 +1104,12 @@ const loadTasks = async () => {
           if (t.dueDate && new Date(t.dueDate).toDateString() === today) return true
           if (t.startDate && new Date(t.startDate).toDateString() === today) return true
           if (t.startDate && t.dueDate) {
-            const now = new Date(); now.setHours(0,0,0,0)
-            const s = new Date(t.startDate); s.setHours(0,0,0,0)
-            const e = new Date(t.dueDate); e.setHours(0,0,0,0)
+            const now = new Date()
+            now.setHours(0, 0, 0, 0)
+            const s = new Date(t.startDate)
+            s.setHours(0, 0, 0, 0)
+            const e = new Date(t.dueDate)
+            e.setHours(0, 0, 0, 0)
             return now >= s && now <= e
           }
           return false
@@ -930,7 +1118,8 @@ const loadTasks = async () => {
         tasks.value = buildFlatTree(todayRoots)
         total.value = tasks.value.length
       } else if (activeMenu.value === 'upcoming') {
-        const now = new Date(); now.setHours(0,0,0,0)
+        const now = new Date()
+        now.setHours(0, 0, 0, 0)
         const upcomingRoots = Array.from(taskMap.values()).filter((t: any) => {
           if (t.parentId) return false
           if (t.status === 1) return false
@@ -938,7 +1127,9 @@ const loadTasks = async () => {
           if (t.dueDate && new Date(t.dueDate) > now) return true
           return false
         })
-        upcomingRoots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        upcomingRoots.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
         tasks.value = buildFlatTree(upcomingRoots)
         total.value = tasks.value.length
       } else if (activeMenu.value.startsWith('list-')) {
@@ -996,17 +1187,20 @@ const showUndo = (label: string, callback: () => void) => {
     duration: 4000,
     showClose: false,
     customClass: 'undo-message',
-    onClose: () => { /* undo expired */ }
+    onClose: () => {
+      /* undo expired */
+    },
   })
   // 利用 setTimeout 追加撤销按钮到消息DOM
   setTimeout(() => {
     const messages = document.querySelectorAll('.el-message--success')
-    messages.forEach(el => {
+    messages.forEach((el) => {
       if (el.textContent?.includes(label) && !el.querySelector('.undo-link')) {
         const btn = document.createElement('span')
         btn.textContent = '撤销'
         btn.className = 'undo-link'
-        btn.style.cssText = 'margin-left:12px;color:#e6a23c;cursor:pointer;font-weight:500;text-decoration:underline'
+        btn.style.cssText =
+          'margin-left:12px;color:#e6a23c;cursor:pointer;font-weight:500;text-decoration:underline'
         btn.onclick = () => {
           callback()
           el.remove()
@@ -1055,17 +1249,17 @@ const handleEditTask = async (task: any) => {
     try {
       const rule = JSON.parse(task.repeatRule)
       editRepeatEndDate.value = rule.endDate || ''
-    } catch { editRepeatEndDate.value = '' }
+    } catch (e) { console.warn('解析循环规则失败', e); editRepeatEndDate.value = '' }
   } else {
     editRepeatEndDate.value = ''
   }
-  
+
   // 加载子任务，将 status 映射为 completed
   try {
     const res = await taskApi.getSubtasks(task.id)
     taskForm.subtasks = (res.data || []).map((st: any) => ({
       ...st,
-      completed: st.status === 1
+      completed: st.status === 1,
     }))
   } catch (error) {
     console.error('加载子任务失败:', error)
@@ -1077,13 +1271,13 @@ const handleEditTask = async (task: any) => {
     const res = await tagApi.getTaskTags(task.id)
     taskTags.value = res.data || []
     selectedTagIds.value = taskTags.value.map((t: any) => t.id)
-  } catch { taskTags.value = []; selectedTagIds.value = [] }
+  } catch (e) { console.warn('加载标签失败', e); taskTags.value = []; selectedTagIds.value = [] }
 
   // 加载任务附件
   try {
     const res = await attachmentApi.getTaskAttachments(task.id)
     taskAttachments.value = res.data || []
-  } catch { taskAttachments.value = [] }
+  } catch (e) { console.warn('加载附件失败', e); taskAttachments.value = [] }
 }
 
 // 点击主内容区（用于关闭编辑面板）
@@ -1148,16 +1342,16 @@ const doSave = async () => {
     startDate: taskForm.startDate,
     dueDate: taskForm.dueDate,
     listId: taskForm.listId,
-    parentId: editingTask.value.parentId // 保持父任务关系不变
+    parentId: editingTask.value.parentId, // 保持父任务关系不变
   }
   const subtasksSnapshot: Array<{ id?: number; title: string; completed: boolean }> = []
   if (taskForm.subtasks) {
-    taskForm.subtasks.forEach(st => {
+    taskForm.subtasks.forEach((st) => {
       if (st.title && st.title.trim()) {
         subtasksSnapshot.push({
           id: st.id,
           title: st.title.trim(),
-          completed: st.completed
+          completed: st.completed,
         })
       }
     })
@@ -1165,18 +1359,12 @@ const doSave = async () => {
 
   isSaving.value = true
   try {
-    console.log('=== 开始保存 ===')
-    console.log('主任务ID:', taskId)
-    console.log('子任务列表:', subtasksSnapshot)
-
     // 先保存主任务（使用捕获的快照数据）
     await taskApi.updateTask(taskId, mainTaskData)
-    console.log('主任务保存成功')
 
     // 获取当前数据库中该任务的所有子任务
     const existingSubtasksRes = await taskApi.getSubtasks(taskId)
     const existingSubtasks = existingSubtasksRes.data || []
-    console.log('数据库中现有子任务:', existingSubtasks)
 
     // 构建数据库子任务映射（仅按 id）
     const dbSubtaskById = new Map<number, any>()
@@ -1186,14 +1374,13 @@ const doSave = async () => {
 
     // 收集前端有 id 的子任务
     const frontendIds = new Set<number>()
-    subtasksSnapshot.forEach(st => {
+    subtasksSnapshot.forEach((st) => {
       if (st.id) frontendIds.add(st.id)
     })
 
     // 1. 删除数据库中不在前端的子任务（按 id 判断）
     for (const [id, dbSubtask] of dbSubtaskById) {
       if (!frontendIds.has(id)) {
-        console.log('删除子任务:', dbSubtask.title, 'ID:', dbSubtask.id)
         await taskApi.deleteTask(dbSubtask.id)
       }
     }
@@ -1201,30 +1388,27 @@ const doSave = async () => {
     // 2. 更新或创建子任务（遍历快照而非 taskForm.subtasks）
     for (const subtask of subtasksSnapshot) {
       // 仅按 id 匹配，允许同名子任务
-      const dbSubtask = (subtask.id && dbSubtaskById.has(subtask.id))
-        ? dbSubtaskById.get(subtask.id)
-        : null
+      const dbSubtask =
+        subtask.id && dbSubtaskById.has(subtask.id) ? dbSubtaskById.get(subtask.id) : null
 
       if (dbSubtask) {
         // 更新现有子任务（保留 parentId，防止被提升为顶级任务）
-        console.log('更新子任务:', subtask.title, 'ID:', dbSubtask.id)
         await taskApi.updateTask(dbSubtask.id, {
           title: subtask.title,
           status: subtask.completed ? 1 : 0,
-          parentId: taskId
+          parentId: taskId,
         })
       } else {
         // 创建新子任务
-        console.log('创建新子任务:', subtask.title, 'parentId:', taskId)
         const res = await taskApi.createTask({
           title: subtask.title,
           parentId: taskId,
           status: subtask.completed ? 1 : 0,
-          priority: 0
+          priority: 0,
         })
         // 回填 id 到原始 reactive 对象
         const originalSubtask = taskForm.subtasks?.find(
-          (st: any) => st.title && st.title.trim() === subtask.title && !st.id
+          (st: any) => st.title && st.title.trim() === subtask.title && !st.id,
         )
         if (res.data && res.data.id && originalSubtask) {
           originalSubtask.id = res.data.id
@@ -1232,7 +1416,7 @@ const doSave = async () => {
       }
     }
 
-    console.log('=== 保存完成 ===')
+
     loadTasks()
     emitTaskChanged()
   } catch (error) {
@@ -1249,7 +1433,7 @@ const addSubtask = () => {
     taskForm.subtasks = []
   }
 
-  const hasEmptySubtask = taskForm.subtasks.some(st => !st.title || !st.title.trim())
+  const hasEmptySubtask = taskForm.subtasks.some((st) => !st.title || !st.title.trim())
   if (hasEmptySubtask) {
     focusLastSubtaskInput()
     return
@@ -1264,7 +1448,7 @@ const focusLastSubtaskInput = () => {
   setTimeout(() => {
     const inputs = document.querySelectorAll('.subtask-input .el-input__inner')
     if (inputs.length > 0) {
-      (inputs[inputs.length - 1] as HTMLInputElement).focus()
+      ;(inputs[inputs.length - 1] as HTMLInputElement).focus()
     }
   }, 100)
 }
@@ -1290,12 +1474,11 @@ const handleSubtaskEnter = (index: number) => {
 const removeSubtask = async (index: number) => {
   if (taskForm.subtasks) {
     const subtask = taskForm.subtasks[index]
-    
+
     // 如果子任务已经保存到数据库，则调用 API 删除
     if (subtask.id) {
       try {
-        console.log('删除数据库中的子任务:', subtask.title, 'ID:', subtask.id)
-        await taskApi.deleteTask(subtask.id)
+      await taskApi.deleteTask(subtask.id)
         ElMessage.success('子任务已删除')
       } catch (error) {
         console.error('删除子任务失败:', error)
@@ -1303,11 +1486,10 @@ const removeSubtask = async (index: number) => {
         return // 删除失败则不继续
       }
     }
-    
+
     // 从前端数组中移除
     taskForm.subtasks.splice(index, 1)
-    console.log('从前端的子任务数组中移除，当前数量:', taskForm.subtasks.length)
-    
+
     // 触发自动保存，确保任务列表刷新
     autoSave()
   }
@@ -1328,7 +1510,7 @@ const handleListChange = (listId: string) => {
 // 获取选中的清单名称
 const getSelectedListName = () => {
   if (!taskForm.listId) return '无清单'
-  const list = taskLists.value.find(l => l.id === taskForm.listId)
+  const list = taskLists.value.find((l) => l.id === taskForm.listId)
   return list ? list.name : '无清单'
 }
 
@@ -1339,7 +1521,7 @@ const loadAllTags = async () => {
   try {
     const res = await tagApi.getTags()
     allTags.value = res.data || []
-  } catch { /* 静默失败 */ }
+  } catch (e) { console.warn('加载全部标签失败', e) }
 }
 
 const handleTagChange = async (tagIds: number[]) => {
@@ -1350,13 +1532,17 @@ const handleTagChange = async (tagIds: number[]) => {
   const newIds = new Set(tagIds)
   for (const id of tagIds) {
     if (!currentIds.has(id)) {
-      try { await tagApi.addTagToTask(taskId, id) } catch { /* skip */ }
+      try {
+        await tagApi.addTagToTask(taskId, id)
+      } catch (e) { console.warn('添加标签失败', e) }
     }
   }
   // 找出移除的标签
   for (const id of currentIds) {
     if (!newIds.has(id)) {
-      try { await tagApi.removeTagFromTask(taskId, id) } catch { /* skip */ }
+      try {
+        await tagApi.removeTagFromTask(taskId, id)
+      } catch (e) { console.warn('移除标签失败', e) }
     }
   }
   // 重新加载
@@ -1364,7 +1550,7 @@ const handleTagChange = async (tagIds: number[]) => {
     const res = await tagApi.getTaskTags(taskId)
     taskTags.value = res.data || []
     selectedTagIds.value = taskTags.value.map((t: any) => t.id)
-  } catch { /* skip */ }
+  } catch (e) { console.warn('刷新标签失败', e) }
 }
 
 const handleRemoveTag = async (tagId: number) => {
@@ -1372,8 +1558,8 @@ const handleRemoveTag = async (tagId: number) => {
   try {
     await tagApi.removeTagFromTask(editingTask.value.id, tagId)
     taskTags.value = taskTags.value.filter((t: any) => t.id !== tagId)
-    selectedTagIds.value = selectedTagIds.value.filter(id => id !== tagId)
-  } catch { /* skip */ }
+    selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId)
+  } catch (e) { console.warn('移除标签失败', e) }
 }
 
 // ===== 附件相关 =====
@@ -1406,7 +1592,8 @@ const handleFileSelect = async (event: Event) => {
 }
 
 const downloadAttachment = (att: any) => {
-  const url = `http://localhost:18080/api/attachments/${encodeURIComponent(att.fileName)}`
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:18080/api'
+  const url = `${baseUrl}/attachments/${encodeURIComponent(att.fileName)}`
   const a = document.createElement('a')
   a.href = url
   a.download = att.fileName
@@ -1422,7 +1609,7 @@ const handleDeleteAttachment = async (att: any) => {
     await ElMessageBox.confirm('确定要删除这个附件吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     })
     await attachmentApi.deleteAttachment(att.id)
     taskAttachments.value = taskAttachments.value.filter((a: any) => a.id !== att.id)
@@ -1444,9 +1631,7 @@ const renderMarkdown = (text: string) => {
   if (!text) return ''
   try {
     return marked(text, { breaks: true, gfm: true }) as string
-  } catch {
-    return text
-  }
+  } catch (e) { console.warn('渲染 Markdown 失败', e); return text }
 }
 
 const datePickerFormat = computed(() => {
@@ -1460,7 +1645,7 @@ const handleDeleteTask = async (task: any) => {
     await ElMessageBox.confirm('确定要删除这个任务吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     })
 
     // 保存删除前的任务数据用于撤销
@@ -1474,7 +1659,7 @@ const handleDeleteTask = async (task: any) => {
         startDate: deletedTask.startDate,
         dueDate: deletedTask.dueDate,
         listId: deletedTask.listId,
-        parentId: deletedTask.parentId
+        parentId: deletedTask.parentId,
       })
       loadTasks()
     })
@@ -1509,11 +1694,11 @@ const toggleTaskSelection = (taskId: number) => {
 }
 
 const handleSelectAll = () => {
-  const visibleIds = new Set(tasks.value.map(t => t.id))
+  const visibleIds = new Set(tasks.value.map((t) => t.id))
   // Skip child tasks whose parent is also visible (parent cascade will delete them)
   const filtered = tasks.value
-    .filter(t => !t.parentId || !visibleIds.has(t.parentId))
-    .map(t => t.id)
+    .filter((t) => !t.parentId || !visibleIds.has(t.parentId))
+    .map((t) => t.id)
   selectedTaskIds.value = new Set(filtered)
 }
 
@@ -1526,7 +1711,7 @@ const handleBatchDelete = async () => {
     await ElMessageBox.confirm(
       `确定要删除选中的 ${selectedTaskIds.value.size} 个任务吗？此操作不可恢复。`,
       '批量删除',
-      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
     )
     await batchApi.batchDelete(Array.from(selectedTaskIds.value))
     ElMessage.success(`已删除 ${selectedTaskIds.value.size} 个任务`)
@@ -1568,9 +1753,11 @@ const handleSubmitTask = async () => {
                 interval: repeatForm.interval,
                 weekDays: repeatForm.weekDays.length > 0 ? repeatForm.weekDays.join(',') : null,
                 dayOfMonth: repeatForm.type === 'MONTHLY' ? repeatForm.dayOfMonth : null,
-                endDate: repeatForm.endDate || null
+                endDate: repeatForm.endDate || null,
               })
-            } catch { ElMessage.warning('循环规则设置失败') }
+            } catch {
+              ElMessage.warning('循环规则设置失败')
+            }
           }
           ElMessage.success('创建成功')
           showCreateTaskDialog.value = false
@@ -1591,7 +1778,7 @@ const handleSubmitTask = async () => {
 // 提交清单
 const handleSubmitList = async () => {
   if (!listFormRef.value) return
-  
+
   await listFormRef.value.validate(async (valid) => {
     if (valid) {
       submitLoading.value = true
@@ -1613,16 +1800,20 @@ const handleSubmitList = async () => {
 // 删除清单
 const handleDeleteList = async (list: any) => {
   try {
-    await ElMessageBox.confirm(`确定要删除清单“${list.name}”吗？该清单下的任务将不会被删除。`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
+    await ElMessageBox.confirm(
+      `确定要删除清单“${list.name}”吗？该清单下的任务将不会被删除。`,
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    )
+
     await listApi.deleteList(list.id)
     ElMessage.success('删除成功')
     loadLists()
-    
+
     // 如果当前正在查看被删除的清单，切换到全部任务
     if (activeMenu.value === `list-${list.id}`) {
       activeMenu.value = 'all'
@@ -1753,7 +1944,7 @@ const handleAddRepeatInPanel = async () => {
       interval: repeatForm.interval,
       weekDays: repeatForm.weekDays.length > 0 ? repeatForm.weekDays.join(',') : null,
       dayOfMonth: repeatForm.type === 'MONTHLY' ? repeatForm.dayOfMonth : null,
-      endDate: repeatForm.endDate || null
+      endDate: repeatForm.endDate || null,
     }
     await repeatApi.setRepeatRule(editingTask.value.id, rule)
     editingTask.value.repeatRule = JSON.stringify(rule)
@@ -1778,8 +1969,10 @@ const getTimeStatus = (task: any) => {
   if (task.repeatRule) {
     if (!task.dueDate) return ''
     const dueDate = new Date(task.dueDate)
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const dueDay = new Date(dueDate); dueDay.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dueDay = new Date(dueDate)
+    dueDay.setHours(0, 0, 0, 0)
     const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     if (diffDays < 0) return '循环 · 过期'
     if (diffDays === 0) return '循环 · 今天'
@@ -1805,8 +1998,10 @@ const getTimeStatus = (task: any) => {
   }
 
   if (dueDate) {
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const dueDay = new Date(dueDate); dueDay.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dueDay = new Date(dueDate)
+    dueDay.setHours(0, 0, 0, 0)
     const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
     // 跨天或仅有日期（无时间）→ 只显示天数
@@ -1847,8 +2042,10 @@ const getTimeStatusClass = (task: any) => {
   if (startDate && now < startDate) return 'time-status-upcoming'
 
   if (dueDate) {
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const dueDay = new Date(dueDate); dueDay.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dueDay = new Date(dueDate)
+    dueDay.setHours(0, 0, 0, 0)
     if (dueDay < today) return 'time-status-overdue'
     if (dueDay > today) return 'time-status-active'
     return 'time-status-today'
@@ -1869,8 +2066,10 @@ const getDueDaysBadge = (task: any) => {
   if (startDate && now < startDate) return { text: '', type: 'empty' }
 
   const dueDate = new Date(task.dueDate)
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const dueDay = new Date(dueDate); dueDay.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dueDay = new Date(dueDate)
+  dueDay.setHours(0, 0, 0, 0)
   const diffDays = Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
   if (diffDays < 0) return { text: `已过期 ${Math.abs(diffDays)} 天`, type: 'overdue' }
@@ -1887,7 +2086,8 @@ const getDueDaysClass = (task: any) => {
 // 判断是否过期（仅限严格过期：截止日期 < 今天，当天不算）
 const handlePostponeTask = async (task: any) => {
   try {
-    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
     await taskApi.updateTaskTime(task.id, { dueDate: formatLocalDateTime(today) })
     ElMessage.success('已顺延至今天')
     loadTasks()
@@ -2107,7 +2307,7 @@ onUnmounted(() => {
 
 .task-item.batch-selected {
   background-color: #ecf5ff;
-  outline: 1px solid #409EFF;
+  outline: 1px solid #409eff;
 }
 
 .task-item.completed .task-title {
@@ -2153,19 +2353,19 @@ onUnmounted(() => {
 }
 
 .time-status-upcoming {
-  color: #409EFF;
+  color: #409eff;
 }
 
 .time-status-active {
-  color: #409EFF;
+  color: #409eff;
 }
 
 .time-status-overdue {
-  color: #F56C6C;
+  color: #f56c6c;
 }
 
 .time-status-today {
-  color: #E6A23C;
+  color: #e6a23c;
 }
 
 /* 距离结束剩余天数徽章 */
@@ -2180,16 +2380,16 @@ onUnmounted(() => {
 }
 
 .due-days-badge-upcoming {
-  color: #409EFF;
+  color: #409eff;
 }
 
 .due-days-badge-today {
-  color: #E6A23C;
+  color: #e6a23c;
   font-weight: 600;
 }
 
 .due-days-badge-overdue {
-  color: #F56C6C;
+  color: #f56c6c;
 }
 
 .task-actions {
@@ -2215,44 +2415,44 @@ onUnmounted(() => {
 
 .priority-1 :deep(.el-checkbox__inner) {
   background-color: #fff;
-  border-color: #409EFF;
+  border-color: #409eff;
 }
 
 .priority-1 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background-color: #fff;
-  border-color: #409EFF;
+  border-color: #409eff;
 }
 
 .priority-1 :deep(.el-checkbox__input.is-checked .el-checkbox__inner::after) {
-  border-color: #409EFF;
+  border-color: #409eff;
 }
 
 .priority-2 :deep(.el-checkbox__inner) {
   background-color: #fff;
-  border-color: #E6A23C;
+  border-color: #e6a23c;
 }
 
 .priority-2 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background-color: #fff;
-  border-color: #E6A23C;
+  border-color: #e6a23c;
 }
 
 .priority-2 :deep(.el-checkbox__input.is-checked .el-checkbox__inner::after) {
-  border-color: #E6A23C;
+  border-color: #e6a23c;
 }
 
 .priority-3 :deep(.el-checkbox__inner) {
   background-color: #fff;
-  border-color: #F56C6C;
+  border-color: #f56c6c;
 }
 
 .priority-3 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
   background-color: #fff;
-  border-color: #F56C6C;
+  border-color: #f56c6c;
 }
 
 .priority-3 :deep(.el-checkbox__input.is-checked .el-checkbox__inner::after) {
-  border-color: #F56C6C;
+  border-color: #f56c6c;
 }
 
 /* 统计和标签视图 */
@@ -2283,14 +2483,42 @@ onUnmounted(() => {
   flex-direction: column;
 }
 
-.bell-btn { position: relative; }
+.bell-btn {
+  position: relative;
+}
 
-.reminder-popover h4 { margin: 0 0 12px 0; font-size: 14px; color: #303133; }
-.reminder-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
-.reminder-item { padding: 10px; border-radius: 6px; background: #f5f7fa; cursor: pointer; transition: background 0.2s; }
-.reminder-item:hover { background: #ecf5ff; }
-.reminder-name { font-weight: 500; font-size: 14px; color: #303133; }
-.reminder-time { font-size: 12px; color: #909399; margin-top: 4px; }
+.reminder-popover h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #303133;
+}
+.reminder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.reminder-item {
+  padding: 10px;
+  border-radius: 6px;
+  background: #f5f7fa;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.reminder-item:hover {
+  background: #ecf5ff;
+}
+.reminder-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: #303133;
+}
+.reminder-time {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+}
 
 /* 占位模块 */
 .placeholder-module {
@@ -2396,16 +2624,51 @@ onUnmounted(() => {
   color: #303133;
 }
 
-.markdown-preview :deep(h1) { font-size: 1.5em; margin: 0.5em 0; }
-.markdown-preview :deep(h2) { font-size: 1.3em; margin: 0.5em 0; }
-.markdown-preview :deep(h3) { font-size: 1.1em; margin: 0.4em 0; }
-.markdown-preview :deep(p) { margin: 0.5em 0; }
-.markdown-preview :deep(ul), .markdown-preview :deep(ol) { padding-left: 1.5em; margin: 0.5em 0; }
-.markdown-preview :deep(code) { background: #eee; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
-.markdown-preview :deep(pre) { background: #f0f0f0; padding: 12px; border-radius: 4px; overflow-x: auto; }
-.markdown-preview :deep(pre code) { background: none; padding: 0; }
-.markdown-preview :deep(blockquote) { border-left: 3px solid #ddd; padding-left: 12px; color: #666; margin: 0.5em 0; }
-.markdown-preview :deep(a) { color: #409EFF; }
+.markdown-preview :deep(h1) {
+  font-size: 1.5em;
+  margin: 0.5em 0;
+}
+.markdown-preview :deep(h2) {
+  font-size: 1.3em;
+  margin: 0.5em 0;
+}
+.markdown-preview :deep(h3) {
+  font-size: 1.1em;
+  margin: 0.4em 0;
+}
+.markdown-preview :deep(p) {
+  margin: 0.5em 0;
+}
+.markdown-preview :deep(ul),
+.markdown-preview :deep(ol) {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+.markdown-preview :deep(code) {
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+.markdown-preview :deep(pre) {
+  background: #f0f0f0;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+.markdown-preview :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+.markdown-preview :deep(blockquote) {
+  border-left: 3px solid #ddd;
+  padding-left: 12px;
+  color: #666;
+  margin: 0.5em 0;
+}
+.markdown-preview :deep(a) {
+  color: #409eff;
+}
 
 .memo-textarea :deep(.el-textarea__inner) {
   border: none;
@@ -2536,5 +2799,4 @@ onUnmounted(() => {
   font-size: 12px;
   color: #909399;
 }
-
 </style>

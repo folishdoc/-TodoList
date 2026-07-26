@@ -2,17 +2,43 @@ import { test, expect, type Page } from '@playwright/test'
 
 async function setupApiMocks(page: Page) {
   let tasks: any[] = [
-    { id: 1, title: '全部-1', status: 0, priority: 1, listId: null, parentId: null, createdAt: '2025-01-01' },
-    { id: 2, title: '全部-2', status: 1, priority: 2, listId: 1, parentId: null, createdAt: '2025-01-02' },
-    { id: 3, title: '工作专属', status: 0, priority: 1, listId: 1, parentId: null, createdAt: '2025-01-03' }
+    {
+      id: 1,
+      title: '全部-1',
+      status: 0,
+      priority: 1,
+      listId: null,
+      parentId: null,
+      createdAt: '2025-01-01',
+    },
+    {
+      id: 2,
+      title: '全部-2',
+      status: 1,
+      priority: 2,
+      listId: 1,
+      parentId: null,
+      createdAt: '2025-01-02',
+    },
+    {
+      id: 3,
+      title: '工作专属',
+      status: 0,
+      priority: 1,
+      listId: 1,
+      parentId: null,
+      createdAt: '2025-01-03',
+    },
   ]
   let lists: any[] = [
     { id: 1, name: '工作', color: '#409EFF' },
-    { id: 2, name: '生活', color: '#67C23A' }
+    { id: 2, name: '生活', color: '#67C23A' },
   ]
   const ElMessageBoxConfirmMock = { confirmed: true }
 
-  await page.exposeFunction('__mockConfirm', (confirmed: boolean) => { ElMessageBoxConfirmMock.confirmed = confirmed })
+  await page.exposeFunction('__mockConfirm', (confirmed: boolean) => {
+    ElMessageBoxConfirmMock.confirmed = confirmed
+  })
 
   await page.addInitScript(() => {
     ;(window as any).__mockConfirmResult = true
@@ -26,18 +52,35 @@ async function setupApiMocks(page: Page) {
     const path = url.pathname
     const method = req.method()
     let body: any = null
-    try { body = req.postDataJSON() } catch {}
+    try {
+      body = req.postDataJSON()
+    } catch {}
 
-    const ok = (data: any) => route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ code: 200, message: 'success', data })
-    })
+    const ok = (data: any) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 200, message: 'success', data }),
+      })
 
     if (path === '/api/tasks' && method === 'GET') {
-      return ok({ content: tasks, totalElements: tasks.length, totalPages: 1, size: 1000, number: 0 })
+      return ok({
+        content: tasks,
+        totalElements: tasks.length,
+        totalPages: 1,
+        size: 1000,
+        number: 0,
+      })
     }
     if (path === '/api/tasks' && method === 'POST') {
-      const t = { id: 100 + tasks.length, status: 0, priority: 2, parentId: null, ...body, createdAt: new Date().toISOString() }
+      const t = {
+        id: 100 + tasks.length,
+        status: 0,
+        priority: 2,
+        parentId: null,
+        ...body,
+        createdAt: new Date().toISOString(),
+      }
       tasks.push(t)
       return ok(t)
     }
@@ -60,7 +103,13 @@ async function setupApiMocks(page: Page) {
       return ok(null)
     }
     if (path === '/api/tags' && method === 'GET') return ok([])
-    if (path === '/api/statistics/overview' && method === 'GET') return ok({ totalTasks: tasks.length, completedTasks: 0, pendingTasks: tasks.length, completionRate: 0 })
+    if (path === '/api/statistics/overview' && method === 'GET')
+      return ok({
+        totalTasks: tasks.length,
+        completedTasks: 0,
+        pendingTasks: tasks.length,
+        completionRate: 0,
+      })
     if (path === '/api/statistics/by-list' && method === 'GET') return ok([])
     if (path === '/api/statistics/by-priority' && method === 'GET') return ok([])
     if (path === '/api/statistics/trend' && method === 'GET') return ok([])
@@ -114,7 +163,11 @@ test.describe('E2E 清单与搜索', () => {
   })
 
   test('创建清单：点击 + 按钮 → 显示表单对话框', async ({ page }) => {
-    const addListBtn = page.locator('button').filter({ has: page.locator('svg') }).filter({ hasText: '' }).first()
+    const addListBtn = page
+      .locator('button')
+      .filter({ has: page.locator('svg') })
+      .filter({ hasText: '' })
+      .first()
     const circleBtn = page.locator('.list-header button').first()
     if ((await circleBtn.count()) > 0) {
       await circleBtn.click()

@@ -11,7 +11,7 @@ export function useTaskSync(onTaskChanged: () => void) {
     try {
       const { emit } = await import('@tauri-apps/api/event')
       await emit('task-changed', null)
-    } catch {}
+    } catch (e) { console.error('Tauri emit failed', e) }
   }
 
   const setupListeners = async () => {
@@ -20,7 +20,7 @@ export function useTaskSync(onTaskChanged: () => void) {
       const { listen } = await import('@tauri-apps/api/event')
       const unlisten = await listen('task-changed', () => onTaskChanged())
       unlistens.push(unlisten)
-    } catch {}
+    } catch (e) { console.error('Tauri listen failed', e) }
 
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window')
@@ -28,7 +28,7 @@ export function useTaskSync(onTaskChanged: () => void) {
         if (event.payload) onTaskChanged()
       })
       unlistens.push(unlisten)
-    } catch {}
+    } catch (e) { console.error('Tauri focus listen failed', e) }
   }
 
   onMounted(() => {
@@ -36,7 +36,11 @@ export function useTaskSync(onTaskChanged: () => void) {
   })
 
   onUnmounted(() => {
-    unlistens.forEach(fn => { try { fn() } catch {} })
+    unlistens.forEach((fn) => {
+      try {
+        fn()
+      } catch (e) { console.error('Tauri unlisten failed', e) }
+    })
     unlistens = []
   })
 

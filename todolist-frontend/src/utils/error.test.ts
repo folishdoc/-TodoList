@@ -6,7 +6,7 @@ import { handleError, handleSuccess, handleWarning } from './error'
 const isAxiosErrorMock = vi.fn()
 vi.mock('axios', () => ({
   default: { isAxiosError: (...args: unknown[]) => isAxiosErrorMock(...args) },
-  isAxiosError: (...args: unknown[]) => isAxiosErrorMock(...args)
+  isAxiosError: (...args: unknown[]) => isAxiosErrorMock(...args),
 }))
 
 describe('utils/error.ts', () => {

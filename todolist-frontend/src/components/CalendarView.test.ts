@@ -14,14 +14,14 @@ vi.mock('../api/task', () => ({
   createTask: (...args: unknown[]) => createTaskMock(...args),
   updateTaskTime: (...args: unknown[]) => updateTaskTimeMock(...args),
   completeTask: (...args: unknown[]) => completeTaskMock(...args),
-  uncompleteTask: (...args: unknown[]) => uncompleteTaskMock(...args)
+  uncompleteTask: (...args: unknown[]) => uncompleteTaskMock(...args),
 }))
 
 const replaceMock = vi.fn()
 const routeQuery: Record<string, string> = {}
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: routeQuery }),
-  useRouter: () => ({ replace: replaceMock })
+  useRouter: () => ({ replace: replaceMock }),
 }))
 
 import CalendarView from './CalendarView.vue'
@@ -29,118 +29,126 @@ import CalendarView from './CalendarView.vue'
 const ElButtonStub = {
   name: 'ElButtonStub',
   template: '<button type="button" @click="$emit(\'click\')"><slot/></button>',
-  props: ['size', 'type']
+  props: ['size', 'type'],
 }
 
 const ElButtonGroupStub = {
   name: 'ElButtonGroupStub',
-  template: '<div class="el-button-group"><slot/></div>'
+  template: '<div class="el-button-group"><slot/></div>',
 }
 
 const ElRadioGroupStub = {
   name: 'ElRadioGroupStub',
-  template: '<div class="el-radio-group" @update:modelValue="$emit(\'update:modelValue\', $event)"><slot/></div>',
-  props: ['modelValue']
+  template:
+    '<div class="el-radio-group" @update:modelValue="$emit(\'update:modelValue\', $event)"><slot/></div>',
+  props: ['modelValue'],
 }
 
 const ElRadioButtonStub = {
   name: 'ElRadioButtonStub',
   template: '<label class="el-radio-button" @click="$emit(\'click\')"><slot/></label>',
-  props: ['value']
+  props: ['value'],
 }
 
 const ElDropdownStub = {
   name: 'ElDropdownStub',
-  template: '<div class="el-dropdown" @click="$emit(\'click\')" @command="$emit(\'command\', $event)"><slot/></div>',
-  props: ['trigger']
+  template:
+    '<div class="el-dropdown" @click="$emit(\'click\')" @command="$emit(\'command\', $event)"><slot/></div>',
+  props: ['trigger'],
 }
 
 const ElDropdownMenuStub = {
   name: 'ElDropdownMenuStub',
-  template: '<div class="el-dropdown-menu"><slot/></div>'
+  template: '<div class="el-dropdown-menu"><slot/></div>',
 }
 
 const ElDropdownItemStub = {
   name: 'ElDropdownItemStub',
-  template: '<div class="el-dropdown-item" :data-command="command" @click="$emit(\'click\', command)"><slot/></div>',
-  props: ['command', 'divided']
+  template:
+    '<div class="el-dropdown-item" :data-command="command" @click="$emit(\'click\', command)"><slot/></div>',
+  props: ['command', 'divided'],
 }
 
 const ElDividerStub = {
   name: 'ElDividerStub',
   template: '<hr class="el-divider" />',
-  props: ['direction']
+  props: ['direction'],
 }
 
 const ElIconStub = {
   name: 'ElIconStub',
-  template: '<i class="el-icon"><slot/></i>'
+  template: '<i class="el-icon"><slot/></i>',
 }
 
 const ElCheckboxStub = {
   name: 'ElCheckboxStub',
-  template: '<input type="checkbox" :checked="modelValue" @change="$emit(\'change\', $event.target.checked); $emit(\'update:modelValue\', $event.target.checked)" />',
-  props: ['modelValue']
+  template:
+    '<input type="checkbox" :checked="modelValue" @change="$emit(\'change\', $event.target.checked); $emit(\'update:modelValue\', $event.target.checked)" />',
+  props: ['modelValue'],
 }
 
 const ElTooltipStub = {
   name: 'ElTooltipStub',
   template: '<div class="el-tooltip"><slot name="default"/></div>',
-  props: ['content', 'placement', 'showAfter']
+  props: ['content', 'placement', 'showAfter'],
 }
 
 const ElEmptyStub = {
   name: 'ElEmptyStub',
   template: '<div class="el-empty"><slot/></div>',
-  props: ['description', 'imageSize']
+  props: ['description', 'imageSize'],
 }
 
 const ElDatePickerStub = {
   name: 'ElDatePickerStub',
-  template: '<input :value="modelValue" @update:modelValue="$emit(\'update:modelValue\', $event.target.value); $emit(\'change\', $event.target.value)" />',
-  props: ['modelValue', 'type', 'placeholder', 'format', 'valueFormat']
+  template:
+    '<input :value="modelValue" @update:modelValue="$emit(\'update:modelValue\', $event.target.value); $emit(\'change\', $event.target.value)" />',
+  props: ['modelValue', 'type', 'placeholder', 'format', 'valueFormat'],
 }
 
 const ElTimePickerStub = {
   name: 'ElTimePickerStub',
-  template: '<input :value="modelValue" @update:modelValue="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder']
+  template:
+    '<input :value="modelValue" @update:modelValue="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'placeholder'],
 }
 
 const ElDialogStub = {
   name: 'ElDialogStub',
   template: '<div v-if="modelValue" class="el-dialog"><slot/></div>',
-  props: ['modelValue', 'title', 'width']
+  props: ['modelValue', 'title', 'width'],
 }
 
 const ElFormStub = {
   name: 'ElFormStub',
   template: '<form class="el-form"><slot/></form>',
-  props: ['model']
+  props: ['model'],
 }
 
 const ElFormItemStub = {
   name: 'ElFormItemStub',
   template: '<div class="el-form-item"><slot/></div>',
-  props: ['label']
+  props: ['label'],
 }
 
 const ElInputStub = {
   name: 'ElInputStub',
-  template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'type', 'rows']
+  template:
+    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'placeholder', 'type', 'rows'],
 }
 
 const ElSelectStub = {
   name: 'ElSelectStub',
-  template: '<div class="el-select" @update:modelValue="$emit(\'update:modelValue\', $event)"><slot/></div>',
-  props: ['modelValue', 'placeholder']
+  template:
+    '<div class="el-select" @update:modelValue="$emit(\'update:modelValue\', $event)"><slot/></div>',
+  props: ['modelValue', 'placeholder'],
 }
 
 const ElOptionStub = {
   name: 'ElOptionStub',
   template: '<div class="el-option" :data-value="value"><slot/></div>',
-  props: ['value', 'label']
+  props: ['value', 'label'],
 }
 
 function mountView() {
@@ -168,9 +176,9 @@ function mountView() {
         'el-input': ElInputStub,
         'el-select': ElSelectStub,
         'el-option': ElOptionStub,
-        Filter: { template: '<span class="filter-stub" />' }
-      }
-    }
+        Filter: { template: '<span class="filter-stub" />' },
+      },
+    },
   })
 }
 
@@ -369,7 +377,15 @@ describe('CalendarView.vue', () => {
       expect(track.exists()).toBe(true)
       const trackEl = track.element as HTMLElement
       const rectSpy = vi.spyOn(trackEl, 'getBoundingClientRect').mockReturnValue({
-        top: 100, left: 0, right: 0, bottom: 0, width: 0, height: 48 * 30, x: 0, y: 100, toJSON: () => ({})
+        top: 100,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 48 * 30,
+        x: 0,
+        y: 100,
+        toJSON: () => ({}),
       } as any)
       const targetDate = (wrapper.vm as any).dayBarDate
       ;(wrapper.vm as any).onDayBarTrackClick({ target: trackEl, clientY: 250 } as any)
@@ -387,9 +403,18 @@ describe('CalendarView.vue', () => {
       const wrapper = mountView()
       await flushPromises()
       const track = wrapper.find('.daybar-track')
-      track.element.getBoundingClientRect = () => ({
-        top: 100, left: 0, right: 0, bottom: 0, width: 0, height: 48 * 30, x: 0, y: 100, toJSON: () => ({})
-      } as any)
+      track.element.getBoundingClientRect = () =>
+        ({
+          top: 100,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 48 * 30,
+          x: 0,
+          y: 100,
+          toJSON: () => ({}),
+        }) as any
       // Simulate drag-end timestamp being just set
       ;(wrapper.vm as any).dayBarSuppressClick = Date.now()
       ;(wrapper.vm as any).onDayBarTrackClick({ target: track.element, clientY: 250 } as any)

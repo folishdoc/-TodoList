@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const requestMock = vi.fn()
 vi.mock('../utils/request', () => ({
-  default: (...args: unknown[]) => requestMock(...args)
+  default: (...args: unknown[]) => requestMock(...args),
 }))
 
 import { getOverview, getByList, getByPriority, getTrend } from './statistics'
@@ -36,7 +36,7 @@ describe('api/statistics.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/statistics/trend',
       method: 'get',
-      params: { days: 7 }
+      params: { days: 7 },
     })
   })
 
@@ -46,7 +46,7 @@ describe('api/statistics.ts', () => {
     expect(requestMock).toHaveBeenCalledWith({
       url: '/statistics/trend',
       method: 'get',
-      params: { days: 30 }
+      params: { days: 30 },
     })
   })
 })

@@ -14,7 +14,7 @@ const validateMock = vi.fn((cb: any) => cb(validateResult))
 
 vi.mock('element-plus', () => ({
   ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
-  ElMessageBox: { confirm: (...args: unknown[]) => ElMessageBoxConfirmMock(...args) }
+  ElMessageBox: { confirm: (...args: unknown[]) => ElMessageBoxConfirmMock(...args) },
 }))
 
 vi.mock('../api/anniversary', () => ({
@@ -23,7 +23,7 @@ vi.mock('../api/anniversary', () => ({
   createAnniversary: (...args: unknown[]) => createAnniversaryMock(...args),
   updateAnniversary: (...args: unknown[]) => updateAnniversaryMock(...args),
   deleteAnniversary: (...args: unknown[]) => deleteAnniversaryMock(...args),
-  generateTodo: (...args: unknown[]) => generateTodoMock(...args)
+  generateTodo: (...args: unknown[]) => generateTodoMock(...args),
 }))
 
 import AnniversaryList from './AnniversaryList.vue'
@@ -31,42 +31,44 @@ import AnniversaryList from './AnniversaryList.vue'
 const ElButtonStub = {
   name: 'ElButtonStub',
   template: '<button type="button" @click="$emit(\'click\')"><slot/></button>',
-  props: ['type', 'size']
+  props: ['type', 'size'],
 }
 
 const ElInputStub = {
   name: 'ElInputStub',
-  template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder']
+  template:
+    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'placeholder'],
 }
 
 const ElSelectStub = {
   name: 'ElSelectStub',
-  template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><slot/></select>',
-  props: ['modelValue', 'placeholder']
+  template:
+    '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><slot/></select>',
+  props: ['modelValue', 'placeholder'],
 }
 
 const ElOptionStub = {
   name: 'ElOptionStub',
   template: '<option :value="value"><slot/></option>',
-  props: ['value', 'label']
+  props: ['value', 'label'],
 }
 
 const ElIconStub = {
   name: 'ElIconStub',
-  template: '<i class="el-icon"><slot/></i>'
+  template: '<i class="el-icon"><slot/></i>',
 }
 
 const ElEmptyStub = {
   name: 'ElEmptyStub',
   template: '<div class="el-empty"><slot/></div>',
-  props: ['description']
+  props: ['description'],
 }
 
 const ElTagStub = {
   name: 'ElTagStub',
   template: '<span class="el-tag" :data-type="type"><slot/></span>',
-  props: ['type', 'size', 'effect']
+  props: ['type', 'size', 'effect'],
 }
 
 const ElDialogStub = {
@@ -79,7 +81,7 @@ const ElDialogStub = {
         <slot name="footer"/>
       </div>
     </div>
-  `
+  `,
 }
 
 const ElDrawerStub = {
@@ -89,7 +91,7 @@ const ElDrawerStub = {
     <div v-if="modelValue" data-testid="drawer">
       <slot/>
     </div>
-  `
+  `,
 }
 
 const ElFormStub = {
@@ -98,64 +100,68 @@ const ElFormStub = {
   template: '<form><slot/></form>',
   setup(_, { expose }: any) {
     expose({
-      validate: (cb: any) => validateMock(cb)
+      validate: (cb: any) => validateMock(cb),
     })
-  }
+  },
 }
 
 const ElFormItemStub = {
   name: 'ElFormItemStub',
   template: '<div class="el-form-item"><slot/></div>',
-  props: ['label', 'prop']
+  props: ['label', 'prop'],
 }
 
 const ElDatePickerStub = {
   name: 'ElDatePickerStub',
-  template: '<input :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'type', 'valueFormat']
+  template:
+    '<input :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'placeholder', 'type', 'valueFormat'],
 }
 
 const ElSwitchStub = {
   name: 'ElSwitchStub',
-  template: '<button role="switch" :aria-checked="String(modelValue)" @click="$emit(\'update:modelValue\', !modelValue)">{{ modelValue }}</button>',
-  props: ['modelValue']
+  template:
+    '<button role="switch" :aria-checked="String(modelValue)" @click="$emit(\'update:modelValue\', !modelValue)">{{ modelValue }}</button>',
+  props: ['modelValue'],
 }
 
 const ElCheckboxGroupStub = {
   name: 'ElCheckboxGroupStub',
   props: ['modelValue'],
-  template: '<div class="el-checkbox-group"><slot/></div>'
+  template: '<div class="el-checkbox-group"><slot/></div>',
 }
 
 const ElCheckboxStub = {
   name: 'ElCheckboxStub',
   props: ['label', 'modelValue'],
-  template: '<label class="el-checkbox" @click.prevent="$emit(\'update:modelValue\', label)">{{ label }}<slot/></label>'
+  template:
+    '<label class="el-checkbox" @click.prevent="$emit(\'update:modelValue\', label)">{{ label }}<slot/></label>',
 }
 
 const ElTimePickerStub = {
   name: 'ElTimePickerStub',
-  template: '<input :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'format', 'valueFormat']
+  template:
+    '<input :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)" />',
+  props: ['modelValue', 'placeholder', 'format', 'valueFormat'],
 }
 
 const ElDescriptionsStub = {
   name: 'ElDescriptionsStub',
   template: '<div class="el-descriptions"><slot/></div>',
-  props: ['column', 'border']
+  props: ['column', 'border'],
 }
 
 const ElDescriptionsItemStub = {
   name: 'ElDescriptionsItemStub',
   template: '<div class="el-descriptions-item"><slot/></div>',
-  props: ['label']
+  props: ['label'],
 }
 
 function mountView() {
   return mount(AnniversaryList, {
     global: {
       directives: {
-        loading: { mounted: () => {}, updated: () => {}, unmounted: () => {} }
+        loading: { mounted: () => {}, updated: () => {}, unmounted: () => {} },
       },
       stubs: {
         'el-button': ElButtonStub,
@@ -175,9 +181,9 @@ function mountView() {
         'el-checkbox': ElCheckboxStub,
         'el-time-picker': ElTimePickerStub,
         'el-descriptions': ElDescriptionsStub,
-        'el-descriptions-item': ElDescriptionsItemStub
-      }
-    }
+        'el-descriptions-item': ElDescriptionsItemStub,
+      },
+    },
   })
 }
 
@@ -196,7 +202,9 @@ describe('AnniversaryList.vue', () => {
   })
 
   it('loads anniversaries on mount', async () => {
-    getAnniversariesMock.mockResolvedValue({ data: [{ id: 1, name: '生日', date: '2025-01-01' }] } as any)
+    getAnniversariesMock.mockResolvedValue({
+      data: [{ id: 1, name: '生日', date: '2025-01-01' }],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     expect(getAnniversariesMock).toHaveBeenCalled()
@@ -214,7 +222,9 @@ describe('AnniversaryList.vue', () => {
   it('opens create dialog with reset form when 新建纪念日 clicked', async () => {
     const wrapper = mountView()
     await flushPromises()
-    const newButton = wrapper.findAllComponents(ElButtonStub).find((b) => b.text().includes('新建纪念日'))!
+    const newButton = wrapper
+      .findAllComponents(ElButtonStub)
+      .find((b) => b.text().includes('新建纪念日'))!
     await newButton.trigger('click')
     await flushPromises()
     expect((wrapper.vm as any).showForm).toBe(true)
@@ -270,7 +280,19 @@ describe('AnniversaryList.vue', () => {
   })
 
   it('editFromDetail populates form and opens dialog', async () => {
-    getAnniversaryByIdMock.mockResolvedValue({ data: { id: 1, name: '生日', date: '2025-01-01', repeatType: 'YEARLY', remindEnabled: true, remindTime: '10:00', remindDaysBefore: '1,3', tags: '家人,朋友', notes: '重要' } } as any)
+    getAnniversaryByIdMock.mockResolvedValue({
+      data: {
+        id: 1,
+        name: '生日',
+        date: '2025-01-01',
+        repeatType: 'YEARLY',
+        remindEnabled: true,
+        remindTime: '10:00',
+        remindDaysBefore: '1,3',
+        tags: '家人,朋友',
+        notes: '重要',
+      },
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     await (wrapper.vm as any).openDetail({ id: 1 })
@@ -314,7 +336,10 @@ describe('AnniversaryList.vue', () => {
     ;(wrapper.vm as any).form.date = '2025-12-31'
     await (wrapper.vm as any).handleSave()
     await flushPromises()
-    expect(updateAnniversaryMock).toHaveBeenCalledWith(7, expect.objectContaining({ name: '新名', date: '2025-12-31' }))
+    expect(updateAnniversaryMock).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ name: '新名', date: '2025-12-31' }),
+    )
     expect(createAnniversaryMock).not.toHaveBeenCalled()
   })
 
@@ -332,7 +357,9 @@ describe('AnniversaryList.vue', () => {
 
   it('handleSave displays error message on API failure', async () => {
     const { ElMessage } = await import('element-plus')
-    createAnniversaryMock.mockRejectedValue({ response: { data: { message: '名称已存在' } } } as any)
+    createAnniversaryMock.mockRejectedValue({
+      response: { data: { message: '名称已存在' } },
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     ;(wrapper.vm as any).openCreate()
@@ -409,11 +436,13 @@ describe('AnniversaryList.vue', () => {
   })
 
   it('allTags computed extracts unique tags from list', async () => {
-    getAnniversariesMock.mockResolvedValue({ data: [
-      { id: 1, tags: '家人,朋友' },
-      { id: 2, tags: '工作,家人' },
-      { id: 3, tags: '' }
-    ] } as any)
+    getAnniversariesMock.mockResolvedValue({
+      data: [
+        { id: 1, tags: '家人,朋友' },
+        { id: 2, tags: '工作,家人' },
+        { id: 3, tags: '' },
+      ],
+    } as any)
     const wrapper = mountView()
     await flushPromises()
     const allTags = (wrapper.vm as any).allTags
