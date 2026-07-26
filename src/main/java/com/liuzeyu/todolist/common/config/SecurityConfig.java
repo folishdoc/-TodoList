@@ -1,8 +1,7 @@
 package com.liuzeyu.todolist.common.config;
 
 import jakarta.servlet.Filter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,10 +9,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -22,38 +20,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Security配置
+ * Security 配置
  */
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
+    @Value("${app.cors.allowed-origins:}")
+    private String allowedOrigins;
+
     /**
-     * 配置CORS跨域
+     * 配置 CORS 跨域
+     * 生产环境通过 app.cors.allowed-origins 指定允许的域名（逗号分隔）
+     * 开发环境不配置时默认允许所有来源
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 允许所有来源（开发环境）- 注意：当allowCredentials为true时，不能使用"*"
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        // 允许所有HTTP方法
+        if (allowedOrigins == null || allowedOrigins.isBlank()) {
+            configuration.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+        }
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        // 允许所有请求头
         configuration.setAllowedHeaders(List.of("*"));
-        // 允许携带认证信息
         configuration.setAllowCredentials(true);
-        // 预检请求缓存时间
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Bean

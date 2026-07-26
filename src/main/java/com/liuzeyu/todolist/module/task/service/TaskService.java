@@ -146,12 +146,19 @@ public class TaskService {
     public void deleteTask(Long userId, Long taskId) {
         Task task = getTask(userId, taskId);
         
-        // 递归删除所有子任务
-        List<Task> subtasks = taskRepository.findByUserIdAndParentId(userId, taskId);
-        for (Task subtask : subtasks) {
-            deleteTask(userId, subtask.getId());
+        // 迭代删除所有子任务（BFS避免栈溢出）
+        java.util.Queue<Long> queue = new java.util.LinkedList<>();
+        queue.add(taskId);
+        while (!queue.isEmpty()) {
+            Long currentId = queue.poll();
+            List<Task> subtasks = taskRepository.findByUserIdAndParentId(userId, currentId);
+            for (Task subtask : subtasks) {
+                queue.add(subtask.getId());
+            }
+            if (!currentId.equals(taskId)) {
+                taskRepository.deleteById(currentId);
+            }
         }
-        
         taskRepository.delete(task);
     }
 
@@ -186,31 +193,8 @@ public class TaskService {
         LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime endOfDay = startOfDay.plusDays(1);
         
-        return taskRepository.findAllByUserId(userId).stream()
-            .filter(task -> task.getStatus() == 0) // 未完成
-            .filter(task -> {
-                // 如果设置了开始日期，必须已经到达或超过开始日期
-                if (task.getStartDate() != null) {
-                    return !task.getStartDate().isAfter(endOfDay);
-                }
-                return true; // 没有设置开始日期的任务也显示
-            })
-            .filter(task -> {
-                // 如果设置了截止日期，必须在今天或之后
-                if (task.getDueDate() != null) {
-                    return !task.getDueDate().isBefore(startOfDay);
-                }
-                return true; // 没有设置截止日期的任务也显示
-            })
-            .sorted((t1, t2) -> {
-                // 按优先级降序，然后按截止日期升序
-                int priorityCompare = Integer.compare(t2.getPriority(), t1.getPriority());
-                if (priorityCompare != 0) return priorityCompare;
-                if (t1.getDueDate() == null) return 1;
-                if (t2.getDueDate() == null) return -1;
-                return t1.getDueDate().compareTo(t2.getDueDate());
-            })
-            .toList();
+        // 数据库层过滤：状态=未完成, 已开始或未设开始日期, 未过期或未设截止日期
+        return taskRepository.findTodayTasks(userId, startOfDay, endOfDay);
     }
 
     /**
@@ -260,30 +244,30 @@ public class TaskService {
      * 返回所有任务，前端自行构建层级
      */
     public Page<TaskWithSubtasks> getTasksWithSubtasks(Long userId, int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-            Page<Task> taskPage = taskRepository.findByUserId(userId, pageable);
-            
-            // 将所有任务包装成TaskWithSubtasks
-            List<TaskWithSubtasks> tasksWithSubtasks = taskPage.getContent().stream()
-                .map(task -> {
-                    TaskWithSubtasks wrapper = new TaskWithSubtasks(task);
-                    // 获取该任务的直接子任务
-                    List<Task> directSubtasks = taskRepository.findByUserIdAndParentId(userId, task.getId());
-                    wrapper.setSubtasks(directSubtasks);
-                    return wrapper;
-                })
-                .collect(Collectors.toList());
-            
-            // 创建新的Page对象
-            return new org.springframework.data.domain.PageImpl<>(
-                tasksWithSubtasks,
-                pageable,
-                taskPage.getTotalElements()
-            );
-        } catch (Exception e) {
-            log.error("获取任务列表失败", e);
-            throw new RuntimeException("获取任务列表失败: " + e.getMessage(), e);
-        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Task> taskPage = taskRepository.findByUserId(userId, pageable);
+        
+        List<Task> tasks = taskPage.getContent();
+        // 批量获取所有子任务（避免N+1）
+        List<Long> taskIds = tasks.stream().map(Task::getId).collect(Collectors.toList());
+        List<Task> allSubtasks = taskRepository.findByUserIdAndParentIdIn(userId, taskIds);
+        java.util.Map<Long, List<Task>> subtasksByParentId = allSubtasks.stream()
+            .collect(Collectors.groupingBy(Task::getParentId));
+        
+        // 将所有任务包装成TaskWithSubtasks
+        List<TaskWithSubtasks> tasksWithSubtasks = tasks.stream()
+            .map(task -> {
+                TaskWithSubtasks wrapper = new TaskWithSubtasks(task);
+                wrapper.setSubtasks(subtasksByParentId.getOrDefault(task.getId(), java.util.Collections.emptyList()));
+                return wrapper;
+            })
+            .collect(Collectors.toList());
+        
+        // 创建新的Page对象
+        return new org.springframework.data.domain.PageImpl<>(
+            tasksWithSubtasks,
+            pageable,
+            taskPage.getTotalElements()
+        );
     }
 }

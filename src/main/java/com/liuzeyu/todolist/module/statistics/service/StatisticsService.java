@@ -29,26 +29,28 @@ public class StatisticsService {
      * 获取任务总体统计
      */
     public TaskStatistics getTaskStatistics(Long userId) {
-        List<Task> allTasks = taskRepository.findAllByUserId(userId);
-        
-        long totalTasks = allTasks.size();
-        long completedTasks = allTasks.stream().filter(t -> t.getStatus() == 1).count();
+        long totalTasks = taskRepository.countByUserId(userId);
+        long completedTasks = taskRepository.countByUserIdAndStatus(userId, 1);
         long pendingTasks = totalTasks - completedTasks;
         double completionRate = totalTasks > 0 ? (completedTasks * 100.0 / totalTasks) : 0;
-        
-        long highPriority = allTasks.stream().filter(t -> t.getPriority() == 3).count();
-        long mediumPriority = allTasks.stream().filter(t -> t.getPriority() == 2).count();
-        long lowPriority = allTasks.stream().filter(t -> t.getPriority() == 1).count();
-        
+
+        List<Object[]> priorityCounts = taskRepository.countByUserIdGroupByPriority(userId);
+        long highPriority = 0, mediumPriority = 0, lowPriority = 0;
+        for (Object[] row : priorityCounts) {
+            Integer priority = (Integer) row[0];
+            Long count = (Long) row[1];
+            if (priority == 3) highPriority = count;
+            else if (priority == 2) mediumPriority = count;
+            else if (priority == 1) lowPriority = count;
+        }
+
         LocalDate today = LocalDate.now();
-        long todayTasks = allTasks.stream()
-            .filter(t -> t.getDueDate() != null && t.getDueDate().toLocalDate().equals(today))
-            .count();
-        
-        long upcomingTasks = allTasks.stream()
-            .filter(t -> t.getDueDate() != null && t.getDueDate().toLocalDate().isAfter(today))
-            .count();
-        
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        long todayTasks = taskRepository.countByUserIdAndDueDateBetween(userId, startOfDay, endOfDay);
+
+        long upcomingTasks = taskRepository.countByUserIdAndDueDateAfter(userId, endOfDay);
+
         return new TaskStatistics(
             totalTasks, completedTasks, pendingTasks, completionRate,
             highPriority, mediumPriority, lowPriority,
@@ -61,18 +63,19 @@ public class StatisticsService {
      */
     public List<TaskDistribution> getTasksByList(Long userId) {
         List<TaskList> lists = taskListRepository.findByUserId(userId);
-        List<Task> allTasks = taskRepository.findAllByUserId(userId);
-        
-        Map<Long, Long> countByList = allTasks.stream()
-            .filter(t -> t.getListId() != null)
-            .collect(Collectors.groupingBy(Task::getListId, Collectors.counting()));
-        
+        List<Object[]> countByList = taskRepository.countByUserIdGroupByListId(userId);
+
+        java.util.Map<Long, Long> countMap = new java.util.HashMap<>();
+        for (Object[] row : countByList) {
+            countMap.put((Long) row[0], (Long) row[1]);
+        }
+
         List<TaskDistribution> distributions = new ArrayList<>();
         String[] colors = {"#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"};
         int colorIndex = 0;
-        
+
         for (TaskList list : lists) {
-            long count = countByList.getOrDefault(list.getId(), 0L);
+            Long count = countMap.getOrDefault(list.getId(), 0L);
             if (count > 0) {
                 distributions.add(new TaskDistribution(
                     list.getName(),
@@ -81,7 +84,7 @@ public class StatisticsService {
                 ));
             }
         }
-        
+
         return distributions;
     }
 
@@ -89,17 +92,17 @@ public class StatisticsService {
      * 获取按优先级分布的任务统计
      */
     public List<TaskDistribution> getTasksByPriority(Long userId) {
-        List<Task> allTasks = taskRepository.findAllByUserId(userId);
-        
-        long high = allTasks.stream().filter(t -> t.getPriority() == 3).count();
-        long medium = allTasks.stream().filter(t -> t.getPriority() == 2).count();
-        long low = allTasks.stream().filter(t -> t.getPriority() == 1).count();
-        
+        List<Object[]> priorityCounts = taskRepository.countByUserIdGroupByPriority(userId);
+
         List<TaskDistribution> distributions = new ArrayList<>();
-        if (high > 0) distributions.add(new TaskDistribution("高优先级", high, "#FF6B6B"));
-        if (medium > 0) distributions.add(new TaskDistribution("中优先级", medium, "#4ECDC4"));
-        if (low > 0) distributions.add(new TaskDistribution("低优先级", low, "#45B7D1"));
-        
+        for (Object[] row : priorityCounts) {
+            Integer priority = (Integer) row[0];
+            Long count = (Long) row[1];
+            if (priority == 3 && count > 0) distributions.add(new TaskDistribution("高优先级", count, "#FF6B6B"));
+            else if (priority == 2 && count > 0) distributions.add(new TaskDistribution("中优先级", count, "#4ECDC4"));
+            else if (priority == 1 && count > 0) distributions.add(new TaskDistribution("低优先级", count, "#45B7D1"));
+        }
+
         return distributions;
     }
 
@@ -107,31 +110,33 @@ public class StatisticsService {
      * 获取近7天任务趋势
      */
     public List<DailyTaskStats> getDailyTrend(Long userId, int days) {
-        List<Task> allTasks = taskRepository.findAllByUserId(userId);
-        List<DailyTaskStats> trend = new ArrayList<>();
-        
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(days - 1);
-        
-        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-            LocalDateTime startOfDay = date.atStartOfDay();
-            LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-            
-            long created = allTasks.stream()
-                .filter(t -> t.getCreatedAt() != null 
-                    && !t.getCreatedAt().isBefore(startOfDay) 
-                    && t.getCreatedAt().isBefore(endOfDay))
-                .count();
-            
-            long completed = allTasks.stream()
-                .filter(t -> t.getCompletedAt() != null 
-                    && !t.getCompletedAt().isBefore(startOfDay) 
-                    && t.getCompletedAt().isBefore(endOfDay))
-                .count();
-            
-            trend.add(new DailyTaskStats(date, created, completed));
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+
+        List<Object[]> createdRaw = taskRepository.countCreatedByDateAfter(userId, startDateTime);
+        List<Object[]> completedRaw = taskRepository.countCompletedByDateAfter(userId, startDateTime);
+
+        java.util.Map<LocalDate, Long> createdMap = new java.util.HashMap<>();
+        for (Object[] row : createdRaw) {
+            LocalDate date = row[0] instanceof java.sql.Date ? ((java.sql.Date) row[0]).toLocalDate() : (LocalDate) row[0];
+            createdMap.put(date, (Long) row[1]);
         }
-        
+        java.util.Map<LocalDate, Long> completedMap = new java.util.HashMap<>();
+        for (Object[] row : completedRaw) {
+            LocalDate date = row[0] instanceof java.sql.Date ? ((java.sql.Date) row[0]).toLocalDate() : (LocalDate) row[0];
+            completedMap.put(date, (Long) row[1]);
+        }
+
+        List<DailyTaskStats> trend = new ArrayList<>();
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            trend.add(new DailyTaskStats(
+                date,
+                createdMap.getOrDefault(date, 0L),
+                completedMap.getOrDefault(date, 0L)
+            ));
+        }
+
         return trend;
     }
 }

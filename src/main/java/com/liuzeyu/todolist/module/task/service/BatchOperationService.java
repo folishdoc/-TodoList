@@ -60,45 +60,51 @@ public class BatchOperationService {
      */
     private int batchComplete(Long userId, List<Long> taskIds) {
         List<Task> tasks = taskRepository.findAllById(taskIds);
-        int count = 0;
+        List<Task> toSave = new java.util.ArrayList<>();
         
         for (Task task : tasks) {
             if (task.getUserId().equals(userId) && task.getStatus() == 0) {
                 task.setStatus(1);
                 task.setCompletedAt(LocalDateTime.now());
-                taskRepository.save(task);
-                count++;
+                toSave.add(task);
             }
         }
         
-        return count;
+        if (!toSave.isEmpty()) {
+            taskRepository.saveAll(toSave);
+        }
+        return toSave.size();
     }
 
     /**
      * 批量删除任务（级联删除子任务）
      */
     private int batchDelete(Long userId, List<Long> taskIds) {
+        // 先验证所有task属于该用户
         List<Task> tasks = taskRepository.findAllById(taskIds);
-        int count = 0;
-
+        java.util.List<Long> allIds = new java.util.ArrayList<>();
+        
         for (Task task : tasks) {
             if (task.getUserId().equals(userId)) {
-                deleteTaskCascade(task.getId());
-                count++;
+                allIds.add(task.getId());
             }
         }
-
-        return count;
-    }
-
-    private void deleteTaskCascade(Long taskId) {
-        Task task = taskRepository.findById(taskId).orElse(null);
-        if (task == null) return;
-        List<Task> subtasks = taskRepository.findByUserIdAndParentId(task.getUserId(), taskId);
-        for (Task subtask : subtasks) {
-            deleteTaskCascade(subtask.getId());
+        
+        // 迭代收集所有子任务ID（BFS避免栈溢出）
+        java.util.Queue<Long> queue = new java.util.LinkedList<>(allIds);
+        java.util.List<Long> descendantIds = new java.util.ArrayList<>();
+        while (!queue.isEmpty()) {
+            Long currentId = queue.poll();
+            List<Task> subtasks = taskRepository.findByUserIdAndParentId(userId, currentId);
+            for (Task subtask : subtasks) {
+                descendantIds.add(subtask.getId());
+                queue.add(subtask.getId());
+            }
         }
-        taskRepository.delete(task);
+        
+        allIds.addAll(descendantIds);
+        taskRepository.deleteAllById(allIds);
+        return tasks.size();
     }
 
     /**
@@ -110,17 +116,19 @@ public class BatchOperationService {
         }
         
         List<Task> tasks = taskRepository.findAllById(taskIds);
-        int count = 0;
+        List<Task> toSave = new java.util.ArrayList<>();
         
         for (Task task : tasks) {
             if (task.getUserId().equals(userId)) {
                 task.setListId(targetListId);
-                taskRepository.save(task);
-                count++;
+                toSave.add(task);
             }
         }
         
-        return count;
+        if (!toSave.isEmpty()) {
+            taskRepository.saveAll(toSave);
+        }
+        return toSave.size();
     }
 
     /**
@@ -132,16 +140,18 @@ public class BatchOperationService {
         }
         
         List<Task> tasks = taskRepository.findAllById(taskIds);
-        int count = 0;
+        List<Task> toSave = new java.util.ArrayList<>();
         
         for (Task task : tasks) {
             if (task.getUserId().equals(userId)) {
                 task.setPriority(priority);
-                taskRepository.save(task);
-                count++;
+                toSave.add(task);
             }
         }
         
-        return count;
+        if (!toSave.isEmpty()) {
+            taskRepository.saveAll(toSave);
+        }
+        return toSave.size();
     }
 }
