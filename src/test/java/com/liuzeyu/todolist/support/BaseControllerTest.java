@@ -8,6 +8,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.liuzeyu.todolist.common.exception.GlobalExceptionHandler;
+import com.liuzeyu.todolist.common.util.JwtUtil;
+import com.liuzeyu.todolist.module.auth.service.AuthService;
 import com.liuzeyu.todolist.module.anniversary.service.AnniversaryService;
 import com.liuzeyu.todolist.module.export.service.ExportService;
 import com.liuzeyu.todolist.module.habit.service.HabitService;
@@ -52,6 +54,8 @@ public abstract class BaseControllerTest {
     @MockitoBean protected TagService tagService;
     @MockitoBean protected TaskService taskService;
     @MockitoBean protected TaskListService taskListService;
+    @MockitoBean protected AuthService authService;
+    @MockitoBean protected JwtUtil jwtUtil;
 
     /**
      * 携带个人 token 的 request post processor。
