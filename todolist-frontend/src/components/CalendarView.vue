@@ -288,7 +288,7 @@
               :style="
                 dragState?.task?.id === task.id && dragPreviewStyle
                   ? dragPreviewStyle
-                  : getBarStyle(task)
+                  : getBarStyle(task, barDays)
               "
               @pointerdown.prevent.stop="onBarPointerDown($event, task)"
             >
@@ -376,7 +376,7 @@
               @pointerdown.prevent.stop="onDayBarResizeStart($event, task, 'top')"
             ></div>
             <span class="daybar-task-title">{{ task.title }}</span>
-            <span class="daybar-task-time">{{ getDayBarTimeLabel(task) }}</span>
+            <span class="daybar-task-time">{{ getDayBarTimeLabel(task, dayBarDate) }}</span>
             <div
               class="daybar-resize bottom"
               @pointerdown.prevent.stop="onDayBarResizeStart($event, task, 'bottom')"
@@ -434,7 +434,16 @@
 import { Filter } from '@element-plus/icons-vue'
 import { formatLocalDateTime } from '../utils/date'
 import { useCalendarState } from '../composables/useCalendarState'
-import { useCalendarGrid } from '../composables/useCalendarGrid'
+import {
+  useCalendarGrid,
+  isOverdue,
+  formatTime,
+  getTaskDateType,
+  taskTooltipContent,
+  getBarStyle,
+  getDayBarTimeLabel,
+  getDayBarStyle,
+} from '../composables/useCalendarGrid'
 import { useCalendarView } from '../composables/useCalendarView'
 import { useCalendarTasks } from '../composables/useCalendarTasks'
 import { useCalendarDrag } from '../composables/useCalendarDrag'

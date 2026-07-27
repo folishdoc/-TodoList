@@ -123,7 +123,8 @@ export function useCalendarView(
         dueDate.setHours(time.getHours())
         dueDate.setMinutes(time.getMinutes())
       }
-      const startDate = new Date()
+      const startDate = new Date(dueDate)
+      startDate.setHours(0, 0, 0, 0)
       await taskApi.createTask({
         title: newTaskForm.value.title,
         description: newTaskForm.value.description,
