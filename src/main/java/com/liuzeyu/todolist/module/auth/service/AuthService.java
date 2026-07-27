@@ -4,7 +4,7 @@ import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.common.util.JwtUtil;
 import com.liuzeyu.todolist.module.auth.controller.LoginResponse;
 import com.liuzeyu.todolist.module.auth.entity.User;
-import com.liuzeyu.todolist.module.auth.repository.UserRepository;
+import com.liuzeyu.todolist.module.auth.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,12 +13,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponse register(String username, String password, String displayName) {
-        if (userRepository.existsByUsername(username)) {
+        if (userMapper.existsByUsername(username)) {
             throw new BusinessException(409, "用户名已存在");
         }
 
@@ -27,13 +27,13 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(password));
         user.setDisplayName(displayName != null && !displayName.isBlank() ? displayName : username);
 
-        user = userRepository.save(user);
+        userMapper.insert(user);
         String jwt = jwtUtil.generateToken(user.getId());
         return new LoginResponse(jwt, user.getId(), user.getUsername(), user.getDisplayName());
     }
 
     public LoginResponse login(String username, String password) {
-        User user = userRepository.findByUsername(username)
+        User user = userMapper.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(401, "用户名或密码错误"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {

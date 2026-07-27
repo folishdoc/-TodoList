@@ -3,7 +3,7 @@ package com.liuzeyu.todolist.module.list.service;
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.list.dto.TaskListRequest;
 import com.liuzeyu.todolist.module.list.entity.TaskList;
-import com.liuzeyu.todolist.module.list.mapper.TaskListRepository;
+import com.liuzeyu.todolist.module.list.mapper.TaskListMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskListService {
 
-    private final TaskListRepository taskListRepository;
+    private final TaskListMapper taskListMapper;
 
     /**
      * 创建清单
@@ -29,22 +29,22 @@ public class TaskListService {
         taskList.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0);
         taskList.setIsDefault(false);
 
-        return taskListRepository.save(taskList);
+        taskListMapper.insert(taskList);
+        return taskList;
     }
 
-    /**
-     * 获取用户的清单列表
-     */
     public List<TaskList> getTaskLists(Long userId) {
-        return taskListRepository.findByUserIdOrderBySortOrderAsc(userId);
+        return taskListMapper.findByUserIdOrderBySortOrderAsc(userId);
     }
 
     /**
      * 获取清单详情
      */
     public TaskList getTaskList(Long userId, Long listId) {
-        TaskList taskList = taskListRepository.findById(listId)
-                .orElseThrow(() -> new BusinessException(404, "清单不存在"));
+        TaskList taskList = taskListMapper.findById(listId);
+        if (taskList == null) {
+            throw new BusinessException(404, "清单不存在");
+        }
         
         if (!taskList.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权访问该清单");
@@ -65,7 +65,8 @@ public class TaskListService {
             taskList.setSortOrder(request.getSortOrder());
         }
 
-        return taskListRepository.save(taskList);
+        taskListMapper.update(taskList);
+        return taskList;
     }
 
     /**
@@ -79,6 +80,6 @@ public class TaskListService {
             throw new BusinessException(400, "不能删除默认清单");
         }
         
-        taskListRepository.delete(taskList);
+        taskListMapper.deleteById(taskList.getId());
     }
 }

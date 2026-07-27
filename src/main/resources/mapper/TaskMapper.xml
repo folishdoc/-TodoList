@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.liuzeyu.todolist.module.task.mapper.TaskMapper">
+
+    <sql id="taskColumns">
+        id, user_id, list_id, parent_id, title, description, priority, status,
+        due_date, start_date, reminder_time, repeat_rule, completed_at, sort_order,
+        created_at, updated_at
+    </sql>
+
+    <!-- 分页查询用户任务 -->
+    <select id="findByUserId" resultType="com.liuzeyu.todolist.module.task.entity.Task">
+        SELECT <include refid="taskColumns"/>
+        FROM tasks
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM tasks WHERE user_id = #{userId}
+    </select>
+
+    <!-- 批量获取子任务 -->
+    <select id="findByUserIdAndParentIdIn" resultType="com.liuzeyu.todolist.module.task.entity.Task">
+        SELECT <include refid="taskColumns"/>
+        FROM tasks
+        WHERE user_id = #{userId} AND parent_id IN
+        <foreach item="pid" collection="parentIds" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+    </select>
+
+    <!-- 今日任务 -->
+    <select id="findTodayTasks" resultType="com.liuzeyu.todolist.module.task.entity.Task">
+        SELECT <include refid="taskColumns"/>
+        FROM tasks
+        WHERE user_id = #{userId}
+          AND status = 0
+          AND (start_date IS NULL OR start_date &lt; #{end})
+          AND (due_date IS NULL OR due_date &gt;= #{start})
+        ORDER BY priority DESC, sort_order ASC
+    </select>
+
+    <!-- 未来任务 -->
+    <select id="findUpcomingTasks" resultType="com.liuzeyu.todolist.module.task.entity.Task">
+        SELECT <include refid="taskColumns"/>
+        FROM tasks
+        WHERE user_id = #{userId}
+          AND due_date &gt;= #{date}
+        ORDER BY due_date ASC, priority DESC
+    </select>
+
+    <!-- 搜索任务 -->
+    <select id="searchTasks" resultType="com.liuzeyu.todolist.module.task.entity.Task">
+        SELECT <include refid="taskColumns"/>
+        FROM tasks
+        WHERE user_id = #{userId}
+        <if test="keyword != null and keyword != ''">
+            AND (title LIKE CONCAT('%', #{keyword}, '%')
+                 OR description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countSearchTasks" resultType="long">
+        SELECT COUNT(*) FROM tasks WHERE user_id = #{userId}
+        <if test="keyword != null and keyword != ''">
+            AND (title LIKE CONCAT('%', #{keyword}, '%')
+                 OR description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </select>
+
+    <!-- 日期范围查询 -->
+    <select id="findByDateRange" resultType="com.liuzeyu.todolist.module.task.entity.Task">
+        SELECT <include refid="taskColumns"/>
+        FROM tasks
+        WHERE user_id = #{userId}
+          AND (
+            (start_date &gt;= #{rangeStart} AND start_date &lt; #{rangeEnd})
+            OR (due_date &gt;= #{rangeStart} AND due_date &lt; #{rangeEnd})
+            OR (start_date &lt;= #{rangeStart} AND due_date &gt;= #{rangeEnd})
+          )
+        ORDER BY priority DESC, sort_order ASC
+    </select>
+
+    <!-- ===== 统计聚合 ===== -->
+
+    <select id="countByUserIdAndStatus" resultType="long">
+        SELECT COUNT(*) FROM tasks WHERE user_id = #{userId} AND status = #{status}
+    </select>
+
+    <select id="countByUserIdGroupByPriority" resultType="java.util.HashMap">
+        SELECT priority as "key", COUNT(*) as "value"
+        FROM tasks WHERE user_id = #{userId} GROUP BY priority
+    </select>
+
+    <select id="countByUserIdAndDueDateBetween" resultType="long">
+        SELECT COUNT(*) FROM tasks
+        WHERE user_id = #{userId} AND due_date &gt;= #{start} AND due_date &lt; #{end}
+    </select>
+
+    <select id="countByUserIdAndDueDateAfter" resultType="long">
+        SELECT COUNT(*) FROM tasks
+        WHERE user_id = #{userId} AND due_date &gt; #{date}
+    </select>
+
+    <select id="countByUserIdGroupByListId" resultType="java.util.HashMap">
+        SELECT list_id as "key", COUNT(*) as "value"
+        FROM tasks
+        WHERE user_id = #{userId} AND list_id IS NOT NULL
+        GROUP BY list_id
+    </select>
+
+    <select id="countCreatedByDateAfter" resultType="java.util.HashMap">
+        SELECT DATE(created_at) as "key", COUNT(*) as "value"
+        FROM tasks
+        WHERE user_id = #{userId} AND created_at &gt;= #{start}
+        GROUP BY DATE(created_at)
+    </select>
+
+    <select id="countCompletedByDateAfter" resultType="java.util.HashMap">
+        SELECT DATE(completed_at) as "key", COUNT(*) as "value"
+        FROM tasks
+        WHERE user_id = #{userId} AND completed_at &gt;= #{start}
+        GROUP BY DATE(completed_at)
+    </select>
+
+    <!-- ===== 批量操作 ===== -->
+
+    <update id="batchUpdate" parameterType="java.util.List">
+        <foreach collection="tasks" item="t" separator=";">
+            UPDATE tasks
+            SET list_id=#{t.listId}, status=#{t.status}, priority=#{t.priority},
+                completed_at=#{t.completedAt}, updated_at=NOW()
+            WHERE id=#{t.id} AND user_id=#{t.userId}
+        </foreach>
+    </update>
+
+    <delete id="batchDeleteByIds">
+        DELETE FROM tasks WHERE id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>
