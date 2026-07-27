@@ -36,7 +36,6 @@ public class SecurityConfig {
 
     @Value("${app.personal.token}")
     private String personalToken;
-
     /**
      * 配置 CORS 跨域
      * 生产环境通过 app.cors.allowed-origins 指定允许的域名（逗号分隔）
