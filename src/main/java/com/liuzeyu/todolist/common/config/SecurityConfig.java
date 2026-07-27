@@ -20,9 +20,15 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.liuzeyu.todolist.common.util.JwtUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * Security 配置
@@ -34,8 +40,6 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins:}")
     private String allowedOrigins;
 
-    @Value("${app.personal.token}")
-    private String personalToken;
     /**
      * 配置 CORS 跨域
      * 生产环境通过 app.cors.allowed-origins 指定允许的域名（逗号分隔）
@@ -63,31 +67,31 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            // 启用CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // 禁用CSRF
-            .csrf(csrf -> csrf.disable())
-            // 无状态会话
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // 授权规则：所有请求需认证（通过匿名认证过滤器注入 userId=1）
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            // 个人令牌认证过滤器：验证 Bearer token 并注入 userId=1
-            .addFilterBefore(personalTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-        return http.build();
+    /**
+     * 阻止 Spring Security 自动创建内存 UserDetailsService（我们使用 JWT 过滤器）
+     */
+    @Bean
+    public UserDetailsService noopUserDetailsService() {
+        return username -> { throw new UsernameNotFoundException("不使用内存用户"); };
     }
 
     @Bean
-    public OncePerRequestFilter personalTokenFilter() {
-        return new OncePerRequestFilter() {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtil jwtUtil) throws Exception {
+        OncePerRequestFilter jwtFilter = new OncePerRequestFilter() {
             @Override
             protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
                     throws ServletException, IOException {
+                String path = request.getRequestURI();
+                // /api/auth/** 路径不需要 JWT 检查（登录、刷新令牌等）
+                if (path.startsWith("/api/auth/")) {
+                    chain.doFilter(request, response);
+                    return;
+                }
+
                 String authHeader = request.getHeader("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     response.setStatus(401);
@@ -96,18 +100,36 @@ public class SecurityConfig {
                     return;
                 }
                 String token = authHeader.substring(7);
-                if (!personalToken.equals(token)) {
+
+                Long userId;
+                try {
+                    userId = jwtUtil.getUserIdFromToken(token);
+                } catch (Exception e) {
                     response.setStatus(401);
                     response.setContentType("application/json");
-                    response.getWriter().write("{\"code\":401,\"message\":\"Invalid token\"}");
+                    response.getWriter().write("{\"code\":401,\"message\":\"Invalid or expired token\"}");
                     return;
                 }
+
                 UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(1L, null, new ArrayList<>());
+                    new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 chain.doFilter(request, response);
             }
         };
+
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 }
