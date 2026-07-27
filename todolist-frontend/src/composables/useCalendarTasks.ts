@@ -13,8 +13,7 @@ export function useCalendarTasks(
 ) {
   const filteredTasks = computed(() => {
     return allTasks.value.filter((task) => {
-      if (filters.value.status === 'pending' && task.status === 1) return false
-      if (filters.value.status === 'completed' && task.status !== 1) return false
+      if (task.status === 1) return false
       if (filters.value.priority === 'high' && task.priority !== 3) return false
       if (filters.value.priority === 'medium' && task.priority !== 2) return false
       if (filters.value.priority === 'low' && task.priority !== 1) return false
