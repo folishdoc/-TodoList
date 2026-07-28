@@ -2,7 +2,6 @@ package com.liuzeyu.todolist.module.anniversary.controller;
 
 import com.liuzeyu.todolist.common.result.Result;
 import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryRequest;
-import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryVO;
 import com.liuzeyu.todolist.module.anniversary.entity.Anniversary;
 import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
 import com.liuzeyu.todolist.module.anniversary.service.AnniversaryService;
@@ -43,7 +42,7 @@ public class AnniversaryController {
      */
     @GetMapping
     @Operation(summary = "获取纪念日列表")
-    public Result<List<AnniversaryVO>> list(@AuthenticationPrincipal Long userId,
+    public Result<List<AnniversaryService.AnniversaryDetail>> list(@AuthenticationPrincipal Long userId,
                                             @RequestParam(required = false) String sortBy,
                                             @RequestParam(required = false) String order,
                                             @RequestParam(required = false) String search,
@@ -60,7 +59,7 @@ public class AnniversaryController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取纪念日详情")
-    public Result<AnniversaryVO> getDetail(@AuthenticationPrincipal Long userId,
+    public Result<AnniversaryService.AnniversaryDetail> getDetail(@AuthenticationPrincipal Long userId,
                                            @PathVariable Long id) {
         return Result.success(anniversaryService.getDetail(userId, id));
     }

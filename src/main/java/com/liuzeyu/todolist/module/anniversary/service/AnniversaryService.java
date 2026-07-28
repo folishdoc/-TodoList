@@ -3,7 +3,6 @@ package com.liuzeyu.todolist.module.anniversary.service;
 import com.liuzeyu.todolist.common.constant.PriorityEnum;
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryRequest;
-import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryVO;
 import com.liuzeyu.todolist.module.anniversary.entity.Anniversary;
 import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
 import com.liuzeyu.todolist.module.anniversary.mapper.AnniversaryMapper;
@@ -14,6 +13,8 @@ import com.liuzeyu.todolist.module.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -105,15 +106,15 @@ public class AnniversaryService {
      *
      * @param userId 用户 ID
      * @param id     纪念日 ID
-     * @return 纪念日 VO（含 nextDate、daysUntil 等）
+     * @return 纪念日详情（含 nextDate、daysUntil 等）
      */
-    public AnniversaryVO getDetail(Long userId, Long id) {
+    public AnniversaryDetail getDetail(Long userId, Long id) {
         Anniversary a = anniversaryMapper.findById(id);
         if (a == null) throw new BusinessException(404, "纪念日不存在");
         if (!a.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权查看");
         }
-        return toVO(a);
+        return toDetail(a);
     }
 
     /**
@@ -126,7 +127,7 @@ public class AnniversaryService {
      * @param tag    标签筛选（逗号分隔）
      * @return 纪念日 VO 列表
      */
-    public List<AnniversaryVO> list(Long userId, String sortBy, String order, String search, String tag) {
+    public List<AnniversaryDetail> list(Long userId, String sortBy, String order, String search, String tag) {
         List<Anniversary> list;
         if (search != null && !search.isBlank()) {
             list = anniversaryMapper.searchByName(userId, search.trim());
@@ -141,21 +142,21 @@ public class AnniversaryService {
                     .collect(Collectors.toList());
         }
 
-        // 转换为 VO
-        List<AnniversaryVO> vos = list.stream().map(this::toVO).collect(Collectors.toList());
+        // 转换为 AnniversaryDetail
+        List<AnniversaryDetail> details = list.stream().map(this::toDetail).collect(Collectors.toList());
 
         // 排序
         boolean desc = "desc".equalsIgnoreCase(order);
         String sort = sortBy != null ? sortBy : "nextDate";
-        Comparator<AnniversaryVO> cmp = switch (sort) {
-            case "name" -> Comparator.comparing(AnniversaryVO::getName);
-            case "createdAt" -> Comparator.comparingLong(AnniversaryVO::getId); // id 自增代表创建顺序
-            default -> Comparator.comparingLong(AnniversaryVO::getDaysUntil); // nextDate/daysUntil
+        Comparator<AnniversaryDetail> cmp = switch (sort) {
+            case "name" -> Comparator.comparing(AnniversaryDetail::getName);
+            case "createdAt" -> Comparator.comparingLong(AnniversaryDetail::getId); // id 自增代表创建顺序
+            default -> Comparator.comparingLong(AnniversaryDetail::getDaysUntil); // nextDate/daysUntil
         };
         if (desc) cmp = cmp.reversed();
-        vos.sort(cmp);
+        details.sort(cmp);
 
-        return vos;
+        return details;
     }
 
     /**
@@ -211,12 +212,12 @@ public class AnniversaryService {
     }
 
     /**
-     * 将 Anniversary 实体转换为 AnniversaryVO（含计算字段）
+     * 将 Anniversary 实体转换为 AnniversaryDetail（含计算字段）
      *
      * @param a 纪念日实体
-     * @return 纪念日 VO
+     * @return 纪念日详情
      */
-    private AnniversaryVO toVO(Anniversary a) {
+    private AnniversaryDetail toDetail(Anniversary a) {
         LocalDate nextDate = AnniversaryCalculator.getNextOccurrence(a.getDate(), a.getRepeatType());
         long daysUntil = AnniversaryCalculator.getDaysUntil(nextDate);
 
@@ -232,11 +233,34 @@ public class AnniversaryService {
                     .collect(Collectors.toList());
         }
 
-        return new AnniversaryVO(
+        return new AnniversaryDetail(
                 a.getId(), a.getName(), a.getDate(), a.getRepeatType(),
                 a.getRemindEnabled(), a.getRemindDaysBefore(),
                 a.getRemindTime() != null ? a.getRemindTime().toString() : "09:00",
                 a.getTags(), a.getNotes(), nextDate, daysUntil, nextRemindTimes
         );
+    }
+
+    /**
+     * 纪念日详情 — 在 Anniversary 字段基础上增加计算字段（下次日期、倒计时、提醒时间列表）
+     * <p>
+     * 替代原 AnniversaryVO DTO，作为 AnniversaryService 的内部类，将展示层数据结构
+     * 收归服务层管理。
+     */
+    @Data
+    @AllArgsConstructor
+    public static class AnniversaryDetail {
+        private Long id;
+        private String name;
+        private LocalDate date;
+        private String repeatType;
+        private Boolean remindEnabled;
+        private String remindDaysBefore;
+        private String remindTime;
+        private String tags;
+        private String notes;
+        private LocalDate nextDate;          // 计算出的下次日期
+        private Long daysUntil;              // 距离天数（正数=未来）
+        private List<LocalDateTime> nextRemindTimes; // 下次提醒时间列表
     }
 }
