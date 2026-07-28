@@ -1,7 +1,7 @@
 package com.liuzeyu.todolist.support;
 
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -13,12 +13,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Repository 切片测试 — @DataJpaTest + H2 内存库。
- * 仅加载 JPA 相关 Bean，速度极快。
+ * Mapper 切片测试 — @MybatisTest + H2 内存库。
+ * 仅加载 MyBatis 相关 Bean，速度极快。
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@DataJpaTest
+@MybatisTest
 @AutoConfigureTestDatabase
 @ActiveProfiles("test")
 @Import(TodolistApplication.class)
