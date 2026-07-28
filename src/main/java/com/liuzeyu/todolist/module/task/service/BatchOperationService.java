@@ -2,7 +2,7 @@ package com.liuzeyu.todolist.module.task.service;
 
 import com.liuzeyu.todolist.module.task.dto.BatchOperationRequest;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 批量操作服务
@@ -19,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BatchOperationService {
 
-    private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
 
     /**
      * 执行批量操作
@@ -59,7 +60,8 @@ public class BatchOperationService {
      * 批量完成任务
      */
     private int batchComplete(Long userId, List<Long> taskIds) {
-        List<Task> tasks = taskRepository.findAllById(taskIds);
+        String idsStr = taskIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+        List<Task> tasks = taskMapper.findAllByIds(userId, idsStr);
         List<Task> toSave = new java.util.ArrayList<>();
         
         for (Task task : tasks) {
@@ -71,7 +73,7 @@ public class BatchOperationService {
         }
         
         if (!toSave.isEmpty()) {
-            taskRepository.saveAll(toSave);
+            taskMapper.batchUpdate(toSave);
         }
         return toSave.size();
     }
@@ -81,7 +83,8 @@ public class BatchOperationService {
      */
     private int batchDelete(Long userId, List<Long> taskIds) {
         // 先验证所有task属于该用户
-        List<Task> tasks = taskRepository.findAllById(taskIds);
+        String idsStr = taskIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+        List<Task> tasks = taskMapper.findAllByIds(userId, idsStr);
         java.util.List<Long> allIds = new java.util.ArrayList<>();
         
         for (Task task : tasks) {
@@ -95,7 +98,7 @@ public class BatchOperationService {
         java.util.List<Long> descendantIds = new java.util.ArrayList<>();
         while (!queue.isEmpty()) {
             Long currentId = queue.poll();
-            List<Task> subtasks = taskRepository.findByUserIdAndParentId(userId, currentId);
+            List<Task> subtasks = taskMapper.findByUserIdAndParentId(userId, currentId);
             for (Task subtask : subtasks) {
                 descendantIds.add(subtask.getId());
                 queue.add(subtask.getId());
@@ -103,7 +106,7 @@ public class BatchOperationService {
         }
         
         allIds.addAll(descendantIds);
-        taskRepository.deleteAllById(allIds);
+        taskMapper.batchDeleteByIds(allIds);
         return tasks.size();
     }
 
@@ -115,7 +118,8 @@ public class BatchOperationService {
             throw new IllegalArgumentException("目标清单ID不能为空");
         }
         
-        List<Task> tasks = taskRepository.findAllById(taskIds);
+        String idsStr = taskIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+        List<Task> tasks = taskMapper.findAllByIds(userId, idsStr);
         List<Task> toSave = new java.util.ArrayList<>();
         
         for (Task task : tasks) {
@@ -126,7 +130,7 @@ public class BatchOperationService {
         }
         
         if (!toSave.isEmpty()) {
-            taskRepository.saveAll(toSave);
+            taskMapper.batchUpdate(toSave);
         }
         return toSave.size();
     }
@@ -139,7 +143,8 @@ public class BatchOperationService {
             throw new IllegalArgumentException("无效的优先级: " + priority);
         }
         
-        List<Task> tasks = taskRepository.findAllById(taskIds);
+        String idsStr = taskIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+        List<Task> tasks = taskMapper.findAllByIds(userId, idsStr);
         List<Task> toSave = new java.util.ArrayList<>();
         
         for (Task task : tasks) {
@@ -150,7 +155,7 @@ public class BatchOperationService {
         }
         
         if (!toSave.isEmpty()) {
-            taskRepository.saveAll(toSave);
+            taskMapper.batchUpdate(toSave);
         }
         return toSave.size();
     }

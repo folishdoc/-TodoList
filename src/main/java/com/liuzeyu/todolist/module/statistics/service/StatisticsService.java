@@ -1,12 +1,12 @@
 package com.liuzeyu.todolist.module.statistics.service;
 
 import com.liuzeyu.todolist.module.list.entity.TaskList;
-import com.liuzeyu.todolist.module.list.mapper.TaskListRepository;
+import com.liuzeyu.todolist.module.list.mapper.TaskListMapper;
 import com.liuzeyu.todolist.module.statistics.dto.DailyTaskStats;
 import com.liuzeyu.todolist.module.statistics.dto.TaskDistribution;
 import com.liuzeyu.todolist.module.statistics.dto.TaskStatistics;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,19 +22,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StatisticsService {
 
-    private final TaskRepository taskRepository;
-    private final TaskListRepository taskListRepository;
+    private final TaskMapper taskMapper;
+    private final TaskListMapper taskListMapper;
 
     /**
      * 获取任务总体统计
      */
     public TaskStatistics getTaskStatistics(Long userId) {
-        long totalTasks = taskRepository.countByUserId(userId);
-        long completedTasks = taskRepository.countByUserIdAndStatus(userId, 1);
+        long totalTasks = taskMapper.countByUserId(userId);
+        long completedTasks = taskMapper.countByUserIdAndStatus(userId, 1);
         long pendingTasks = totalTasks - completedTasks;
         double completionRate = totalTasks > 0 ? (completedTasks * 100.0 / totalTasks) : 0;
 
-        List<Object[]> priorityCounts = taskRepository.countByUserIdGroupByPriority(userId);
+        List<Object[]> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
         long highPriority = 0, mediumPriority = 0, lowPriority = 0;
         for (Object[] row : priorityCounts) {
             Integer priority = (Integer) row[0];
@@ -47,9 +47,9 @@ public class StatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
-        long todayTasks = taskRepository.countByUserIdAndDueDateBetween(userId, startOfDay, endOfDay);
+        long todayTasks = taskMapper.countByUserIdAndDueDateBetween(userId, startOfDay, endOfDay);
 
-        long upcomingTasks = taskRepository.countByUserIdAndDueDateAfter(userId, endOfDay);
+        long upcomingTasks = taskMapper.countByUserIdAndDueDateAfter(userId, endOfDay);
 
         return new TaskStatistics(
             totalTasks, completedTasks, pendingTasks, completionRate,
@@ -62,8 +62,8 @@ public class StatisticsService {
      * 获取按清单分布的任务统计
      */
     public List<TaskDistribution> getTasksByList(Long userId) {
-        List<TaskList> lists = taskListRepository.findByUserId(userId);
-        List<Object[]> countByList = taskRepository.countByUserIdGroupByListId(userId);
+        List<TaskList> lists = taskListMapper.findByUserId(userId);
+        List<Object[]> countByList = taskMapper.countByUserIdGroupByListId(userId);
 
         java.util.Map<Long, Long> countMap = new java.util.HashMap<>();
         for (Object[] row : countByList) {
@@ -92,7 +92,7 @@ public class StatisticsService {
      * 获取按优先级分布的任务统计
      */
     public List<TaskDistribution> getTasksByPriority(Long userId) {
-        List<Object[]> priorityCounts = taskRepository.countByUserIdGroupByPriority(userId);
+        List<Object[]> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
 
         List<TaskDistribution> distributions = new ArrayList<>();
         for (Object[] row : priorityCounts) {
@@ -114,8 +114,8 @@ public class StatisticsService {
         LocalDate startDate = endDate.minusDays(days - 1);
         LocalDateTime startDateTime = startDate.atStartOfDay();
 
-        List<Object[]> createdRaw = taskRepository.countCreatedByDateAfter(userId, startDateTime);
-        List<Object[]> completedRaw = taskRepository.countCompletedByDateAfter(userId, startDateTime);
+        List<Object[]> createdRaw = taskMapper.countCreatedByDateAfter(userId, startDateTime);
+        List<Object[]> completedRaw = taskMapper.countCompletedByDateAfter(userId, startDateTime);
 
         java.util.Map<LocalDate, Long> createdMap = new java.util.HashMap<>();
         for (Object[] row : createdRaw) {

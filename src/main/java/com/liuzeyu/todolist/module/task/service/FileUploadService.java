@@ -2,7 +2,7 @@ package com.liuzeyu.todolist.module.task.service;
 
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.entity.TaskAttachment;
-import com.liuzeyu.todolist.module.task.mapper.TaskAttachmentRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskAttachmentMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +27,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileUploadService {
 
-    private final TaskAttachmentRepository attachmentRepository;
+    private final TaskAttachmentMapper attachmentMapper;
 
     @Value("${file.upload.dir:uploads}")
     private String uploadDir;
@@ -75,7 +75,7 @@ public class FileUploadService {
         attachment.setFileUrl("/api/attachments/" + fileName);
         attachment.setCreatedAt(LocalDateTime.now());
 
-        attachmentRepository.save(attachment);
+        attachmentMapper.insert(attachment);
 
         log.info("文件上传成功: taskId={}, fileName={}, size={}", taskId, fileName, file.getSize());
         return attachment;
@@ -85,7 +85,7 @@ public class FileUploadService {
      * 获取任务的附件列表
      */
     public List<TaskAttachment> getTaskAttachments(Long taskId) {
-        return attachmentRepository.findByTaskId(taskId);
+        return attachmentMapper.findByTaskId(taskId);
     }
 
     /**
@@ -93,8 +93,10 @@ public class FileUploadService {
      */
     @Transactional
     public void deleteAttachment(Long attachmentId) {
-        TaskAttachment attachment = attachmentRepository.findById(attachmentId)
-            .orElseThrow(() -> new BusinessException(404, "附件不存在"));
+        TaskAttachment attachment = attachmentMapper.findById(attachmentId);
+        if (attachment == null) {
+            throw new BusinessException(404, "附件不存在");
+        }
 
         // 删除文件
         try {
@@ -104,7 +106,7 @@ public class FileUploadService {
         }
 
         // 删除记录
-        attachmentRepository.delete(attachment);
+        attachmentMapper.deleteById(attachment.getId());
         log.info("附件删除成功: attachmentId={}", attachmentId);
     }
 
@@ -113,7 +115,7 @@ public class FileUploadService {
      */
     @Transactional
     public void deleteTaskAttachments(Long taskId) {
-        List<TaskAttachment> attachments = attachmentRepository.findByTaskId(taskId);
+        List<TaskAttachment> attachments = attachmentMapper.findByTaskId(taskId);
         for (TaskAttachment attachment : attachments) {
             try {
                 Files.deleteIfExists(Paths.get(attachment.getFilePath()));
@@ -121,7 +123,7 @@ public class FileUploadService {
                 log.error("删除文件失败: {}", attachment.getFilePath(), e);
             }
         }
-        attachmentRepository.deleteByTaskId(taskId);
+        attachmentMapper.deleteByTaskId(taskId);
         log.info("任务附件全部删除: taskId={}", taskId);
     }
 }

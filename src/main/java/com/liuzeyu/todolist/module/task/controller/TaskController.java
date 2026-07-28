@@ -1,5 +1,6 @@
 package com.liuzeyu.todolist.module.task.controller;
 
+import com.liuzeyu.todolist.common.result.PageResult;
 import com.liuzeyu.todolist.common.result.Result;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
@@ -10,7 +11,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,9 +37,9 @@ public class TaskController {
 
     @GetMapping
     @Operation(summary = "获取任务列表")
-    public Result<Page<Task>> getTasks(@AuthenticationPrincipal Long userId,
-                                       @RequestParam(defaultValue = "0") int page,
-                                       @RequestParam(defaultValue = "20") int size) {
+    public Result<PageResult<Task>> getTasks(@AuthenticationPrincipal Long userId,
+                                             @RequestParam(defaultValue = "0") int page,
+                                             @RequestParam(defaultValue = "20") int size) {
         return Result.success(taskService.getTasks(userId, page, size));
     }
 
@@ -102,10 +102,10 @@ public class TaskController {
 
     @GetMapping("/search")
     @Operation(summary = "搜索任务")
-    public Result<Page<Task>> searchTasks(@AuthenticationPrincipal Long userId,
-                                          @RequestParam String keyword,
-                                          @RequestParam(defaultValue = "0") int page,
-                                          @RequestParam(defaultValue = "20") int size) {
+    public Result<PageResult<Task>> searchTasks(@AuthenticationPrincipal Long userId,
+                                                @RequestParam String keyword,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "20") int size) {
         return Result.success(taskService.searchTasks(userId, keyword, page, size));
     }
 
@@ -118,9 +118,9 @@ public class TaskController {
     
     @GetMapping("/with-subtasks")
     @Operation(summary = "获取带子任务的任务列表")
-    public Result<Page<TaskWithSubtasks>> getTasksWithSubtasks(@AuthenticationPrincipal Long userId,
-                                                               @RequestParam(defaultValue = "0") int page,
-                                                               @RequestParam(defaultValue = "20") int size) {
+    public Result<PageResult<TaskWithSubtasks>> getTasksWithSubtasks(@AuthenticationPrincipal Long userId,
+                                                                      @RequestParam(defaultValue = "0") int page,
+                                                                      @RequestParam(defaultValue = "20") int size) {
         return Result.success(taskService.getTasksWithSubtasks(userId, page, size));
     }
 

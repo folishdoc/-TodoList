@@ -2,17 +2,14 @@ package com.liuzeyu.todolist.module.task.service;
 
 import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
 import com.liuzeyu.todolist.common.exception.BusinessException;
+import com.liuzeyu.todolist.common.result.PageResult;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskWithSubtasks;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -27,7 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TaskService {
 
-    private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
 
     private void validateDateRange(TaskRequest request) {
         if (request.getStartDate() != null && request.getDueDate() != null
@@ -57,23 +54,28 @@ public class TaskService {
         task.setReminderTime(request.getReminderTime());
         task.setRepeatRule(request.getRepeatRule());
 
-        return taskRepository.save(task);
+        taskMapper.insert(task);
+        return task;
     }
 
     /**
      * 获取任务列表（分页）
      */
-    public Page<Task> getTasks(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return taskRepository.findByUserId(userId, pageable);
+    public PageResult<Task> getTasks(Long userId, int page, int size) {
+        int offset = page * size;
+        List<Task> content = taskMapper.findByUserId(userId, offset, size);
+        long total = taskMapper.countByUserId(userId);
+        return new PageResult<>(content, total, page, size);
     }
 
     /**
      * 获取任务详情
      */
     public Task getTask(Long userId, Long taskId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new BusinessException(404, "任务不存在"));
+        Task task = taskMapper.findById(taskId);
+        if (task == null) {
+            throw new BusinessException(404, "任务不存在");
+        }
         
         if (!task.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权访问该任务");
@@ -113,7 +115,8 @@ public class TaskService {
         task.setReminderTime(request.getReminderTime());
         task.setRepeatRule(request.getRepeatRule());
 
-        return taskRepository.save(task);
+        taskMapper.update(task);
+        return task;
     }
 
     /**
@@ -136,7 +139,8 @@ public class TaskService {
             task.setDueDate(request.getDueDate());
         }
 
-        return taskRepository.save(task);
+        taskMapper.update(task);
+        return task;
     }
 
     /**
@@ -151,15 +155,15 @@ public class TaskService {
         queue.add(taskId);
         while (!queue.isEmpty()) {
             Long currentId = queue.poll();
-            List<Task> subtasks = taskRepository.findByUserIdAndParentId(userId, currentId);
+            List<Task> subtasks = taskMapper.findByUserIdAndParentId(userId, currentId);
             for (Task subtask : subtasks) {
                 queue.add(subtask.getId());
             }
             if (!currentId.equals(taskId)) {
-                taskRepository.deleteById(currentId);
+                taskMapper.deleteById(currentId);
             }
         }
-        taskRepository.delete(task);
+        taskMapper.deleteById(task.getId());
     }
 
     /**
@@ -169,7 +173,8 @@ public class TaskService {
         Task task = getTask(userId, taskId);
         task.setStatus(TaskStatusEnum.COMPLETE.getCode());
         task.setCompletedAt(LocalDateTime.now());
-        return taskRepository.save(task);
+        taskMapper.update(task);
+        return task;
     }
 
     /**
@@ -179,7 +184,8 @@ public class TaskService {
         Task task = getTask(userId, taskId);
         task.setStatus(TaskStatusEnum.INCOMPLETE.getCode());
         task.setCompletedAt(null);
-        return taskRepository.save(task);
+        taskMapper.update(task);
+        return task;
     }
 
     /**
@@ -194,7 +200,7 @@ public class TaskService {
         LocalDateTime endOfDay = startOfDay.plusDays(1);
         
         // 数据库层过滤：状态=未完成, 已开始或未设开始日期, 未过期或未设截止日期
-        return taskRepository.findTodayTasks(userId, startOfDay, endOfDay);
+        return taskMapper.findTodayTasks(userId, startOfDay, endOfDay);
     }
 
     /**
@@ -202,29 +208,31 @@ public class TaskService {
      */
     public List<Task> getUpcomingTasks(Long userId) {
         LocalDateTime now = LocalDateTime.now();
-        return taskRepository.findUpcomingTasks(userId, now);
+        return taskMapper.findUpcomingTasks(userId, now);
     }
 
     /**
      * 搜索任务
      */
-    public Page<Task> searchTasks(Long userId, String keyword, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return taskRepository.searchTasks(userId, keyword, pageable);
+    public PageResult<Task> searchTasks(Long userId, String keyword, int page, int size) {
+        int offset = page * size;
+        List<Task> content = taskMapper.searchTasks(userId, keyword, offset, size);
+        long total = taskMapper.countSearchTasks(userId, keyword);
+        return new PageResult<>(content, total, page, size);
     }
 
     /**
      * 获取子任务列表（只获取直接子任务）
      */
     public List<Task> getSubtasks(Long userId, Long parentId) {
-        return taskRepository.findByUserIdAndParentId(userId, parentId);
+        return taskMapper.findByUserIdAndParentId(userId, parentId);
     }
     
     /**
      * 递归获取所有层级的子任务
      */
     private void collectAllSubtasks(Long userId, Long parentId, List<Task> result) {
-        List<Task> directSubtasks = taskRepository.findByUserIdAndParentId(userId, parentId);
+        List<Task> directSubtasks = taskMapper.findByUserIdAndParentId(userId, parentId);
         for (Task subtask : directSubtasks) {
             result.add(subtask);
             // 递归获取子任务的子任务
@@ -236,21 +244,21 @@ public class TaskService {
      * 获取日期范围内的任务（日历视图用）
      */
     public List<Task> getTasksByDateRange(Long userId, LocalDateTime rangeStart, LocalDateTime rangeEnd) {
-        return taskRepository.findByDateRange(userId, rangeStart, rangeEnd);
+        return taskMapper.findByDateRange(userId, rangeStart, rangeEnd);
     }
 
     /**
      * 获取带子任务的任务列表（分页）
      * 返回所有任务，前端自行构建层级
      */
-    public Page<TaskWithSubtasks> getTasksWithSubtasks(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Task> taskPage = taskRepository.findByUserId(userId, pageable);
+    public PageResult<TaskWithSubtasks> getTasksWithSubtasks(Long userId, int page, int size) {
+        int offset = page * size;
+        List<Task> tasks = taskMapper.findByUserId(userId, offset, size);
+        long total = taskMapper.countByUserId(userId);
         
-        List<Task> tasks = taskPage.getContent();
         // 批量获取所有子任务（避免N+1）
         List<Long> taskIds = tasks.stream().map(Task::getId).collect(Collectors.toList());
-        List<Task> allSubtasks = taskRepository.findByUserIdAndParentIdIn(userId, taskIds);
+        List<Task> allSubtasks = taskMapper.findByUserIdAndParentIdIn(userId, taskIds);
         java.util.Map<Long, List<Task>> subtasksByParentId = allSubtasks.stream()
             .collect(Collectors.groupingBy(Task::getParentId));
         
@@ -263,11 +271,6 @@ public class TaskService {
             })
             .collect(Collectors.toList());
         
-        // 创建新的Page对象
-        return new org.springframework.data.domain.PageImpl<>(
-            tasksWithSubtasks,
-            pageable,
-            taskPage.getTotalElements()
-        );
+        return new PageResult<>(tasksWithSubtasks, total, page, size);
     }
 }

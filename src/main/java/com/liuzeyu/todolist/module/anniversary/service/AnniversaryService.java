@@ -6,8 +6,8 @@ import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryRequest;
 import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryVO;
 import com.liuzeyu.todolist.module.anniversary.entity.Anniversary;
 import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
-import com.liuzeyu.todolist.module.anniversary.repository.AnniversaryRepository;
-import com.liuzeyu.todolist.module.anniversary.repository.ReminderLogRepository;
+import com.liuzeyu.todolist.module.anniversary.mapper.AnniversaryMapper;
+import com.liuzeyu.todolist.module.anniversary.mapper.ReminderLogMapper;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.service.TaskService;
@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnniversaryService {
 
-    private final AnniversaryRepository anniversaryRepository;
-    private final ReminderLogRepository reminderLogRepository;
+    private final AnniversaryMapper anniversaryMapper;
+    private final ReminderLogMapper reminderLogMapper;
     private final TaskService taskService;
 
     public Anniversary create(Long userId, AnniversaryRequest request) {
@@ -39,12 +39,13 @@ public class AnniversaryService {
         a.setRemindTime(request.getRemindTime() != null ? request.getRemindTime() : LocalTime.of(9, 0));
         a.setTags(request.getTags());
         a.setNotes(request.getNotes());
-        return anniversaryRepository.save(a);
+        anniversaryMapper.insert(a);
+        return a;
     }
 
     public Anniversary update(Long userId, Long id, AnniversaryRequest request) {
-        Anniversary a = anniversaryRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "纪念日不存在"));
+        Anniversary a = anniversaryMapper.findById(id);
+        if (a == null) throw new BusinessException(404, "纪念日不存在");
         if (!a.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权修改");
         }
@@ -56,21 +57,22 @@ public class AnniversaryService {
         a.setRemindTime(request.getRemindTime() != null ? request.getRemindTime() : LocalTime.of(9, 0));
         a.setTags(request.getTags());
         a.setNotes(request.getNotes());
-        return anniversaryRepository.save(a);
+        anniversaryMapper.update(a);
+        return a;
     }
 
     public void delete(Long userId, Long id) {
-        Anniversary a = anniversaryRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "纪念日不存在"));
+        Anniversary a = anniversaryMapper.findById(id);
+        if (a == null) throw new BusinessException(404, "纪念日不存在");
         if (!a.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权删除");
         }
-        anniversaryRepository.delete(a);
+        anniversaryMapper.deleteById(id);
     }
 
     public AnniversaryVO getDetail(Long userId, Long id) {
-        Anniversary a = anniversaryRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "纪念日不存在"));
+        Anniversary a = anniversaryMapper.findById(id);
+        if (a == null) throw new BusinessException(404, "纪念日不存在");
         if (!a.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权查看");
         }
@@ -80,9 +82,9 @@ public class AnniversaryService {
     public List<AnniversaryVO> list(Long userId, String sortBy, String order, String search, String tag) {
         List<Anniversary> list;
         if (search != null && !search.isBlank()) {
-            list = anniversaryRepository.searchByName(userId, search.trim());
+            list = anniversaryMapper.searchByName(userId, search.trim());
         } else {
-            list = anniversaryRepository.findAllByUserId(userId);
+            list = anniversaryMapper.findAllByUserId(userId);
         }
 
         // 标签筛选
@@ -110,8 +112,8 @@ public class AnniversaryService {
     }
 
     public Task generateTodo(Long userId, Long id) {
-        Anniversary a = anniversaryRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "纪念日不存在"));
+        Anniversary a = anniversaryMapper.findById(id);
+        if (a == null) throw new BusinessException(404, "纪念日不存在");
         if (!a.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权操作");
         }
@@ -128,18 +130,19 @@ public class AnniversaryService {
     }
 
     public List<ReminderLog> getPendingReminders(Long userId) {
-        List<Anniversary> anniversaries = anniversaryRepository.findAllByUserId(userId);
+        List<Anniversary> anniversaries = anniversaryMapper.findAllByUserId(userId);
         List<Long> ids = anniversaries.stream().map(Anniversary::getId).collect(Collectors.toList());
         if (ids.isEmpty()) return Collections.emptyList();
-        return reminderLogRepository.findByAnniversaryIdInAndRemindDatetimeBetween(ids,
+        return reminderLogMapper.findByAnniversaryIdInAndRemindDatetimeBetween(ids,
                 LocalDateTime.now().minusDays(30), LocalDateTime.now().plusMinutes(1));
     }
 
     public void markReminderRead(Long logId) {
-        reminderLogRepository.findById(logId).ifPresent(log -> {
+        ReminderLog log = reminderLogMapper.findById(logId);
+        if (log != null) {
             log.setIsRead(true);
-            reminderLogRepository.save(log);
-        });
+            reminderLogMapper.update(log);
+        }
     }
 
     private AnniversaryVO toVO(Anniversary a) {

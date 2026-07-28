@@ -3,8 +3,8 @@ package com.liuzeyu.todolist.module.habit.service;
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.habit.entity.Habit;
 import com.liuzeyu.todolist.module.habit.entity.HabitRecord;
-import com.liuzeyu.todolist.module.habit.mapper.HabitRepository;
-import com.liuzeyu.todolist.module.habit.mapper.HabitRecordRepository;
+import com.liuzeyu.todolist.module.habit.mapper.HabitMapper;
+import com.liuzeyu.todolist.module.habit.mapper.HabitRecordMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HabitService {
 
-    private final HabitRepository habitRepository;
-    private final HabitRecordRepository habitRecordRepository;
+    private final HabitMapper habitMapper;
+    private final HabitRecordMapper habitRecordMapper;
 
     /**
      * 创建习惯
@@ -30,22 +30,25 @@ public class HabitService {
         habit.setCurrentStreak(0);
         habit.setMaxStreak(0);
         habit.setTotalCompletions(0);
-        return habitRepository.save(habit);
+        habitMapper.insert(habit);
+        return habit;
     }
 
     /**
      * 获取用户的习惯列表
      */
     public List<Habit> getHabits(Long userId) {
-        return habitRepository.findByUserId(userId);
+        return habitMapper.findByUserId(userId);
     }
 
     /**
      * 获取习惯详情
      */
     public Habit getHabit(Long userId, Long habitId) {
-        Habit habit = habitRepository.findById(habitId)
-                .orElseThrow(() -> new BusinessException(404, "习惯不存在"));
+        Habit habit = habitMapper.findById(habitId);
+        if (habit == null) {
+            throw new BusinessException(404, "习惯不存在");
+        }
         
         if (!habit.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权访问该习惯");
@@ -75,7 +78,8 @@ public class HabitService {
         habit.setEndDate(habitData.getEndDate());
         habit.setRestDays(habitData.getRestDays());
         
-        return habitRepository.save(habit);
+        habitMapper.update(habit);
+        return habit;
     }
 
     /**
@@ -86,10 +90,9 @@ public class HabitService {
         Habit habit = getHabit(userId, habitId);
         
         // 删除相关的打卡记录
-        List<HabitRecord> records = habitRecordRepository.findByHabitId(habitId);
-        habitRecordRepository.deleteAll(records);
+        habitRecordMapper.deleteByHabitId(habitId);
         
-        habitRepository.delete(habit);
+        habitMapper.deleteById(habit.getId());
     }
 
     /**
@@ -101,7 +104,7 @@ public class HabitService {
         Habit habit = getHabit(userId, habitId);
         
         // 检查是否已经打卡
-        if (!Boolean.TRUE.equals(isMakeup) && habitRecordRepository.findByHabitIdAndCheckDate(habitId, checkDate).isPresent()) {
+        if (!Boolean.TRUE.equals(isMakeup) && habitRecordMapper.findByHabitIdAndCheckDate(habitId, checkDate) != null) {
             throw new BusinessException(409, "今天已经打卡过了");
         }
         
@@ -114,7 +117,7 @@ public class HabitService {
         record.setIsMakeup(isMakeup != null ? isMakeup : false);
         record.setUserId(userId);
         
-        habitRecordRepository.save(record);
+        habitRecordMapper.insert(record);
         
         // 更新习惯统计
         updateHabitStats(habit);
@@ -129,10 +132,12 @@ public class HabitService {
     public void cancelCheckIn(Long userId, Long habitId, LocalDate checkDate) {
         Habit habit = getHabit(userId, habitId);
         
-        HabitRecord record = habitRecordRepository.findByHabitIdAndCheckDate(habitId, checkDate)
-                .orElseThrow(() -> new BusinessException(404, "未找到打卡记录"));
+        HabitRecord record = habitRecordMapper.findByHabitIdAndCheckDate(habitId, checkDate);
+        if (record == null) {
+            throw new BusinessException(404, "未找到打卡记录");
+        }
         
-        habitRecordRepository.delete(record);
+        habitRecordMapper.deleteById(record.getId());
         
         // 重新计算统计
         recalculateHabitStats(habit);
@@ -143,23 +148,23 @@ public class HabitService {
      */
     public List<HabitRecord> getRecords(Long userId, Long habitId) {
         Habit habit = getHabit(userId, habitId);
-        return habitRecordRepository.findByHabitId(habitId);
+        return habitRecordMapper.findByHabitId(habitId);
     }
 
     /**
      * 获取指定日期范围的打卡记录
      */
     public List<HabitRecord> getRecordsByDateRange(Long userId, Long habitId, 
-                                                    LocalDate startDate, LocalDate endDate) {
+                                                     LocalDate startDate, LocalDate endDate) {
         Habit habit = getHabit(userId, habitId);
-        return habitRecordRepository.findByHabitIdAndCheckDateBetween(habitId, startDate, endDate);
+        return habitRecordMapper.findByHabitIdAndCheckDateBetween(habitId, startDate, endDate);
     }
 
     /**
      * 更新习惯统计
      */
     private void updateHabitStats(Habit habit) {
-        long totalCompletions = habitRecordRepository.countByHabitIdAndCheckDateAfter(
+        long totalCompletions = habitRecordMapper.countByHabitIdAndCheckDateAfter(
                 habit.getId(), LocalDate.now().minusYears(1));
         
         habit.setTotalCompletions((int) totalCompletions);
@@ -171,28 +176,28 @@ public class HabitService {
             habit.setMaxStreak(streak);
         }
         
-        habitRepository.save(habit);
+        habitMapper.update(habit);
     }
 
     /**
      * 重新计算习惯统计
      */
     private void recalculateHabitStats(Habit habit) {
-        long totalCompletions = habitRecordRepository.countByHabitIdAndCheckDateAfter(
+        long totalCompletions = habitRecordMapper.countByHabitIdAndCheckDateAfter(
                 habit.getId(), LocalDate.now().minusYears(1));
         
         habit.setTotalCompletions((int) totalCompletions);
         int streak = calculateStreak(habit.getId());
         habit.setCurrentStreak(streak);
         
-        habitRepository.save(habit);
+        habitMapper.update(habit);
     }
 
     /**
      * 计算连续天数
      */
     private int calculateStreak(Long habitId) {
-        List<HabitRecord> records = habitRecordRepository.findByHabitId(habitId);
+        List<HabitRecord> records = habitRecordMapper.findByHabitId(habitId);
         if (records.isEmpty()) {
             return 0;
         }
@@ -227,6 +232,6 @@ public class HabitService {
      */
     public List<HabitRecord> getTodayRecords(Long userId) {
         LocalDate today = LocalDate.now();
-        return habitRecordRepository.findByUserIdAndCheckDate(userId, today);
+        return habitRecordMapper.findByUserIdAndCheckDate(userId, today);
     }
 }

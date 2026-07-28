@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liuzeyu.todolist.common.constant.PriorityEnum;
 import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,14 +18,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExportService {
 
-    private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 导出任务为CSV格式
      */
     public String exportTasksAsCsv(Long userId) {
-        List<Task> tasks = taskRepository.findAllByUserId(userId);
+        List<Task> tasks = taskMapper.findAllByUserId(userId);
         
         StringBuilder csv = new StringBuilder();
         csv.append("ID,标题,描述,优先级,状态,截止日期,创建时间\n");
@@ -47,7 +47,7 @@ public class ExportService {
      * 导出任务为JSON格式（使用Jackson）
      */
     public String exportTasksAsJson(Long userId) {
-        List<Task> tasks = taskRepository.findAllByUserId(userId);
+        List<Task> tasks = taskMapper.findAllByUserId(userId);
         try {
             List<Map<String, Object>> jsonList = tasks.stream().map(task -> {
                 Map<String, Object> map = new java.util.HashMap<>();

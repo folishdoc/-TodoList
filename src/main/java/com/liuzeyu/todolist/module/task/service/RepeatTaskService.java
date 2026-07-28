@@ -8,7 +8,7 @@ import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.dto.RepeatRule;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,12 +26,12 @@ import java.util.List;
 @Service
 public class RepeatTaskService {
 
-    private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
     private final ObjectMapper objectMapper;
     private LocalDate lastGenerateDate = null;
 
-    public RepeatTaskService(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
+    public RepeatTaskService(TaskMapper taskMapper) {
+        this.taskMapper = taskMapper;
         this.objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -52,7 +52,7 @@ public class RepeatTaskService {
         log.info("开始定时生成重复任务...");
         
         LocalDateTime now = LocalDateTime.now();
-        List<Task> allTasks = taskRepository.findAll();
+        List<Task> allTasks = taskMapper.findAll();
         
         int generatedCount = 0;
         
@@ -63,7 +63,7 @@ public class RepeatTaskService {
 
                     if (shouldGenerateNewTask(task, rule, now)) {
                         Task newTask = createRepeatedTask(task, rule);
-                        taskRepository.save(newTask);
+                        taskMapper.insert(newTask);
                         generatedCount++;
 
                         log.info("生成重复任务: {} -> {}", task.getTitle(), newTask.getTitle());
@@ -90,7 +90,7 @@ public class RepeatTaskService {
         log.info("开始为用户 {} 生成重复任务...", userId);
 
         LocalDateTime now = LocalDateTime.now();
-        List<Task> userTasks = taskRepository.findAllByUserId(userId);
+        List<Task> userTasks = taskMapper.findAllByUserId(userId);
 
         int generatedCount = 0;
 
@@ -101,7 +101,7 @@ public class RepeatTaskService {
 
                     if (shouldGenerateNewTask(task, rule, now)) {
                         Task newTask = createRepeatedTask(task, rule);
-                        taskRepository.save(newTask);
+                        taskMapper.insert(newTask);
                         generatedCount++;
 
                         log.info("生成重复任务: {} -> {}", task.getTitle(), newTask.getTitle());
@@ -200,12 +200,14 @@ public class RepeatTaskService {
      */
     @Transactional
     public void setRepeatRule(Long taskId, RepeatRule rule) throws JsonProcessingException {
-        Task task = taskRepository.findById(taskId)
-            .orElseThrow(() -> new BusinessException(404, "任务不存在"));
+        Task task = taskMapper.findById(taskId);
+        if (task == null) {
+            throw new BusinessException(404, "任务不存在");
+        }
         
         String ruleJson = objectMapper.writeValueAsString(rule);
         task.setRepeatRule(ruleJson);
-        taskRepository.save(task);
+        taskMapper.update(task);
         
         log.info("设置重复规则: taskId={}, rule={}", taskId, rule.getType());
     }
@@ -215,11 +217,13 @@ public class RepeatTaskService {
      */
     @Transactional
     public void cancelRepeatRule(Long taskId) {
-        Task task = taskRepository.findById(taskId)
-            .orElseThrow(() -> new BusinessException(404, "任务不存在"));
+        Task task = taskMapper.findById(taskId);
+        if (task == null) {
+            throw new BusinessException(404, "任务不存在");
+        }
         
         task.setRepeatRule(null);
-        taskRepository.save(task);
+        taskMapper.update(task);
         
         log.info("取消重复规则: taskId={}", taskId);
     }

@@ -2,8 +2,8 @@ package com.liuzeyu.todolist.module.anniversary.service;
 
 import com.liuzeyu.todolist.module.anniversary.entity.Anniversary;
 import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
-import com.liuzeyu.todolist.module.anniversary.repository.AnniversaryRepository;
-import com.liuzeyu.todolist.module.anniversary.repository.ReminderLogRepository;
+import com.liuzeyu.todolist.module.anniversary.mapper.AnniversaryMapper;
+import com.liuzeyu.todolist.module.anniversary.mapper.ReminderLogMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,8 +20,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AnniversaryReminderService {
 
-    private final AnniversaryRepository anniversaryRepository;
-    private final ReminderLogRepository reminderLogRepository;
+    private final AnniversaryMapper anniversaryMapper;
+    private final ReminderLogMapper reminderLogMapper;
 
     /**
      * 每分钟检查待提醒的纪念日
@@ -30,7 +30,7 @@ public class AnniversaryReminderService {
     public void checkAnniversaryReminders() {
         log.debug("检查纪念日提醒...");
         // 只查询已启用提醒的纪念日（代替全表扫描）
-        List<Anniversary> allEnabled = anniversaryRepository.findRemindEnabledByUserId(1L);
+        List<Anniversary> allEnabled = anniversaryMapper.findRemindEnabledByUserId(1L);
 
         LocalDateTime now = LocalDateTime.now();
         for (Anniversary a : allEnabled) {
@@ -44,14 +44,14 @@ public class AnniversaryReminderService {
                         LocalDateTime remindAt = LocalDateTime.of(nextDate.minusDays(daysBefore), remindTime);
 
                         if (now.isAfter(remindAt) || now.isEqual(remindAt)) {
-                            List<ReminderLog> existing = reminderLogRepository
+                            List<ReminderLog> existing = reminderLogMapper
                                     .findByAnniversaryIdAndRemindDatetime(a.getId(), remindAt);
                             if (existing.isEmpty()) {
                                 ReminderLog entry = new ReminderLog();
                                 entry.setAnniversaryId(a.getId());
                                 entry.setRemindDatetime(remindAt);
                                 entry.setIsRead(false);
-                                reminderLogRepository.save(entry);
+                                reminderLogMapper.insert(entry);
                                 log.info("触发提醒: 纪念日={}, 提醒时间={}", a.getName(), remindAt);
                             }
                         }
