@@ -16,6 +16,7 @@ target/
 build/
 dist/
 out/
+app.jar
 src/main/resources/static/assets/
 
 # 项目运行不需要 — IDE
