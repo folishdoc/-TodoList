@@ -2,7 +2,7 @@ package com.liuzeyu.todolist.module.task.service;
 
 import com.liuzeyu.todolist.module.task.dto.BatchOperationRequest;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,12 +14,13 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class BatchOperationServiceTest extends BaseUnitTest {
 
     @Mock
-    private TaskRepository taskRepository;
+    private TaskMapper taskMapper;
 
     @InjectMocks
     private BatchOperationService batchOperationService;
@@ -38,8 +39,8 @@ class BatchOperationServiceTest extends BaseUnitTest {
     void complete_filtersByUser() {
         Task mine = makeTask(1L, 1L, 0);
         Task other = makeTask(2L, 2L, 0);
-        when(taskRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(mine, other));
-        when(taskRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+        when(taskMapper.findAllByIds(eq(1L), anyString())).thenReturn(List.of(mine, other));
+        doNothing().when(taskMapper).batchUpdate(anyList());
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L, 2L));
@@ -56,7 +57,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
     @DisplayName("批量完成 - 已完成的任务不重复")
     void complete_skipsAlreadyCompleted() {
         Task completed = makeTask(1L, 1L, 1);
-        when(taskRepository.findAllById(List.of(1L))).thenReturn(List.of(completed));
+        when(taskMapper.findAllByIds(eq(1L), anyString())).thenReturn(List.of(completed));
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L));
@@ -65,7 +66,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
         int count = batchOperationService.executeBatchOperation(1L, req);
 
         assertThat(count).isEqualTo(0);
-        verify(taskRepository, never()).saveAll(anyList());
+        verify(taskMapper, never()).batchUpdate(anyList());
     }
 
     @Test
@@ -74,9 +75,9 @@ class BatchOperationServiceTest extends BaseUnitTest {
         Task parent = makeTask(1L, 1L, 0);
         Task child = makeTask(2L, 1L, 0);
         child.setParentId(1L);
-        when(taskRepository.findAllById(List.of(1L))).thenReturn(List.of(parent));
-        when(taskRepository.findByUserIdAndParentId(1L, 1L)).thenReturn(List.of(child));
-        when(taskRepository.findByUserIdAndParentId(1L, 2L)).thenReturn(List.of());
+        when(taskMapper.findAllByIds(eq(1L), anyString())).thenReturn(List.of(parent));
+        when(taskMapper.findByUserIdAndParentId(1L, 1L)).thenReturn(List.of(child));
+        when(taskMapper.findByUserIdAndParentId(1L, 2L)).thenReturn(List.of());
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L));
@@ -85,15 +86,15 @@ class BatchOperationServiceTest extends BaseUnitTest {
         int count = batchOperationService.executeBatchOperation(1L, req);
 
         assertThat(count).isEqualTo(1);
-        verify(taskRepository).deleteAllById(List.of(1L, 2L));
+        verify(taskMapper).batchDeleteByIds(List.of(1L, 2L));
     }
 
     @Test
     @DisplayName("批量移动 - 设置 listId")
     void move_setsListId() {
         Task t = makeTask(1L, 1L, 0);
-        when(taskRepository.findAllById(List.of(1L))).thenReturn(List.of(t));
-        when(taskRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+        when(taskMapper.findAllByIds(eq(1L), anyString())).thenReturn(List.of(t));
+        doNothing().when(taskMapper).batchUpdate(anyList());
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L));
@@ -135,8 +136,8 @@ class BatchOperationServiceTest extends BaseUnitTest {
     @DisplayName("批量设置优先级 - 正常")
     void setPriority_succeeds() {
         Task t = makeTask(1L, 1L, 0);
-        when(taskRepository.findAllById(List.of(1L))).thenReturn(List.of(t));
-        when(taskRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+        when(taskMapper.findAllByIds(eq(1L), anyString())).thenReturn(List.of(t));
+        doNothing().when(taskMapper).batchUpdate(anyList());
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L));

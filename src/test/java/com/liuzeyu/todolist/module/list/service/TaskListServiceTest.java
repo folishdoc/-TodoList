@@ -3,7 +3,7 @@ package com.liuzeyu.todolist.module.list.service;
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.list.dto.TaskListRequest;
 import com.liuzeyu.todolist.module.list.entity.TaskList;
-import com.liuzeyu.todolist.module.list.mapper.TaskListRepository;
+import com.liuzeyu.todolist.module.list.mapper.TaskListMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,7 +20,7 @@ import static org.mockito.Mockito.*;
 class TaskListServiceTest extends BaseUnitTest {
 
     @Mock
-    private TaskListRepository taskListRepository;
+    private TaskListMapper taskListMapper;
 
     @InjectMocks
     private TaskListService taskListService;
@@ -32,7 +31,7 @@ class TaskListServiceTest extends BaseUnitTest {
         TaskListRequest req = new TaskListRequest();
         req.setName("工作");
         req.setColor("#FF0000");
-        when(taskListRepository.save(any(TaskList.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskListMapper.insert(any(TaskList.class))).thenReturn(1);
 
         TaskList list = taskListService.createTaskList(1L, req);
 
@@ -47,7 +46,7 @@ class TaskListServiceTest extends BaseUnitTest {
         TaskList list = new TaskList();
         list.setId(1L);
         list.setUserId(1L);
-        when(taskListRepository.findById(1L)).thenReturn(Optional.of(list));
+        when(taskListMapper.findById(1L)).thenReturn(list);
 
         TaskList result = taskListService.getTaskList(1L, 1L);
 
@@ -57,7 +56,7 @@ class TaskListServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("获取清单详情 - 不存在抛异常")
     void get_notFound_throws() {
-        when(taskListRepository.findById(1L)).thenReturn(Optional.empty());
+        when(taskListMapper.findById(1L)).thenReturn(null);
 
         assertThatThrownBy(() -> taskListService.getTaskList(1L, 1L))
                 .isInstanceOf(BusinessException.class)
@@ -70,7 +69,7 @@ class TaskListServiceTest extends BaseUnitTest {
         TaskList list = new TaskList();
         list.setId(1L);
         list.setUserId(2L);
-        when(taskListRepository.findById(1L)).thenReturn(Optional.of(list));
+        when(taskListMapper.findById(1L)).thenReturn(list);
 
         assertThatThrownBy(() -> taskListService.getTaskList(1L, 1L))
                 .isInstanceOf(BusinessException.class)
@@ -84,8 +83,8 @@ class TaskListServiceTest extends BaseUnitTest {
         existing.setId(1L);
         existing.setUserId(1L);
         existing.setName("旧名");
-        when(taskListRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(taskListRepository.save(any(TaskList.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskListMapper.findById(1L)).thenReturn(existing);
+        when(taskListMapper.update(any(TaskList.class))).thenReturn(1);
 
         TaskListRequest req = new TaskListRequest();
         req.setName("新名");
@@ -101,7 +100,7 @@ class TaskListServiceTest extends BaseUnitTest {
         list.setId(1L);
         list.setUserId(1L);
         list.setIsDefault(true);
-        when(taskListRepository.findById(1L)).thenReturn(Optional.of(list));
+        when(taskListMapper.findById(1L)).thenReturn(list);
 
         assertThatThrownBy(() -> taskListService.deleteTaskList(1L, 1L))
                 .isInstanceOf(BusinessException.class)
@@ -115,17 +114,17 @@ class TaskListServiceTest extends BaseUnitTest {
         list.setId(1L);
         list.setUserId(1L);
         list.setIsDefault(false);
-        when(taskListRepository.findById(1L)).thenReturn(Optional.of(list));
+        when(taskListMapper.findById(1L)).thenReturn(list);
 
         taskListService.deleteTaskList(1L, 1L);
 
-        verify(taskListRepository).delete(list);
+        verify(taskListMapper).deleteById(list.getId());
     }
 
     @Test
     @DisplayName("获取用户的清单列表 - 委托给 repository")
     void getLists_delegates() {
-        when(taskListRepository.findByUserIdOrderBySortOrderAsc(1L)).thenReturn(List.of(new TaskList()));
+        when(taskListMapper.findByUserIdOrderBySortOrderAsc(1L)).thenReturn(List.of(new TaskList()));
 
         List<TaskList> result = taskListService.getTaskLists(1L);
 

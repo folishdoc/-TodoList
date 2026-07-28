@@ -1,12 +1,12 @@
 package com.liuzeyu.todolist.module.statistics.service;
 
 import com.liuzeyu.todolist.module.list.entity.TaskList;
-import com.liuzeyu.todolist.module.list.mapper.TaskListRepository;
+import com.liuzeyu.todolist.module.list.mapper.TaskListMapper;
 import com.liuzeyu.todolist.module.statistics.dto.DailyTaskStats;
 import com.liuzeyu.todolist.module.statistics.dto.TaskDistribution;
 import com.liuzeyu.todolist.module.statistics.dto.TaskStatistics;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,10 +26,10 @@ import static org.mockito.Mockito.when;
 class StatisticsServiceTest extends BaseUnitTest {
 
     @Mock
-    private TaskRepository taskRepository;
+    private TaskMapper taskMapper;
 
     @Mock
-    private TaskListRepository taskListRepository;
+    private TaskListMapper taskListMapper;
 
     @InjectMocks
     private StatisticsService statisticsService;
@@ -50,13 +50,13 @@ class StatisticsServiceTest extends BaseUnitTest {
     @DisplayName("任务总览 - 全部统计字段正确")
     void getTaskStatistics_succeeds() {
         LocalDate today = LocalDate.now();
-        when(taskRepository.countByUserId(1L)).thenReturn(3L);
-        when(taskRepository.countByUserIdAndStatus(1L, 1)).thenReturn(1L);
-        when(taskRepository.countByUserIdGroupByPriority(1L)).thenReturn(List.of(
+        when(taskMapper.countByUserId(1L)).thenReturn(3L);
+        when(taskMapper.countByUserIdAndStatus(1L, 1)).thenReturn(1L);
+        when(taskMapper.countByUserIdGroupByPriority(1L)).thenReturn(List.of(
                 new Object[]{3, 1L}, new Object[]{2, 1L}, new Object[]{1, 1L}
         ));
-        when(taskRepository.countByUserIdAndDueDateBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(1L);
-        when(taskRepository.countByUserIdAndDueDateAfter(eq(1L), any(LocalDateTime.class))).thenReturn(1L);
+        when(taskMapper.countByUserIdAndDueDateBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(1L);
+        when(taskMapper.countByUserIdAndDueDateAfter(eq(1L), any(LocalDateTime.class))).thenReturn(1L);
 
         TaskStatistics stats = statisticsService.getTaskStatistics(1L);
 
@@ -72,11 +72,11 @@ class StatisticsServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("任务总览 - 空列表完成率为 0")
     void getTaskStatistics_empty() {
-        when(taskRepository.countByUserId(1L)).thenReturn(0L);
-        when(taskRepository.countByUserIdAndStatus(1L, 1)).thenReturn(0L);
-        when(taskRepository.countByUserIdGroupByPriority(1L)).thenReturn(List.of());
-        when(taskRepository.countByUserIdAndDueDateBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(0L);
-        when(taskRepository.countByUserIdAndDueDateAfter(eq(1L), any(LocalDateTime.class))).thenReturn(0L);
+        when(taskMapper.countByUserId(1L)).thenReturn(0L);
+        when(taskMapper.countByUserIdAndStatus(1L, 1)).thenReturn(0L);
+        when(taskMapper.countByUserIdGroupByPriority(1L)).thenReturn(List.of());
+        when(taskMapper.countByUserIdAndDueDateBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(0L);
+        when(taskMapper.countByUserIdAndDueDateAfter(eq(1L), any(LocalDateTime.class))).thenReturn(0L);
 
         TaskStatistics stats = statisticsService.getTaskStatistics(1L);
 
@@ -93,8 +93,8 @@ class StatisticsServiceTest extends BaseUnitTest {
         TaskList list2 = new TaskList();
         list2.setId(2L);
         list2.setName("生活");
-        when(taskListRepository.findByUserId(1L)).thenReturn(List.of(list1, list2));
-        when(taskRepository.countByUserIdGroupByListId(1L)).thenReturn(Collections.singletonList(new Object[]{1L, 1L}));
+        when(taskListMapper.findByUserId(1L)).thenReturn(List.of(list1, list2));
+        when(taskMapper.countByUserIdGroupByListId(1L)).thenReturn(Collections.singletonList(new Object[]{1L, 1L}));
 
         List<TaskDistribution> dist = statisticsService.getTasksByList(1L);
 
@@ -105,7 +105,7 @@ class StatisticsServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("按优先级分布 - 只返回非空桶")
     void getTasksByPriority_skipsEmpty() {
-        when(taskRepository.countByUserIdGroupByPriority(1L)).thenReturn(Collections.singletonList(new Object[]{3, 2L}));
+        when(taskMapper.countByUserIdGroupByPriority(1L)).thenReturn(Collections.singletonList(new Object[]{3, 2L}));
 
         List<TaskDistribution> dist = statisticsService.getTasksByPriority(1L);
 
@@ -118,9 +118,9 @@ class StatisticsServiceTest extends BaseUnitTest {
     @DisplayName("任务趋势 - 7 天窗口")
     void getDailyTrend_succeeds() {
         LocalDate twoDaysAgo = LocalDate.now().minusDays(2);
-        when(taskRepository.countCreatedByDateAfter(eq(1L), any(LocalDateTime.class)))
+        when(taskMapper.countCreatedByDateAfter(eq(1L), any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonList(new Object[]{twoDaysAgo, 1L}));
-        when(taskRepository.countCompletedByDateAfter(eq(1L), any(LocalDateTime.class)))
+        when(taskMapper.countCompletedByDateAfter(eq(1L), any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonList(new Object[]{twoDaysAgo, 1L}));
 
         List<DailyTaskStats> trend = statisticsService.getDailyTrend(1L, 7);

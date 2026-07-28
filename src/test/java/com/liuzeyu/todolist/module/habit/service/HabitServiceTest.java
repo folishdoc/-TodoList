@@ -3,8 +3,8 @@ package com.liuzeyu.todolist.module.habit.service;
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.habit.entity.Habit;
 import com.liuzeyu.todolist.module.habit.entity.HabitRecord;
-import com.liuzeyu.todolist.module.habit.mapper.HabitRecordRepository;
-import com.liuzeyu.todolist.module.habit.mapper.HabitRepository;
+import com.liuzeyu.todolist.module.habit.mapper.HabitRecordMapper;
+import com.liuzeyu.todolist.module.habit.mapper.HabitMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,6 @@ import org.mockito.Mock;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,10 +23,10 @@ import static org.mockito.Mockito.*;
 class HabitServiceTest extends BaseUnitTest {
 
     @Mock
-    private HabitRepository habitRepository;
+    private HabitMapper habitMapper;
 
     @Mock
-    private HabitRecordRepository habitRecordRepository;
+    private HabitRecordMapper habitRecordMapper;
 
     @InjectMocks
     private HabitService habitService;
@@ -37,7 +36,7 @@ class HabitServiceTest extends BaseUnitTest {
     void createHabit_initializesStreaks() {
         Habit habit = new Habit();
         habit.setName("晨跑");
-        when(habitRepository.save(any(Habit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(habitMapper.insert(any(Habit.class))).thenReturn(1);
 
         Habit result = habitService.createHabit(1L, habit);
 
@@ -53,7 +52,7 @@ class HabitServiceTest extends BaseUnitTest {
         Habit h = new Habit();
         h.setId(1L);
         h.setUserId(2L);
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(h));
+        when(habitMapper.findById(1L)).thenReturn(h);
 
         assertThatThrownBy(() -> habitService.getHabit(1L, 1L))
                 .isInstanceOf(BusinessException.class)
@@ -67,8 +66,8 @@ class HabitServiceTest extends BaseUnitTest {
         existing.setId(1L);
         existing.setUserId(1L);
         existing.setName("旧");
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(habitRepository.save(any(Habit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(habitMapper.findById(1L)).thenReturn(existing);
+        when(habitMapper.update(any(Habit.class))).thenReturn(1);
 
         Habit data = new Habit();
         data.setName("新");
@@ -85,15 +84,15 @@ class HabitServiceTest extends BaseUnitTest {
         Habit h = new Habit();
         h.setId(1L);
         h.setUserId(1L);
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(h));
+        when(habitMapper.findById(1L)).thenReturn(h);
         HabitRecord r = new HabitRecord();
         r.setId(100L);
-        when(habitRecordRepository.findByHabitId(1L)).thenReturn(List.of(r));
+        when(habitRecordMapper.findByHabitId(1L)).thenReturn(List.of(r));
 
         habitService.deleteHabit(1L, 1L);
 
-        verify(habitRecordRepository).deleteAll(List.of(r));
-        verify(habitRepository).delete(h);
+        verify(habitRecordMapper).deleteByHabitId(1L);
+        verify(habitMapper).deleteById(h.getId());
     }
 
     @Test
@@ -102,8 +101,8 @@ class HabitServiceTest extends BaseUnitTest {
         Habit h = new Habit();
         h.setId(1L);
         h.setUserId(1L);
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(h));
-        when(habitRecordRepository.findByHabitIdAndCheckDate(eq(1L), any())).thenReturn(Optional.of(new HabitRecord()));
+        when(habitMapper.findById(1L)).thenReturn(h);
+        when(habitRecordMapper.findByHabitIdAndCheckDate(eq(1L), any())).thenReturn(new HabitRecord());
 
         assertThatThrownBy(() -> habitService.checkIn(1L, 1L, LocalDate.now(), 1.0, null, false))
                 .isInstanceOf(BusinessException.class)
@@ -116,12 +115,12 @@ class HabitServiceTest extends BaseUnitTest {
         Habit h = new Habit();
         h.setId(1L);
         h.setUserId(1L);
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(h));
-        when(habitRecordRepository.save(any(HabitRecord.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(habitRecordRepository.countByHabitIdAndCheckDateAfter(eq(1L), any())).thenReturn(1L);
+        when(habitMapper.findById(1L)).thenReturn(h);
+        when(habitRecordMapper.insert(any(HabitRecord.class))).thenReturn(1);
+        when(habitRecordMapper.countByHabitIdAndCheckDateAfter(eq(1L), any())).thenReturn(1L);
         HabitRecord r = new HabitRecord();
         r.setCheckDate(LocalDate.now());
-        when(habitRecordRepository.findByHabitId(1L)).thenReturn(new java.util.ArrayList<>(List.of(r)));
+        when(habitRecordMapper.findByHabitId(1L)).thenReturn(new java.util.ArrayList<>(List.of(r)));
 
         HabitRecord result = habitService.checkIn(1L, 1L, LocalDate.now(), 1.0, "补卡", true);
 
@@ -135,19 +134,19 @@ class HabitServiceTest extends BaseUnitTest {
         Habit h = new Habit();
         h.setId(1L);
         h.setUserId(1L);
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(h));
-        when(habitRecordRepository.findByHabitIdAndCheckDate(eq(1L), any())).thenReturn(Optional.empty());
-        when(habitRecordRepository.save(any(HabitRecord.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(habitRecordRepository.countByHabitIdAndCheckDateAfter(eq(1L), any())).thenReturn(1L);
+        when(habitMapper.findById(1L)).thenReturn(h);
+        when(habitRecordMapper.findByHabitIdAndCheckDate(eq(1L), any())).thenReturn(null);
+        when(habitRecordMapper.insert(any(HabitRecord.class))).thenReturn(1);
+        when(habitRecordMapper.countByHabitIdAndCheckDateAfter(eq(1L), any())).thenReturn(1L);
         HabitRecord r = new HabitRecord();
         r.setCheckDate(LocalDate.now());
-        when(habitRecordRepository.findByHabitId(1L)).thenReturn(new java.util.ArrayList<>(List.of(r)));
-        when(habitRepository.save(any(Habit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(habitRecordMapper.findByHabitId(1L)).thenReturn(new java.util.ArrayList<>(List.of(r)));
+        when(habitMapper.update(any(Habit.class))).thenReturn(1);
 
         HabitRecord result = habitService.checkIn(1L, 1L, LocalDate.now(), 1.0, "good", false);
 
         ArgumentCaptor<HabitRecord> captor = ArgumentCaptor.forClass(HabitRecord.class);
-        verify(habitRecordRepository).save(captor.capture());
+        verify(habitRecordMapper).insert(captor.capture());
         assertThat(captor.getValue().getCompletionValue()).isEqualTo(1.0);
         assertThat(captor.getValue().getIsMakeup()).isFalse();
         assertThat(result.getHabitId()).isEqualTo(1L);
@@ -159,8 +158,8 @@ class HabitServiceTest extends BaseUnitTest {
         Habit h = new Habit();
         h.setId(1L);
         h.setUserId(1L);
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(h));
-        when(habitRecordRepository.findByHabitIdAndCheckDate(eq(1L), any())).thenReturn(Optional.empty());
+        when(habitMapper.findById(1L)).thenReturn(h);
+        when(habitRecordMapper.findByHabitIdAndCheckDate(eq(1L), any())).thenReturn(null);
 
         assertThatThrownBy(() -> habitService.cancelCheckIn(1L, 1L, LocalDate.now()))
                 .isInstanceOf(BusinessException.class)
@@ -175,14 +174,14 @@ class HabitServiceTest extends BaseUnitTest {
         h.setUserId(1L);
         HabitRecord r = new HabitRecord();
         r.setId(99L);
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(h));
-        when(habitRecordRepository.findByHabitIdAndCheckDate(eq(1L), any())).thenReturn(Optional.of(r));
-        when(habitRecordRepository.countByHabitIdAndCheckDateAfter(eq(1L), any())).thenReturn(0L);
-        when(habitRecordRepository.findByHabitId(1L)).thenReturn(new java.util.ArrayList<>());
+        when(habitMapper.findById(1L)).thenReturn(h);
+        when(habitRecordMapper.findByHabitIdAndCheckDate(eq(1L), any())).thenReturn(r);
+        when(habitRecordMapper.countByHabitIdAndCheckDateAfter(eq(1L), any())).thenReturn(0L);
+        when(habitRecordMapper.findByHabitId(1L)).thenReturn(new java.util.ArrayList<>());
 
         habitService.cancelCheckIn(1L, 1L, LocalDate.now());
 
-        verify(habitRecordRepository).delete(r);
+        verify(habitRecordMapper).deleteById(r.getId());
     }
 
     @Test
@@ -191,9 +190,9 @@ class HabitServiceTest extends BaseUnitTest {
         Habit h = new Habit();
         h.setId(1L);
         h.setUserId(1L);
-        when(habitRepository.findById(1L)).thenReturn(Optional.of(h));
+        when(habitMapper.findById(1L)).thenReturn(h);
         HabitRecord r = new HabitRecord();
-        when(habitRecordRepository.findByHabitIdAndCheckDateBetween(eq(1L), any(), any())).thenReturn(List.of(r));
+        when(habitRecordMapper.findByHabitIdAndCheckDateBetween(eq(1L), any(), any())).thenReturn(List.of(r));
 
         List<HabitRecord> result = habitService.getRecordsByDateRange(1L, 1L, LocalDate.now().minusDays(7), LocalDate.now());
 
@@ -204,7 +203,7 @@ class HabitServiceTest extends BaseUnitTest {
     @DisplayName("获取今日所有习惯的打卡记录")
     void getTodayRecords_succeeds() {
         HabitRecord r = new HabitRecord();
-        when(habitRecordRepository.findByUserIdAndCheckDate(1L, LocalDate.now())).thenReturn(List.of(r));
+        when(habitRecordMapper.findByUserIdAndCheckDate(1L, LocalDate.now())).thenReturn(List.of(r));
 
         List<HabitRecord> result = habitService.getTodayRecords(1L);
 

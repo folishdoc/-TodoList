@@ -4,8 +4,8 @@ import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.tag.dto.TagRequest;
 import com.liuzeyu.todolist.module.tag.entity.Tag;
 import com.liuzeyu.todolist.module.tag.entity.TaskTag;
-import com.liuzeyu.todolist.module.tag.repository.TagRepository;
-import com.liuzeyu.todolist.module.tag.repository.TaskTagRepository;
+import com.liuzeyu.todolist.module.tag.mapper.TagMapper;
+import com.liuzeyu.todolist.module.tag.mapper.TaskTagMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,10 +22,10 @@ import static org.mockito.Mockito.*;
 class TagServiceTest extends BaseUnitTest {
 
     @Mock
-    private TagRepository tagRepository;
+    private TagMapper tagMapper;
 
     @Mock
-    private TaskTagRepository taskTagRepository;
+    private TaskTagMapper taskTagMapper;
 
     @InjectMocks
     private TagService tagService;
@@ -37,8 +36,8 @@ class TagServiceTest extends BaseUnitTest {
         TagRequest req = new TagRequest();
         req.setName("工作");
         req.setColor("#FF0000");
-        when(tagRepository.findByUserIdAndName(1L, "工作")).thenReturn(null);
-        when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tagMapper.findByUserIdAndName(1L, "工作")).thenReturn(null);
+        when(tagMapper.insert(any(Tag.class))).thenReturn(1);
 
         Tag result = tagService.createTag(1L, req);
 
@@ -53,7 +52,7 @@ class TagServiceTest extends BaseUnitTest {
         req.setName("工作");
         Tag existing = new Tag();
         existing.setId(1L);
-        when(tagRepository.findByUserIdAndName(1L, "工作")).thenReturn(existing);
+        when(tagMapper.findByUserIdAndName(1L, "工作")).thenReturn(existing);
 
         assertThatThrownBy(() -> tagService.createTag(1L, req))
                 .isInstanceOf(BusinessException.class)
@@ -67,9 +66,9 @@ class TagServiceTest extends BaseUnitTest {
         existing.setId(1L);
         existing.setUserId(1L);
         existing.setName("旧");
-        when(tagRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(tagRepository.findByUserIdAndName(1L, "新")).thenReturn(null);
-        when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tagMapper.findById(1L)).thenReturn(existing);
+        when(tagMapper.findByUserIdAndName(1L, "新")).thenReturn(null);
+        when(tagMapper.update(any(Tag.class))).thenReturn(1);
 
         TagRequest req = new TagRequest();
         req.setName("新");
@@ -84,7 +83,7 @@ class TagServiceTest extends BaseUnitTest {
         Tag existing = new Tag();
         existing.setId(1L);
         existing.setUserId(2L);
-        when(tagRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(tagMapper.findById(1L)).thenReturn(existing);
 
         TagRequest req = new TagRequest();
         req.setName("新");
@@ -100,8 +99,8 @@ class TagServiceTest extends BaseUnitTest {
         existing.setUserId(1L);
         Tag other = new Tag();
         other.setId(2L);
-        when(tagRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(tagRepository.findByUserIdAndName(1L, "冲突")).thenReturn(other);
+        when(tagMapper.findById(1L)).thenReturn(existing);
+        when(tagMapper.findByUserIdAndName(1L, "冲突")).thenReturn(other);
 
         TagRequest req = new TagRequest();
         req.setName("冲突");
@@ -116,12 +115,12 @@ class TagServiceTest extends BaseUnitTest {
         Tag existing = new Tag();
         existing.setId(1L);
         existing.setUserId(1L);
-        when(tagRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(tagMapper.findById(1L)).thenReturn(existing);
 
         tagService.deleteTag(1L, 1L);
 
-        verify(taskTagRepository).deleteAllByTagId(1L);
-        verify(tagRepository).delete(existing);
+        verify(taskTagMapper).deleteByTagId(1L);
+        verify(tagMapper).deleteById(existing.getId());
     }
 
     @Test
@@ -130,13 +129,13 @@ class TagServiceTest extends BaseUnitTest {
         Tag tag = new Tag();
         tag.setId(10L);
         tag.setUserId(1L);
-        when(tagRepository.findById(10L)).thenReturn(Optional.of(tag));
-        when(taskTagRepository.findByTaskIdAndTagId(1L, 10L)).thenReturn(null);
-        when(taskTagRepository.save(any(TaskTag.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tagMapper.findById(10L)).thenReturn(tag);
+        when(taskTagMapper.findByTaskIdAndTagId(1L, 10L)).thenReturn(null);
+        when(taskTagMapper.insert(any(TaskTag.class))).thenReturn(1);
 
         tagService.addTagToTask(1L, 1L, 10L);
 
-        verify(taskTagRepository).save(any(TaskTag.class));
+        verify(taskTagMapper).insert(any(TaskTag.class));
     }
 
     @Test
@@ -145,7 +144,7 @@ class TagServiceTest extends BaseUnitTest {
         Tag tag = new Tag();
         tag.setId(10L);
         tag.setUserId(2L);
-        when(tagRepository.findById(10L)).thenReturn(Optional.of(tag));
+        when(tagMapper.findById(10L)).thenReturn(tag);
 
         assertThatThrownBy(() -> tagService.addTagToTask(1L, 1L, 10L))
                 .isInstanceOf(BusinessException.class)
@@ -158,8 +157,8 @@ class TagServiceTest extends BaseUnitTest {
         Tag tag = new Tag();
         tag.setId(10L);
         tag.setUserId(1L);
-        when(tagRepository.findById(10L)).thenReturn(Optional.of(tag));
-        when(taskTagRepository.findByTaskIdAndTagId(1L, 10L)).thenReturn(new TaskTag());
+        when(tagMapper.findById(10L)).thenReturn(tag);
+        when(taskTagMapper.findByTaskIdAndTagId(1L, 10L)).thenReturn(new TaskTag());
 
         assertThatThrownBy(() -> tagService.addTagToTask(1L, 1L, 10L))
                 .isInstanceOf(BusinessException.class)
@@ -171,11 +170,11 @@ class TagServiceTest extends BaseUnitTest {
     void removeTagFromTask_succeeds() {
         TaskTag tt = new TaskTag();
         tt.setId(100L);
-        when(taskTagRepository.findByTaskIdAndTagId(1L, 10L)).thenReturn(tt);
+        when(taskTagMapper.findByTaskIdAndTagId(1L, 10L)).thenReturn(tt);
 
         tagService.removeTagFromTask(1L, 1L, 10L);
 
-        verify(taskTagRepository).delete(tt);
+        verify(taskTagMapper).deleteById(tt.getId());
     }
 
     @Test
@@ -183,8 +182,8 @@ class TagServiceTest extends BaseUnitTest {
     void getTaskTags_succeeds() {
         Tag tag = new Tag();
         tag.setId(10L);
-        when(taskTagRepository.findTagIdsByTaskId(1L)).thenReturn(List.of(10L));
-        when(tagRepository.findAllById(List.of(10L))).thenReturn(List.of(tag));
+        when(taskTagMapper.findTagIdsByTaskId(1L)).thenReturn(List.of(10L));
+        when(tagMapper.findAllByIds(List.of(10L))).thenReturn(List.of(tag));
 
         List<Tag> result = tagService.getTaskTags(1L);
 

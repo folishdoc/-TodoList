@@ -5,7 +5,7 @@ import com.liuzeyu.todolist.module.list.dto.TaskListRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import com.liuzeyu.todolist.support.BaseIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +32,7 @@ class TaskFlowIntegrationTest extends BaseIntegrationTest {
     private static final String TOKEN = "Bearer test-personal-token-2026-secure-key";
 
     @Autowired
-    private TaskRepository taskRepository;
+    private TaskMapper taskMapper;
 
     private String uniqueSuffix;
 
@@ -142,14 +142,14 @@ class TaskFlowIntegrationTest extends BaseIntegrationTest {
                         .header("Authorization", TOKEN))
                 .andReturn();
         assertThat(delSubResult.getResponse().getStatus()).isEqualTo(200);
-        assertThat(taskRepository.findById(subId)).isEmpty();
+        assertThat(taskMapper.findById(subId)).isNull();
 
         // 9. 删除主任务
         MvcResult delParentResult = mockMvc.perform(delete("/api/tasks/{id}", parentId)
                         .header("Authorization", TOKEN))
                 .andReturn();
         assertThat(delParentResult.getResponse().getStatus()).isEqualTo(200);
-        assertThat(taskRepository.findById(parentId)).isEmpty();
+        assertThat(taskMapper.findById(parentId)).isNull();
     }
 
     @Test

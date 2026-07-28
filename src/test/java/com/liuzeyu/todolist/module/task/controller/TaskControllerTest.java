@@ -1,13 +1,12 @@
 package com.liuzeyu.todolist.module.task.controller;
 
 import com.liuzeyu.todolist.common.exception.BusinessException;
+import com.liuzeyu.todolist.common.result.PageResult;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.support.BaseControllerTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 
 import java.util.List;
@@ -25,7 +24,7 @@ class TaskControllerTest extends BaseControllerTest {
     void getTasks_returnsOk() throws Exception {
         Task task = new Task();
         task.setId(1L);
-        when(taskService.getTasks(eq(1L), eq(0), eq(20))).thenReturn(new PageImpl<>(List.of(task)));
+        when(taskService.getTasks(eq(1L), eq(0), eq(20))).thenReturn(new PageResult<>(List.of(task), 1, 1, 20));
 
         mockMvc.perform(get("/api/tasks"))
                 .andExpect(status().isOk())
@@ -69,7 +68,7 @@ class TaskControllerTest extends BaseControllerTest {
     void getTasks_succeeds() throws Exception {
         Task task = new Task();
         task.setId(1L);
-        Page<Task> page = new PageImpl<>(List.of(task));
+        PageResult<Task> page = new PageResult<>(List.of(task), 1, 1, 20);
         when(taskService.getTasks(eq(1L), eq(0), eq(20))).thenReturn(page);
 
         doGet("/api/tasks")
@@ -148,7 +147,7 @@ class TaskControllerTest extends BaseControllerTest {
     @DisplayName("GET /api/tasks/search - search tasks")
     void searchTasks_succeeds() throws Exception {
         when(taskService.searchTasks(eq(1L), eq("milk"), eq(0), eq(20)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(new PageResult<>(List.of(), 0, 1, 20));
 
         doGet("/api/tasks/search?keyword=milk")
                 .andExpect(status().isOk());

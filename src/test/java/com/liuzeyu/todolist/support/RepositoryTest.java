@@ -1,7 +1,6 @@
 package com.liuzeyu.todolist.support;
 
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -19,7 +18,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @MybatisTest
-@AutoConfigureTestDatabase
 @ActiveProfiles("test")
 @Import(TodolistApplication.class)
 public @interface RepositoryTest {

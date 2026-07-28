@@ -2,8 +2,8 @@ package com.liuzeyu.todolist.module.anniversary.integration;
 
 import com.liuzeyu.todolist.module.anniversary.entity.Anniversary;
 import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
-import com.liuzeyu.todolist.module.anniversary.repository.AnniversaryRepository;
-import com.liuzeyu.todolist.module.anniversary.repository.ReminderLogRepository;
+import com.liuzeyu.todolist.module.anniversary.mapper.AnniversaryMapper;
+import com.liuzeyu.todolist.module.anniversary.mapper.ReminderLogMapper;
 import com.liuzeyu.todolist.module.anniversary.service.AnniversaryReminderService;
 import com.liuzeyu.todolist.support.BaseIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
@@ -25,18 +25,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AnniversaryReminderIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
-    private AnniversaryRepository anniversaryRepository;
+    private AnniversaryMapper anniversaryMapper;
 
     @Autowired
-    private ReminderLogRepository reminderLogRepository;
+    private ReminderLogMapper reminderLogMapper;
 
     @Autowired
     private AnniversaryReminderService reminderService;
 
     private long countLogsForAnniversary(Long anniversaryId) {
-        return reminderLogRepository.findAll().stream()
-                .filter(l -> l.getAnniversaryId().equals(anniversaryId))
-                .count();
+        return reminderLogMapper.findByAnniversaryIdInAndRemindDatetimeBetween(
+                List.of(anniversaryId),
+                LocalDateTime.of(2000, 1, 1, 0, 0),
+                LocalDateTime.of(2099, 12, 31, 23, 59)
+        ).size();
     }
 
     @Test
@@ -52,7 +54,7 @@ class AnniversaryReminderIntegrationTest extends BaseIntegrationTest {
         a.setRemindEnabled(true);
         a.setRemindDaysBefore("0");
         a.setRemindTime(java.time.LocalTime.of(0, 1));
-        a = anniversaryRepository.save(a);
+        anniversaryMapper.insert(a);
         final Long aid = a.getId();
 
         long before = countLogsForAnniversary(aid);
@@ -62,12 +64,7 @@ class AnniversaryReminderIntegrationTest extends BaseIntegrationTest {
         assertThat(after).isEqualTo(before + 1);
 
         // 清理
-        reminderLogRepository.deleteAll(
-            reminderLogRepository.findAll().stream()
-                .filter(l -> l.getAnniversaryId().equals(aid))
-                .toList()
-        );
-        anniversaryRepository.deleteById(aid);
+        anniversaryMapper.deleteById(aid);
     }
 
     @Test
@@ -83,7 +80,7 @@ class AnniversaryReminderIntegrationTest extends BaseIntegrationTest {
         a.setRemindEnabled(true);
         a.setRemindDaysBefore("0");
         a.setRemindTime(java.time.LocalTime.of(0, 1));
-        a = anniversaryRepository.save(a);
+        anniversaryMapper.insert(a);
         final Long aid = a.getId();
 
         reminderService.checkAnniversaryReminders();
@@ -96,12 +93,7 @@ class AnniversaryReminderIntegrationTest extends BaseIntegrationTest {
         assertThat(secondCount).isEqualTo(1);
 
         // 清理
-        reminderLogRepository.deleteAll(
-            reminderLogRepository.findAll().stream()
-                .filter(l -> l.getAnniversaryId().equals(aid))
-                .toList()
-        );
-        anniversaryRepository.deleteById(aid);
+        anniversaryMapper.deleteById(aid);
     }
 
     @Test
@@ -116,14 +108,14 @@ class AnniversaryReminderIntegrationTest extends BaseIntegrationTest {
         a.setRepeatType("YEARLY");
         a.setRemindEnabled(false);
         a.setRemindDaysBefore("0");
-        a = anniversaryRepository.save(a);
+        anniversaryMapper.insert(a);
         final Long aid = a.getId();
 
         reminderService.checkAnniversaryReminders();
         long count = countLogsForAnniversary(aid);
         assertThat(count).isEqualTo(0);
 
-        anniversaryRepository.deleteById(aid);
+        anniversaryMapper.deleteById(aid);
     }
 
     @Test
@@ -139,7 +131,7 @@ class AnniversaryReminderIntegrationTest extends BaseIntegrationTest {
         a.setRemindEnabled(true);
         a.setRemindDaysBefore("0,3,7");
         a.setRemindTime(java.time.LocalTime.of(0, 1));
-        a = anniversaryRepository.save(a);
+        anniversaryMapper.insert(a);
         final Long aid = a.getId();
 
         reminderService.checkAnniversaryReminders();
@@ -147,11 +139,6 @@ class AnniversaryReminderIntegrationTest extends BaseIntegrationTest {
         // 三个提醒日都已过 → 应生成 3 条
         assertThat(count).isEqualTo(3);
 
-        reminderLogRepository.deleteAll(
-            reminderLogRepository.findAll().stream()
-                .filter(l -> l.getAnniversaryId().equals(aid))
-                .toList()
-        );
-        anniversaryRepository.deleteById(aid);
+        anniversaryMapper.deleteById(aid);
     }
 }

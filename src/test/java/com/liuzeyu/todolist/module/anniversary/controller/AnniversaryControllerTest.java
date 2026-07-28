@@ -1,8 +1,8 @@
 package com.liuzeyu.todolist.module.anniversary.controller;
 
 import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryRequest;
-import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryVO;
 import com.liuzeyu.todolist.module.anniversary.entity.Anniversary;
+import com.liuzeyu.todolist.module.anniversary.service.AnniversaryService;
 import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
 import com.liuzeyu.todolist.support.BaseControllerTest;
 import org.junit.jupiter.api.DisplayName;
@@ -22,7 +22,7 @@ class AnniversaryControllerTest extends BaseControllerTest {
     @Test
     @DisplayName("GET /api/anniversaries - list")
     void list_succeeds() throws Exception {
-        AnniversaryVO vo = new AnniversaryVO(1L, "Birthday", LocalDate.now(), "NONE", false, "0", "09:00", null, null, LocalDate.now(), 0L, List.of());
+        var vo = new AnniversaryService.AnniversaryDetail(1L, "Birthday", LocalDate.now(), "NONE", false, "0", "09:00", null, null, LocalDate.now(), 0L, List.of());
         when(anniversaryService.list(eq(1L), any(), any(), any(), any())).thenReturn(List.of(vo));
 
         doGet("/api/anniversaries")
@@ -44,7 +44,7 @@ class AnniversaryControllerTest extends BaseControllerTest {
     @Test
     @DisplayName("GET /api/anniversaries/{id} - detail")
     void getDetail_succeeds() throws Exception {
-        AnniversaryVO vo = new AnniversaryVO(1L, "Birthday", LocalDate.now(), "NONE", false, "0", "09:00", null, null, LocalDate.now(), 0L, List.of());
+        var vo = new AnniversaryService.AnniversaryDetail(1L, "Birthday", LocalDate.now(), "NONE", false, "0", "09:00", null, null, LocalDate.now(), 0L, List.of());
         when(anniversaryService.getDetail(1L, 1L)).thenReturn(vo);
 
         doGet("/api/anniversaries/{id}", 1L)

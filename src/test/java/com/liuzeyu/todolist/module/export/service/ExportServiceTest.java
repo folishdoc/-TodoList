@@ -1,7 +1,7 @@
 package com.liuzeyu.todolist.module.export.service;
 
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 class ExportServiceTest extends BaseUnitTest {
 
     @Mock
-    private TaskRepository taskRepository;
+    private TaskMapper taskMapper;
 
     @InjectMocks
     private ExportService exportService;
@@ -38,7 +38,7 @@ class ExportServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("导出 CSV - 包含表头与所有任务行")
     void exportCsv_includesHeader() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(
+        when(taskMapper.findAllByUserId(1L)).thenReturn(List.of(
                 makeTask(1L, "A", "desc1", 2, 0),
                 makeTask(2L, "B", "desc2", 3, 1)
         ));
@@ -53,7 +53,7 @@ class ExportServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("导出 CSV - 含逗号或引号应被转义")
     void exportCsv_escapesSpecialChars() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(
+        when(taskMapper.findAllByUserId(1L)).thenReturn(List.of(
                 makeTask(1L, "标题,逗号", "描述\"引号", 2, 0)
         ));
 
@@ -66,7 +66,7 @@ class ExportServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("导出 CSV - 空列表只输出表头")
     void exportCsv_empty() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of());
+        when(taskMapper.findAllByUserId(1L)).thenReturn(List.of());
 
         String csv = exportService.exportTasksAsCsv(1L);
 
@@ -76,7 +76,7 @@ class ExportServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("导出 JSON - 包含所有任务")
     void exportJson_includesAllTasks() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(
+        when(taskMapper.findAllByUserId(1L)).thenReturn(List.of(
                 makeTask(1L, "A", null, 2, 0),
                 makeTask(2L, "B", null, 3, 1)
         ));
@@ -94,7 +94,7 @@ class ExportServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("导出 JSON - 转义引号和反斜杠")
     void exportJson_escapesSpecialChars() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of(
+        when(taskMapper.findAllByUserId(1L)).thenReturn(List.of(
                 makeTask(1L, "标题\"引号\\反斜杠", null, 2, 0)
         ));
 
@@ -106,7 +106,7 @@ class ExportServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("导出 JSON - 空列表")
     void exportJson_empty() {
-        when(taskRepository.findAllByUserId(1L)).thenReturn(List.of());
+        when(taskMapper.findAllByUserId(1L)).thenReturn(List.of());
 
         String json = exportService.exportTasksAsJson(1L);
 

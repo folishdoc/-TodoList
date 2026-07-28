@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.liuzeyu.todolist.module.task.dto.RepeatRule;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import com.liuzeyu.todolist.module.task.service.RepeatTaskService;
 import com.liuzeyu.todolist.support.BaseIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RepeatTaskIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
-    private TaskRepository taskRepository;
+    private TaskMapper taskMapper;
 
     @Autowired
     private RepeatTaskService repeatTaskService;
@@ -53,18 +53,18 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         rule.setType("DAILY");
         rule.setInterval(1);
         parent.setRepeatRule(mapper.writeValueAsString(rule));
-        parent = taskRepository.save(parent);
+        taskMapper.insert(parent);
         final String parentTitle = parent.getTitle();
         final Long parentId = parent.getId();
 
-        long before = taskRepository.count();
+        long before = taskMapper.findAll().size();
         repeatTaskService.scheduledGenerateRepeatTasks();
-        long after = taskRepository.count();
+        long after = taskMapper.findAll().size();
 
         assertThat(after).isEqualTo(before + 1);
 
         // 验证新实例存在：标题相同，状态=0，dueDate 在未来
-        List<Task> allByTitle = taskRepository.findByUserIdAndStatus(1L, 0).stream()
+        List<Task> allByTitle = taskMapper.findByUserIdAndStatus(1L, 0).stream()
                 .filter(t -> t.getTitle().equals(parentTitle))
                 .toList();
         assertThat(allByTitle).isNotEmpty();
@@ -73,8 +73,8 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         assertThat(generated.getDueDate()).isAfter(LocalDateTime.now().minusHours(1));
 
         // 清理
-        taskRepository.delete(generated);
-        taskRepository.deleteById(parentId);
+        taskMapper.deleteById(generated.getId());
+        taskMapper.deleteById(parentId);
     }
 
     @Test
@@ -93,17 +93,17 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         rule.setType("DAILY");
         rule.setInterval(1);
         task.setRepeatRule(mapper.writeValueAsString(rule));
-        task = taskRepository.save(task);
+        taskMapper.insert(task);
         final Long taskId = task.getId();
 
-        long before = taskRepository.count();
+        long before = taskMapper.findAll().size();
         repeatTaskService.scheduledGenerateRepeatTasks();
-        long after = taskRepository.count();
+        long after = taskMapper.findAll().size();
 
         // 未完成不生成
         assertThat(after).isEqualTo(before);
 
-        taskRepository.deleteById(taskId);
+        taskMapper.deleteById(taskId);
     }
 
     @Test
@@ -118,15 +118,15 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         task.setPriority(2);
         task.setDueDate(LocalDateTime.now().minusDays(1));
         task.setRepeatRule(null);
-        task = taskRepository.save(task);
+        taskMapper.insert(task);
 
-        long before = taskRepository.count();
+        long before = taskMapper.findAll().size();
         repeatTaskService.scheduledGenerateRepeatTasks();
-        long after = taskRepository.count();
+        long after = taskMapper.findAll().size();
 
         assertThat(after).isEqualTo(before);
 
-        taskRepository.delete(task);
+        taskMapper.deleteById(task.getId());
     }
 
     @Test
@@ -146,20 +146,20 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
         rule.setType("WEEKLY");
         rule.setInterval(1);
         task.setRepeatRule(mapper.writeValueAsString(rule));
-        task = taskRepository.save(task);
+        taskMapper.insert(task);
         final String weeklyTitle = task.getTitle();
         final Long weeklyId = task.getId();
 
         repeatTaskService.scheduledGenerateRepeatTasks();
 
-        List<Task> generated = taskRepository.findByUserIdAndStatus(1L, 0).stream()
+        List<Task> generated = taskMapper.findByUserIdAndStatus(1L, 0).stream()
                 .filter(t -> t.getTitle().equals(weeklyTitle))
                 .toList();
         assertThat(generated).hasSize(1);
         assertThat(generated.get(0).getDueDate()).isEqualTo(originalDue.plusWeeks(1));
 
         // 清理
-        taskRepository.delete(generated.get(0));
-        taskRepository.deleteById(weeklyId);
+        taskMapper.deleteById(generated.get(0).getId());
+        taskMapper.deleteById(weeklyId);
     }
 }

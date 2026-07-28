@@ -1,7 +1,7 @@
 package com.liuzeyu.todolist.module.task.service;
 
 import com.liuzeyu.todolist.module.task.entity.TaskAttachment;
-import com.liuzeyu.todolist.module.task.mapper.TaskAttachmentRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskAttachmentMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,7 +25,7 @@ import static org.mockito.Mockito.*;
 class FileUploadServiceTest extends BaseUnitTest {
 
     @Mock
-    private TaskAttachmentRepository attachmentRepository;
+    private TaskAttachmentMapper attachmentMapper;
 
     @InjectMocks
     private FileUploadService fileUploadService;
@@ -43,7 +42,7 @@ class FileUploadServiceTest extends BaseUnitTest {
     @DisplayName("上传文件 - 正常")
     void upload_succeeds() throws IOException {
         MultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "hello".getBytes());
-        when(attachmentRepository.save(any(TaskAttachment.class))).thenAnswer(inv -> inv.getArgument(0));
+        doNothing().when(attachmentMapper).insert(any(TaskAttachment.class));
 
         TaskAttachment attachment = fileUploadService.uploadFile(1L, file);
 
@@ -79,7 +78,7 @@ class FileUploadServiceTest extends BaseUnitTest {
     @DisplayName("上传文件 - 无扩展名时使用原文件名")
     void upload_noExtension() throws IOException {
         MultipartFile file = new MockMultipartFile("file", "README", "text/plain", "hello".getBytes());
-        when(attachmentRepository.save(any(TaskAttachment.class))).thenAnswer(inv -> inv.getArgument(0));
+        doNothing().when(attachmentMapper).insert(any(TaskAttachment.class));
 
         TaskAttachment attachment = fileUploadService.uploadFile(1L, file);
 
@@ -87,10 +86,10 @@ class FileUploadServiceTest extends BaseUnitTest {
     }
 
     @Test
-    @DisplayName("获取任务附件 - 委托给 repository")
+    @DisplayName("获取任务附件 - 委托给 mapper")
     void getTaskAttachments_delegates() {
         TaskAttachment a = new TaskAttachment();
-        when(attachmentRepository.findByTaskId(1L)).thenReturn(List.of(a));
+        when(attachmentMapper.findByTaskId(1L)).thenReturn(List.of(a));
 
         List<TaskAttachment> result = fileUploadService.getTaskAttachments(1L);
 
@@ -104,18 +103,18 @@ class FileUploadServiceTest extends BaseUnitTest {
         a.setId(1L);
         a.setFilePath(tempUploadDir.resolve("dummy.txt").toString());
         Files.writeString(Path.of(a.getFilePath()), "x");
-        when(attachmentRepository.findById(1L)).thenReturn(Optional.of(a));
+        when(attachmentMapper.findById(1L)).thenReturn(a);
 
         fileUploadService.deleteAttachment(1L);
 
         assertThat(Files.exists(Path.of(a.getFilePath()))).isFalse();
-        verify(attachmentRepository).delete(a);
+        verify(attachmentMapper).deleteById(1L);
     }
 
     @Test
     @DisplayName("删除附件 - 不存在抛异常")
     void delete_notFound_throws() {
-        when(attachmentRepository.findById(1L)).thenReturn(Optional.empty());
+        when(attachmentMapper.findById(1L)).thenReturn(null);
 
         assertThatThrownBy(() -> fileUploadService.deleteAttachment(1L))
                 .isInstanceOf(RuntimeException.class)

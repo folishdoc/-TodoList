@@ -4,7 +4,7 @@ import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
 import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskRepository;
+import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,6 @@ import org.mockito.Mock;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,7 +23,7 @@ import static org.mockito.Mockito.*;
 class TaskServiceTest extends BaseUnitTest {
 
     @Mock
-    private TaskRepository taskRepository;
+    private TaskMapper taskMapper;
 
     @InjectMocks
     private TaskService taskService;
@@ -35,11 +34,11 @@ class TaskServiceTest extends BaseUnitTest {
         TaskRequest request = new TaskRequest();
         request.setTitle("买牛奶");
         request.setPriority(3);
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> {
+        doAnswer(inv -> {
             Task t = inv.getArgument(0);
             t.setId(1L);
-            return t;
-        });
+            return null;
+        }).when(taskMapper).insert(any(Task.class));
 
         Task result = taskService.createTask(1L, request);
 
@@ -47,7 +46,7 @@ class TaskServiceTest extends BaseUnitTest {
         assertThat(result.getUserId()).isEqualTo(1L);
         assertThat(result.getPriority()).isEqualTo(3);
         assertThat(result.getStatus()).isEqualTo(0);
-        verify(taskRepository).save(any(Task.class));
+        verify(taskMapper).insert(any(Task.class));
     }
 
     @Test
@@ -69,7 +68,7 @@ class TaskServiceTest extends BaseUnitTest {
         TaskRequest request = new TaskRequest();
         request.setTitle("已完成");
         request.setStatus(1);
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        doNothing().when(taskMapper).insert(any(Task.class));
 
         Task result = taskService.createTask(1L, request);
 
@@ -82,7 +81,7 @@ class TaskServiceTest extends BaseUnitTest {
         Task task = new Task();
         task.setId(10L);
         task.setUserId(1L);
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(task));
+        when(taskMapper.findById(10L)).thenReturn(task);
 
         Task result = taskService.getTask(1L, 10L);
 
@@ -92,7 +91,7 @@ class TaskServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("获取任务详情 - 任务不存在抛异常")
     void getTask_notFound_throws() {
-        when(taskRepository.findById(10L)).thenReturn(Optional.empty());
+        when(taskMapper.findById(10L)).thenReturn(null);
 
         assertThatThrownBy(() -> taskService.getTask(1L, 10L))
                 .isInstanceOf(BusinessException.class)
@@ -105,7 +104,7 @@ class TaskServiceTest extends BaseUnitTest {
         Task task = new Task();
         task.setId(10L);
         task.setUserId(2L);
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(task));
+        when(taskMapper.findById(10L)).thenReturn(task);
 
         assertThatThrownBy(() -> taskService.getTask(1L, 10L))
                 .isInstanceOf(BusinessException.class)
@@ -119,8 +118,8 @@ class TaskServiceTest extends BaseUnitTest {
         existing.setId(10L);
         existing.setUserId(1L);
         existing.setStatus(0);
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskMapper.findById(10L)).thenReturn(existing);
+        doNothing().when(taskMapper).update(any(Task.class));
 
         TaskRequest req = new TaskRequest();
         req.setTitle("新标题");
@@ -138,8 +137,8 @@ class TaskServiceTest extends BaseUnitTest {
         existing.setId(10L);
         existing.setUserId(1L);
         existing.setStatus(0);
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskMapper.findById(10L)).thenReturn(existing);
+        doNothing().when(taskMapper).update(any(Task.class));
 
         TaskRequest req = new TaskRequest();
         req.setTitle("t");
@@ -156,8 +155,8 @@ class TaskServiceTest extends BaseUnitTest {
         Task existing = new Task();
         existing.setId(10L);
         existing.setUserId(1L);
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskMapper.findById(10L)).thenReturn(existing);
+        doNothing().when(taskMapper).update(any(Task.class));
 
         TaskTimeRequest req = new TaskTimeRequest();
         req.setStartDate(LocalDateTime.of(2026, 6, 10, 9, 0));
@@ -175,7 +174,7 @@ class TaskServiceTest extends BaseUnitTest {
         Task existing = new Task();
         existing.setId(10L);
         existing.setUserId(1L);
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(existing));
+        when(taskMapper.findById(10L)).thenReturn(existing);
 
         TaskTimeRequest req = new TaskTimeRequest();
         req.setStartDate(LocalDateTime.of(2026, 6, 10, 18, 0));
@@ -195,14 +194,14 @@ class TaskServiceTest extends BaseUnitTest {
         child.setId(11L);
         child.setUserId(1L);
         child.setParentId(10L);
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(parent));
-        when(taskRepository.findByUserIdAndParentId(1L, 10L)).thenReturn(List.of(child));
-        when(taskRepository.findByUserIdAndParentId(1L, 11L)).thenReturn(List.of());
+        when(taskMapper.findById(10L)).thenReturn(parent);
+        when(taskMapper.findByUserIdAndParentId(1L, 10L)).thenReturn(List.of(child));
+        when(taskMapper.findByUserIdAndParentId(1L, 11L)).thenReturn(List.of());
 
         taskService.deleteTask(1L, 10L);
 
-        verify(taskRepository).deleteById(11L);
-        verify(taskRepository).delete(parent);
+        verify(taskMapper).deleteById(11L);
+        verify(taskMapper).deleteById(10L);
     }
 
     @Test
@@ -211,8 +210,8 @@ class TaskServiceTest extends BaseUnitTest {
         Task existing = new Task();
         existing.setId(10L);
         existing.setUserId(1L);
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskMapper.findById(10L)).thenReturn(existing);
+        doNothing().when(taskMapper).update(any(Task.class));
 
         Task result = taskService.completeTask(1L, 10L);
 
@@ -228,8 +227,8 @@ class TaskServiceTest extends BaseUnitTest {
         existing.setUserId(1L);
         existing.setStatus(1);
         existing.setCompletedAt(LocalDateTime.now());
-        when(taskRepository.findById(10L)).thenReturn(Optional.of(existing));
-        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskMapper.findById(10L)).thenReturn(existing);
+        doNothing().when(taskMapper).update(any(Task.class));
 
         Task result = taskService.uncompleteTask(1L, 10L);
 
@@ -249,7 +248,7 @@ class TaskServiceTest extends BaseUnitTest {
         todayActive.setDueDate(endOfDay.minusMinutes(1));
         todayActive.setPriority(2);
 
-        when(taskRepository.findTodayTasks(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(taskMapper.findTodayTasks(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of(todayActive));
 
         List<Task> result = taskService.getTodayTasks(1L);
@@ -258,23 +257,23 @@ class TaskServiceTest extends BaseUnitTest {
     }
 
     @Test
-    @DisplayName("搜索任务 - 委托给 repository")
+    @DisplayName("搜索任务 - 委托给 mapper")
     void searchTasks_delegatesToRepository() {
-        org.springframework.data.domain.Page<Task> page = org.springframework.data.domain.Page.empty();
-        when(taskRepository.searchTasks(eq(1L), eq("牛奶"), any())).thenReturn(page);
+        when(taskMapper.searchTasks(eq(1L), eq("牛奶"), eq(0), eq(20))).thenReturn(List.of());
+        when(taskMapper.countSearchTasks(eq(1L), eq("牛奶"))).thenReturn(0L);
 
         var result = taskService.searchTasks(1L, "牛奶", 0, 20);
 
-        assertThat(result).isEmpty();
-        verify(taskRepository).searchTasks(eq(1L), eq("牛奶"), any());
+        assertThat(result.getContent()).isEmpty();
+        verify(taskMapper).searchTasks(eq(1L), eq("牛奶"), eq(0), eq(20));
     }
 
     @Test
-    @DisplayName("按日期范围查询任务 - 委托给 repository")
+    @DisplayName("按日期范围查询任务 - 委托给 mapper")
     void getTasksByDateRange_delegatesToRepository() {
         LocalDateTime start = LocalDateTime.of(2026, 6, 1, 0, 0);
         LocalDateTime end = LocalDateTime.of(2026, 6, 30, 23, 59);
-        when(taskRepository.findByDateRange(1L, start, end)).thenReturn(List.of(new Task()));
+        when(taskMapper.findByDateRange(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(List.of(new Task()));
 
         List<Task> result = taskService.getTasksByDateRange(1L, start, end);
 

@@ -2,8 +2,8 @@ package com.liuzeyu.todolist.module.anniversary.service;
 
 import com.liuzeyu.todolist.module.anniversary.entity.Anniversary;
 import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
-import com.liuzeyu.todolist.module.anniversary.repository.AnniversaryRepository;
-import com.liuzeyu.todolist.module.anniversary.repository.ReminderLogRepository;
+import com.liuzeyu.todolist.module.anniversary.mapper.AnniversaryMapper;
+import com.liuzeyu.todolist.module.anniversary.mapper.ReminderLogMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
@@ -24,10 +24,10 @@ import static org.mockito.Mockito.*;
 class AnniversaryReminderServiceTest extends BaseUnitTest {
 
     @Mock
-    private AnniversaryRepository anniversaryRepository;
+    private AnniversaryMapper anniversaryMapper;
 
     @Mock
-    private ReminderLogRepository reminderLogRepository;
+    private ReminderLogMapper reminderLogMapper;
 
     @InjectMocks
     private AnniversaryReminderService service;
@@ -51,11 +51,11 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("检查提醒 - 无启用提醒的纪念日不触发")
     void noEnabledReminders_notTriggered() {
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of());
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
 
-        verify(reminderLogRepository, never()).save(any());
+        verify(reminderLogMapper, never()).insert(any());
     }
 
     @Test
@@ -67,24 +67,24 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
         a.setDate(LocalDate.now().plusDays(7));
         a.setRemindDaysBefore("0");
         a.setRemindTime(LocalTime.of(9, 0));
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
 
         service.checkAnniversaryReminders();
 
-        verify(reminderLogRepository, never()).save(any());
+        verify(reminderLogMapper, never()).insert(any());
     }
 
     @Test
     @DisplayName("检查提醒 - 已过期的提醒应写入 ReminderLog")
     void overdueReminder_writesLog() {
         Anniversary a = pastReminderAnniversary(1L);
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
-        when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
+        when(reminderLogMapper.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
 
         ArgumentCaptor<ReminderLog> captor = ArgumentCaptor.forClass(ReminderLog.class);
-        verify(reminderLogRepository).save(captor.capture());
+        verify(reminderLogMapper).insert(captor.capture());
         ReminderLog saved = captor.getValue();
         assertThat(saved.getAnniversaryId()).isEqualTo(1L);
         assertThat(saved.getIsRead()).isFalse();
@@ -94,13 +94,13 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     @DisplayName("检查提醒 - 已存在同时间日志则不重复")
     void duplicateReminder_deduped() {
         Anniversary a = pastReminderAnniversary(1L);
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
         ReminderLog existing = new ReminderLog();
-        when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of(existing));
+        when(reminderLogMapper.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of(existing));
 
         service.checkAnniversaryReminders();
 
-        verify(reminderLogRepository, never()).save(any());
+        verify(reminderLogMapper, never()).insert(any());
     }
 
     @Test
@@ -112,12 +112,12 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
         a.setDate(LocalDate.now());
         a.setRemindDaysBefore("0,1");
         a.setRemindTime(LocalTime.of(0, 1));
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
-        when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
+        when(reminderLogMapper.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
 
-        verify(reminderLogRepository, times(2)).save(any(ReminderLog.class));
+        verify(reminderLogMapper, times(2)).insert(any(ReminderLog.class));
     }
 
     @Test
@@ -125,12 +125,12 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     void nullRemindDaysBefore_usesDefault() {
         Anniversary a = pastReminderAnniversary(1L);
         a.setRemindDaysBefore(null);
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
-        when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
+        when(reminderLogMapper.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
 
-        verify(reminderLogRepository, times(1)).save(any(ReminderLog.class));
+        verify(reminderLogMapper, times(1)).insert(any(ReminderLog.class));
     }
 
     @Test
@@ -138,11 +138,11 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     void invalidDaysFormat_ignored() {
         Anniversary a = pastReminderAnniversary(1L);
         a.setRemindDaysBefore("abc,xyz");
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
 
         service.checkAnniversaryReminders();
 
-        verify(reminderLogRepository, never()).save(any());
+        verify(reminderLogMapper, never()).insert(any());
     }
 
     @Test
@@ -154,13 +154,13 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
         );
         Anniversary a = pastReminderAnniversary(1L);
         a.setRemindTime(null);
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
-        when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of(a));
+        when(reminderLogMapper.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
 
         ArgumentCaptor<ReminderLog> captor = ArgumentCaptor.forClass(ReminderLog.class);
-        verify(reminderLogRepository).save(captor.capture());
+        verify(reminderLogMapper).insert(captor.capture());
         assertThat(captor.getValue().getRemindDatetime().toLocalTime()).isEqualTo(LocalTime.of(9, 0));
     }
 
@@ -169,11 +169,11 @@ class AnniversaryReminderServiceTest extends BaseUnitTest {
     void multipleEnabledAnniversaries() {
         Anniversary enabled = pastReminderAnniversary(1L);
         Anniversary another = pastReminderAnniversary(2L);
-        when(anniversaryRepository.findRemindEnabledByUserId(1L)).thenReturn(List.of(enabled, another));
-        when(reminderLogRepository.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
+        when(anniversaryMapper.findRemindEnabledByUserId(1L)).thenReturn(List.of(enabled, another));
+        when(reminderLogMapper.findByAnniversaryIdAndRemindDatetime(any(), any())).thenReturn(List.of());
 
         service.checkAnniversaryReminders();
 
-        verify(reminderLogRepository, times(2)).save(any(ReminderLog.class));
+        verify(reminderLogMapper, times(2)).insert(any(ReminderLog.class));
     }
 }

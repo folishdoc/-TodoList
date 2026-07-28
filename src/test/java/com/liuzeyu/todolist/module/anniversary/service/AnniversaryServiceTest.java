@@ -2,11 +2,10 @@ package com.liuzeyu.todolist.module.anniversary.service;
 
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryRequest;
-import com.liuzeyu.todolist.module.anniversary.dto.AnniversaryVO;
 import com.liuzeyu.todolist.module.anniversary.entity.Anniversary;
 import com.liuzeyu.todolist.module.anniversary.entity.ReminderLog;
-import com.liuzeyu.todolist.module.anniversary.repository.AnniversaryRepository;
-import com.liuzeyu.todolist.module.anniversary.repository.ReminderLogRepository;
+import com.liuzeyu.todolist.module.anniversary.mapper.AnniversaryMapper;
+import com.liuzeyu.todolist.module.anniversary.mapper.ReminderLogMapper;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.service.TaskService;
 import com.liuzeyu.todolist.support.BaseUnitTest;
@@ -17,7 +16,6 @@ import org.mockito.Mock;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,10 +25,10 @@ import static org.mockito.Mockito.*;
 class AnniversaryServiceTest extends BaseUnitTest {
 
     @Mock
-    private AnniversaryRepository anniversaryRepository;
+    private AnniversaryMapper anniversaryMapper;
 
     @Mock
-    private ReminderLogRepository reminderLogRepository;
+    private ReminderLogMapper reminderLogMapper;
 
     @Mock
     private TaskService taskService;
@@ -46,7 +44,7 @@ class AnniversaryServiceTest extends BaseUnitTest {
         req.setDate(LocalDate.of(2024, 5, 20));
         req.setRemindEnabled(true);
         req.setRemindDaysBefore("0,1");
-        when(anniversaryRepository.save(any(Anniversary.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(anniversaryMapper.insert(any(Anniversary.class))).thenReturn(1);
 
         Anniversary a = anniversaryService.create(1L, req);
 
@@ -61,7 +59,7 @@ class AnniversaryServiceTest extends BaseUnitTest {
         Anniversary a = new Anniversary();
         a.setId(1L);
         a.setUserId(2L);
-        when(anniversaryRepository.findById(1L)).thenReturn(Optional.of(a));
+        when(anniversaryMapper.findById(1L)).thenReturn(a);
 
         AnniversaryRequest req = new AnniversaryRequest();
         req.setName("new");
@@ -76,8 +74,8 @@ class AnniversaryServiceTest extends BaseUnitTest {
         a.setId(1L);
         a.setUserId(1L);
         a.setName("old");
-        when(anniversaryRepository.findById(1L)).thenReturn(Optional.of(a));
-        when(anniversaryRepository.save(any(Anniversary.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(anniversaryMapper.findById(1L)).thenReturn(a);
+        when(anniversaryMapper.update(any(Anniversary.class))).thenReturn(1);
 
         AnniversaryRequest req = new AnniversaryRequest();
         req.setName("new");
@@ -92,11 +90,11 @@ class AnniversaryServiceTest extends BaseUnitTest {
         Anniversary a = new Anniversary();
         a.setId(1L);
         a.setUserId(1L);
-        when(anniversaryRepository.findById(1L)).thenReturn(Optional.of(a));
+        when(anniversaryMapper.findById(1L)).thenReturn(a);
 
         anniversaryService.delete(1L, 1L);
 
-        verify(anniversaryRepository).delete(a);
+        verify(anniversaryMapper).deleteById(1L);
     }
 
     @Test
@@ -105,7 +103,7 @@ class AnniversaryServiceTest extends BaseUnitTest {
         Anniversary a = new Anniversary();
         a.setId(1L);
         a.setUserId(2L);
-        when(anniversaryRepository.findById(1L)).thenReturn(Optional.of(a));
+        when(anniversaryMapper.findById(1L)).thenReturn(a);
 
         assertThatThrownBy(() -> anniversaryService.delete(1L, 1L))
                 .isInstanceOf(BusinessException.class);
@@ -120,9 +118,9 @@ class AnniversaryServiceTest extends BaseUnitTest {
         a.setName("生日");
         a.setDate(LocalDate.now().plusDays(10));
         a.setRepeatType("YEARLY");
-        when(anniversaryRepository.findById(1L)).thenReturn(Optional.of(a));
+        when(anniversaryMapper.findById(1L)).thenReturn(a);
 
-        AnniversaryVO vo = anniversaryService.getDetail(1L, 1L);
+        AnniversaryService.AnniversaryDetail vo = anniversaryService.getDetail(1L, 1L);
 
         assertThat(vo.getName()).isEqualTo("生日");
         assertThat(vo.getDaysUntil()).isBetween(0L, 365L);
@@ -136,9 +134,9 @@ class AnniversaryServiceTest extends BaseUnitTest {
         a1.setUserId(1L);
         a1.setName("生日");
         a1.setDate(LocalDate.now());
-        when(anniversaryRepository.searchByName(1L, "生日")).thenReturn(List.of(a1));
+        when(anniversaryMapper.searchByName(1L, "生日")).thenReturn(List.of(a1));
 
-        List<AnniversaryVO> result = anniversaryService.list(1L, null, null, "生日", null);
+        List<AnniversaryService.AnniversaryDetail> result = anniversaryService.list(1L, null, null, "生日", null);
 
         assertThat(result).hasSize(1);
     }
@@ -158,9 +156,9 @@ class AnniversaryServiceTest extends BaseUnitTest {
         a2.setName("纪念日");
         a2.setDate(LocalDate.now());
         a2.setTags("其他");
-        when(anniversaryRepository.findAllByUserId(1L)).thenReturn(List.of(a1, a2));
+        when(anniversaryMapper.findAllByUserId(1L)).thenReturn(List.of(a1, a2));
 
-        List<AnniversaryVO> result = anniversaryService.list(1L, null, null, null, "家人");
+        List<AnniversaryService.AnniversaryDetail> result = anniversaryService.list(1L, null, null, null, "家人");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("生日");
@@ -179,9 +177,9 @@ class AnniversaryServiceTest extends BaseUnitTest {
         a2.setUserId(1L);
         a2.setName("A");
         a2.setDate(LocalDate.now());
-        when(anniversaryRepository.findAllByUserId(1L)).thenReturn(List.of(a1, a2));
+        when(anniversaryMapper.findAllByUserId(1L)).thenReturn(List.of(a1, a2));
 
-        List<AnniversaryVO> result = anniversaryService.list(1L, "name", "asc", null, null);
+        List<AnniversaryService.AnniversaryDetail> result = anniversaryService.list(1L, "name", "asc", null, null);
 
         assertThat(result.get(0).getName()).isEqualTo("A");
         assertThat(result.get(1).getName()).isEqualTo("B");
@@ -196,7 +194,7 @@ class AnniversaryServiceTest extends BaseUnitTest {
         a.setName("生日");
         a.setDate(LocalDate.now().plusDays(7));
         a.setRepeatType("NONE");
-        when(anniversaryRepository.findById(1L)).thenReturn(Optional.of(a));
+        when(anniversaryMapper.findById(1L)).thenReturn(a);
         Task task = new Task();
         task.setId(99L);
         when(taskService.createTask(eq(1L), any())).thenReturn(task);
@@ -210,12 +208,12 @@ class AnniversaryServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("获取未读提醒 - 空列表当无纪念日时")
     void getPendingReminders_emptyWhenNoAnniversaries() {
-        when(anniversaryRepository.findAllByUserId(1L)).thenReturn(List.of());
+        when(anniversaryMapper.findAllByUserId(1L)).thenReturn(List.of());
 
         List<ReminderLog> result = anniversaryService.getPendingReminders(1L);
 
         assertThat(result).isEmpty();
-        verify(reminderLogRepository, never()).findByAnniversaryIdInAndRemindDatetimeBetween(any(), any(), any());
+        verify(reminderLogMapper, never()).findByAnniversaryIdInAndRemindDatetimeBetween(any(), any(), any());
     }
 
     @Test
@@ -224,10 +222,10 @@ class AnniversaryServiceTest extends BaseUnitTest {
         Anniversary a = new Anniversary();
         a.setId(1L);
         a.setUserId(1L);
-        when(anniversaryRepository.findAllByUserId(1L)).thenReturn(List.of(a));
+        when(anniversaryMapper.findAllByUserId(1L)).thenReturn(List.of(a));
         ReminderLog log = new ReminderLog();
         log.setId(1L);
-        when(reminderLogRepository.findByAnniversaryIdInAndRemindDatetimeBetween(any(), any(), any()))
+        when(reminderLogMapper.findByAnniversaryIdInAndRemindDatetimeBetween(any(), any(), any()))
                 .thenReturn(List.of(log));
 
         List<ReminderLog> result = anniversaryService.getPendingReminders(1L);
@@ -241,21 +239,21 @@ class AnniversaryServiceTest extends BaseUnitTest {
         ReminderLog log = new ReminderLog();
         log.setId(1L);
         log.setIsRead(false);
-        when(reminderLogRepository.findById(1L)).thenReturn(Optional.of(log));
+        when(reminderLogMapper.findById(1L)).thenReturn(log);
 
         anniversaryService.markReminderRead(1L);
 
         assertThat(log.getIsRead()).isTrue();
-        verify(reminderLogRepository).save(log);
+        verify(reminderLogMapper).update(log);
     }
 
     @Test
     @DisplayName("标记提醒已读 - 不存在则忽略")
     void markReminderRead_notFound_noop() {
-        when(reminderLogRepository.findById(1L)).thenReturn(Optional.empty());
+        when(reminderLogMapper.findById(1L)).thenReturn(null);
 
         anniversaryService.markReminderRead(1L);
 
-        verify(reminderLogRepository, never()).save(any());
+        verify(reminderLogMapper, never()).update(any());
     }
 }
