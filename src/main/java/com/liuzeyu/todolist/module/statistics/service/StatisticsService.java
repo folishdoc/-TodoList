@@ -16,7 +16,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 统计服务类
+ * 统计服务类 — 仪表盘数据聚合
+ * <p>
+ * 提供任务总体统计、按清单/优先级分布统计、每日趋势统计。
+ * 数据来源于 TaskMapper 的聚合查询（XML 实现），避免全表扫描。
  */
 @Service
 @RequiredArgsConstructor
@@ -27,6 +30,11 @@ public class StatisticsService {
 
     /**
      * 获取任务总体统计
+     * <p>
+     * 包括总数、完成数、待办数、完成率、优先级分布、今日/未来任务数。
+     *
+     * @param userId 用户 ID
+     * @return 任务统计
      */
     public TaskStatistics getTaskStatistics(Long userId) {
         long totalTasks = taskMapper.countByUserId(userId);
@@ -60,6 +68,11 @@ public class StatisticsService {
 
     /**
      * 获取按清单分布的任务统计
+     * <p>
+     * 只返回有任务（count > 0）的清单，每个清单分配一个颜色用于图表。
+     *
+     * @param userId 用户 ID
+     * @return 分布列表
      */
     public List<TaskDistribution> getTasksByList(Long userId) {
         List<TaskList> lists = taskListMapper.findByUserId(userId);
@@ -90,6 +103,9 @@ public class StatisticsService {
 
     /**
      * 获取按优先级分布的任务统计
+     *
+     * @param userId 用户 ID
+     * @return 分布列表
      */
     public List<TaskDistribution> getTasksByPriority(Long userId) {
         List<Object[]> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
@@ -107,7 +123,13 @@ public class StatisticsService {
     }
 
     /**
-     * 获取近7天任务趋势
+     * 获取近 N 天任务趋势
+     * <p>
+     * 按日期升序返回每日创建和完成的任务数量，无数据的日期补 0。
+     *
+     * @param userId 用户 ID
+     * @param days   天数（默认 7）
+     * @return 每日统计列表
      */
     public List<DailyTaskStats> getDailyTrend(Long userId, int days) {
         LocalDate endDate = LocalDate.now();

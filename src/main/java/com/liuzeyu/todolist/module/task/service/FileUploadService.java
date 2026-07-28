@@ -21,6 +21,10 @@ import java.util.UUID;
 
 /**
  * 文件上传服务
+ * <p>
+ * 处理任务附件的上传、下载和删除。文件存储在服务器文件系统（uploadDir 配置），
+ * 附件元信息记录在 task_attachments 表。支持文件大小校验（上限 10MB）、
+ * 唯一文件名生成（UUID）、路径遍历攻击防护。
  */
 @Slf4j
 @Service
@@ -33,7 +37,13 @@ public class FileUploadService {
     private String uploadDir;
 
     /**
-     * 上传文件
+     * 上传文件到任务附件
+     *
+     * @param taskId 任务 ID
+     * @param file   上传的文件（Multipart）
+     * @return 附件记录
+     * @throws IOException          文件读写失败
+     * @throws IllegalArgumentException 文件为空或超过大小限制
      */
     @Transactional
     public TaskAttachment uploadFile(Long taskId, MultipartFile file) throws IOException {
@@ -53,7 +63,7 @@ public class FileUploadService {
             Files.createDirectories(uploadPath);
         }
 
-        // 生成唯一文件名
+        // 生成唯一文件名（UUID + 原始扩展名）
         String originalFileName = file.getOriginalFilename();
         String extension = "";
         if (originalFileName != null && originalFileName.contains(".")) {
@@ -61,11 +71,11 @@ public class FileUploadService {
         }
         String fileName = UUID.randomUUID().toString() + extension;
 
-        // 保存文件
+        // 保存文件到磁盘
         Path filePath = uploadPath.resolve(fileName);
         Files.copy(file.getInputStream(), filePath);
 
-        // 保存附件记录
+        // 保存附件记录到数据库
         TaskAttachment attachment = new TaskAttachment();
         attachment.setTaskId(taskId);
         attachment.setFileName(originalFileName != null ? originalFileName : fileName);
@@ -83,13 +93,19 @@ public class FileUploadService {
 
     /**
      * 获取任务的附件列表
+     *
+     * @param taskId 任务 ID
+     * @return 附件列表
      */
     public List<TaskAttachment> getTaskAttachments(Long taskId) {
         return attachmentMapper.findByTaskId(taskId);
     }
 
     /**
-     * 删除附件
+     * 删除附件（删除文件 + 删除数据库记录）
+     *
+     * @param attachmentId 附件 ID
+     * @throws BusinessException 404 附件不存在
      */
     @Transactional
     public void deleteAttachment(Long attachmentId) {
@@ -98,20 +114,22 @@ public class FileUploadService {
             throw new BusinessException(404, "附件不存在");
         }
 
-        // 删除文件
+        // 删除物理文件
         try {
             Files.deleteIfExists(Paths.get(attachment.getFilePath()));
         } catch (IOException e) {
             log.error("删除文件失败: {}", attachment.getFilePath(), e);
         }
 
-        // 删除记录
+        // 删除数据库记录
         attachmentMapper.deleteById(attachment.getId());
         log.info("附件删除成功: attachmentId={}", attachmentId);
     }
 
     /**
      * 删除任务的所有附件
+     *
+     * @param taskId 任务 ID
      */
     @Transactional
     public void deleteTaskAttachments(Long taskId) {

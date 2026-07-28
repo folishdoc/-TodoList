@@ -1,3 +1,10 @@
+/**
+ * useCalendarView — 日历视图导航与操作
+ *
+ * 提供日历视图的翻页导航（上一段/下一段/今天）、时间段文本生成、
+ * 任务点击完成、新建任务对话框管理（openCreateWithTime）。
+ * 与 useCalendarState（视图状态）和 useCalendarGrid（布局计算）配合使用。
+ */
 import { computed, type Ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as taskApi from '../api/task'
@@ -20,6 +27,9 @@ export function useCalendarView(
   loadTasks: () => Promise<void>,
   formatLocalDateTime: (d: Date) => string,
 ) {
+  // ── 计算属性 ──
+
+  /** 当前视图模式的中文名（"月"/"周"/"天"），用于导航按钮标签 */
   const periodText = computed(() => {
     if (viewMode.value === 'bar') return barScale.value === 'week' ? '周' : '月'
     if (viewMode.value === 'daybar') return '天'
@@ -27,6 +37,7 @@ export function useCalendarView(
     return texts[viewMode.value] || '月'
   })
 
+  /** 当前时间范围的文本描述（如"2026年7月"或"7月20日 - 7月26日"） */
   const currentPeriodText = computed(() => {
     const date = currentDate.value
     if (viewMode.value === 'month' || (viewMode.value === 'bar' && barScale.value === 'month')) {
@@ -44,6 +55,9 @@ export function useCalendarView(
     }
   })
 
+  // ── 导航方法 ──
+
+  /** 跳转到上一时间段（日/周/月） */
   const prevPeriod = () => {
     if (viewMode.value === 'daybar') {
       const d = new Date(dayBarDate.value)
@@ -60,6 +74,7 @@ export function useCalendarView(
     currentDate.value = date
   }
 
+  /** 跳转到下一时间段（日/周/月） */
   const nextPeriod = () => {
     if (viewMode.value === 'daybar') {
       const d = new Date(dayBarDate.value)
@@ -76,6 +91,7 @@ export function useCalendarView(
     currentDate.value = date
   }
 
+  /** 回到今天：重置 currentDate 和 dayBarDate */
   const goToToday = () => {
     currentDate.value = new Date()
     dayBarDate.value = new Date()

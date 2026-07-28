@@ -1,4 +1,24 @@
+<!--
+/**
+ * WidgetView.vue — 嵌入式 Widget 视图
+ *
+ 用于 Tauri 桌面环境的迷你窗口，或嵌入其他页面的 iframe。
+ * 功能：筛选（全部/今日/未来/按清单）、任务列表展示、快速添加、编辑对话框、
+ * 设置面板（深色/浅色主题、不透明度、窗口置顶）。
+ * 与主应用的 Dashboard 共享 TaskEditPanel 作为编辑弹窗。
+ * 特色：紧凑 UI 设计、深色主题默认、支持窗口拖拽（data-tauri-drag-region）。
+ * 设置持久化到 localStorage（widget-settings key）。
+ */
+-->
 <script setup lang="ts">
+/**
+ * Widget 视图核心逻辑：
+ * - 筛选状态 + 筛选菜单控制
+ * - 任务列表加载/切换完成/删除/快速添加
+ * - 编辑弹窗（复用 TaskEditPanel）
+ * - Tauri 窗口设置：主题、不透明度、置顶
+ * - 任务变更跨窗口同步（useTaskSync）
+ */
 import { ref, watch, onMounted } from 'vue'
 import {
   getTasks,
@@ -17,11 +37,12 @@ import { useTaskSync } from '../composables/useTaskSync'
 import TaskEditPanel from '../components/TaskEditPanel.vue'
 import type { Task, TaskList, ApiResponse, PageResponse } from '../types'
 
-// ---- 筛选状态 ----
+// ── 筛选状态 ──
 const currentFilter = ref<'all' | 'today' | 'upcoming' | number>('today')
 const showFilterMenu = ref(false)
 const lists = ref<TaskList[]>([])
 
+/** 获取当前筛选条件的文本标签 */
 const filterLabel = () => {
   if (currentFilter.value === 'all') return '全部任务'
   if (currentFilter.value === 'today') return '今日任务'
@@ -30,12 +51,12 @@ const filterLabel = () => {
   return l ? l.name : '选择清单'
 }
 
-// ---- 任务列表 ----
+// ── 任务列表 ──
 const tasks = ref<Task[]>([])
 const loading = ref(false)
 const newTitle = ref('')
 
-// ---- 编辑状态 ----
+// ── 编辑状态 ──
 const showEditDialog = ref(false)
 const editingTaskId = ref<number | null>(null)
 

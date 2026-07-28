@@ -1,3 +1,10 @@
+/**
+ * useSubtasks — 子任务管理逻辑
+ *
+ * 管理任务编辑表单中的子任务集合：添加、删除、回车跳转。
+ * 子任务标题为空时自动聚焦到最后一个输入框。
+ * 通常与 useTaskEdit 或 Dashboard.vue 配合使用。
+ */
 import { ElMessage } from 'element-plus'
 import * as taskApi from '../api/task'
 
@@ -5,6 +12,9 @@ export function useSubtasks(
   taskForm: { subtasks: any[] },
   autoSave: () => void,
 ) {
+  // ── 方法 ──
+
+  /** 聚焦到最后一个子任务输入框 */
   const focusLastSubtaskInput = () => {
     setTimeout(() => {
       const inputs = document.querySelectorAll('.subtask-input .el-input__inner')
@@ -14,6 +24,7 @@ export function useSubtasks(
     }, 100)
   }
 
+  /** 添加子任务（如已有空标题子任务则聚焦到它，不重复添加） */
   const addSubtask = () => {
     if (!taskForm.subtasks) {
       taskForm.subtasks = []
@@ -29,6 +40,7 @@ export function useSubtasks(
     focusLastSubtaskInput()
   }
 
+  /** 子任务回车后自动保存并添加新空行 */
   const handleSubtaskEnter = (index: number) => {
     const subtask = taskForm.subtasks?.[index]
     if (!subtask) return
@@ -43,6 +55,7 @@ export function useSubtasks(
     addSubtask()
   }
 
+  /** 删除子任务（含后端 API 调用，确认已有 id 才调用） */
   const removeSubtask = async (index: number) => {
     if (taskForm.subtasks) {
       const subtask = taskForm.subtasks[index]

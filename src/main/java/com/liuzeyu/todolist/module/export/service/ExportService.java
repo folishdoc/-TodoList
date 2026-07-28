@@ -12,7 +12,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 数据导出服务
+ * 数据导出服务 — CSV / JSON 格式导出
+ * <p>
+ * 将用户的所有任务导出为 CSV（逗号分隔值）或 JSON 格式。
+ * CSV 导出包含 ID、标题、描述、优先级、状态、截止日期、创建时间字段。
+ * JSON 导出使用 Jackson 序列化，包含 id、title、priority、status 字段。
  */
 @Service
 @RequiredArgsConstructor
@@ -22,7 +26,13 @@ public class ExportService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 导出任务为CSV格式
+     * 导出任务为 CSV 格式
+     * <p>
+     * 包含 BOM 头（UTF-8），支持 Excel 直接打开。
+     * 特殊字符（逗号、引号、换行）自动转义。
+     *
+     * @param userId 用户 ID
+     * @return CSV 字符串
      */
     public String exportTasksAsCsv(Long userId) {
         List<Task> tasks = taskMapper.findAllByUserId(userId);
@@ -44,7 +54,13 @@ public class ExportService {
     }
 
     /**
-     * 导出任务为JSON格式（使用Jackson）
+     * 导出任务为 JSON 格式
+     * <p>
+     * 使用 Jackson 序列化为格式化 JSON 数组。
+     *
+     * @param userId 用户 ID
+     * @return JSON 字符串
+     * @throws RuntimeException 序列化失败
      */
     public String exportTasksAsJson(Long userId) {
         List<Task> tasks = taskMapper.findAllByUserId(userId);
@@ -63,6 +79,12 @@ public class ExportService {
         }
     }
 
+    /**
+     * CSV 字段转义：如果包含逗号、引号或换行，用双引号包裹并转义内部引号
+     *
+     * @param value 原始值
+     * @return 转义后的值
+     */
     private String escapeCsv(String value) {
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";

@@ -1,3 +1,13 @@
+/**
+ * useCalendarDrag — 日历拖拽交互逻辑
+ *
+ * 处理两种拖拽操作：
+ * 1. 条形图（Bar）拖拽：左右移动/缩放宽度的任务条
+ * 2. 日任务栏（DayBar）拖拽：上下移动/缩放任务块
+ *
+ * 使用 Pointer Events API（setPointerCapture）确保拖拽过程中
+ * 不会丢失事件，并抑制拖拽结束时的 click 冒泡。
+ */
 import { ref, type Ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as taskApi from '../api/task'
@@ -17,19 +27,23 @@ export function useCalendarDrag(
   onTaskClick: (task: any) => void,
   openCreateWithTime: (date: Date, time?: { h: number; m: number } | null) => void,
 ) {
-  // ===== Bar drag state =====
+  // ── 条形图拖拽状态 ──
   const dragState = ref<any>(null)
   const dragPreviewStyle = ref<any>(null)
   const dragHint = ref('')
 
-  // ===== DayBar drag state =====
+  // ── DayBar 拖拽状态 ──
   const dayBarDrag = ref<any>(null)
   const dayBarDragPreview = ref<any>(null)
   const dayBarDragHint = ref('')
   const dayBarSuppressClick = ref(0)
 
-  // ===== Bar drag handlers =====
+  // ── 条形图拖拽处理 ──
 
+  /**
+   * 条形图任务 pointerdown：开始移动
+   * 记录起始列的索引（origSi/origEi）
+   */
   const onBarPointerDown = (e: PointerEvent, task: any) => {
     if (dragState.value) return
     const sd = task.startDate ? new Date(task.startDate) : new Date(task.dueDate)
@@ -46,6 +60,10 @@ export function useCalendarDrag(
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }
 
+  /**
+   * 条形图任务 resize handle pointerdown：开始缩放
+   * side: 'left' 左边缘 / 'right' 右边缘
+   */
   const onResizeStart = (e: PointerEvent, task: any, side: 'left' | 'right') => {
     if (dragState.value) return
     const sd = task.startDate ? new Date(task.startDate) : new Date(task.dueDate)
@@ -62,6 +80,7 @@ export function useCalendarDrag(
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }
 
+  /** 条形图移动中：计算新的列索引，更新预览样式 */
   const onBarPointerMove = (e: PointerEvent) => {
     if (!dragState.value) return
     const dx = e.clientX - dragState.value.startX
@@ -93,6 +112,7 @@ export function useCalendarDrag(
     dragHint.value = `${fmtD(startDay)} → ${fmtD(endDay)}`
   }
 
+  /** 条形图拖拽结束：调用 API 更新时间 */
   const onBarPointerUp = async () => {
     if (!dragState.value) return
     const { task, mode, origSi, origEi } = dragState.value
@@ -144,8 +164,9 @@ export function useCalendarDrag(
     }
   }
 
-  // ===== DayBar drag handlers =====
+  // ── DayBar 拖拽处理 ──
 
+  /** DayBar 任务 pointerdown：开始移动 */
   const onDayBarPointerDown = (e: PointerEvent, task: any) => {
     if (dayBarDrag.value) return
     const { startMin, endMin } = getDayBarMinutes(task, dayBarDate.value)
@@ -162,6 +183,7 @@ export function useCalendarDrag(
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }
 
+  /** DayBar 任务 resize handle pointerdown：开始缩放（上/下边缘） */
   const onDayBarResizeStart = (e: PointerEvent, task: any, side: 'top' | 'bottom') => {
     if (dayBarDrag.value) return
     const { startMin, endMin } = getDayBarMinutes(task, dayBarDate.value)
@@ -178,8 +200,10 @@ export function useCalendarDrag(
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }
 
+  /** DayBar 移动中：根据鼠标 Y 计算新位置，更新预览 */
   const onDayBarPointerMove = (e: PointerEvent) => {
     if (!dayBarDrag.value) return
+    // 4px 死区避免误触
     if (!dayBarDrag.value.moved && Math.abs(e.clientY - dayBarDrag.value.startY) > 4) {
       dayBarDrag.value.moved = true
     }
@@ -218,6 +242,7 @@ export function useCalendarDrag(
     dayBarDragHint.value = `${fmtMm(sm)} → ${fmtMm(em)}`
   }
 
+  /** DayBar 拖拽结束：调用 API 更新时间 */
   const onDayBarPointerUp = async () => {
     if (!dayBarDrag.value) return
     const { task, mode, startMin: origSm, endMin: origEm, moved } = dayBarDrag.value
@@ -226,6 +251,7 @@ export function useCalendarDrag(
     dayBarDrag.value = null
     dayBarDragPreview.value = null
     dayBarDragHint.value = ''
+    // 如果有移动，标记抑制后续 click 事件
     if (wasMoved) dayBarSuppressClick.value = Date.now()
     if (!preview) {
       onTaskClick(task)
@@ -262,6 +288,10 @@ export function useCalendarDrag(
     }
   }
 
+  /**
+   * DayBar 空白区域点击：在点击时间位置弹出新建任务对话框
+   * 使用 200ms 抑制（drag 结束后触发 click 时忽略）
+   */
   const onDayBarTrackClick = (e: MouseEvent) => {
     if (Date.now() - dayBarSuppressClick.value < 200) return
     const target = e.target as HTMLElement

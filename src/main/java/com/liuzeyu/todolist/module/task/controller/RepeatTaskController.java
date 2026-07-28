@@ -10,7 +10,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 重复任务控制器
+ * 重复任务控制器 — 设置/取消重复规则，手动触发生成
+ * <p>
+ * 路径前缀 /api/tasks/repeat。重复规则的自动生成由 RepeatTaskService 的定时任务处理，
+ * 此控制器提供手动管理和触发接口。
  */
 @RestController
 @RequestMapping("/api/tasks/repeat")
@@ -20,6 +23,14 @@ public class RepeatTaskController {
 
     private final RepeatTaskService repeatTaskService;
 
+    /**
+     * 设置任务重复规则
+     *
+     * @param userId 用户 ID
+     * @param taskId 任务 ID
+     * @param rule   重复规则
+     * @return 空响应
+     */
     @PostMapping("/{taskId}")
     @Operation(summary = "设置任务重复规则")
     public Result<Void> setRepeatRule(
@@ -34,6 +45,13 @@ public class RepeatTaskController {
         }
     }
 
+    /**
+     * 取消任务重复规则
+     *
+     * @param userId 用户 ID
+     * @param taskId 任务 ID
+     * @return 空响应
+     */
     @DeleteMapping("/{taskId}")
     @Operation(summary = "取消任务重复规则")
     public Result<Void> cancelRepeatRule(
@@ -43,6 +61,12 @@ public class RepeatTaskController {
         return Result.success(null);
     }
 
+    /**
+     * 手动生成重复任务（测试用）
+     *
+     * @param userId 用户 ID
+     * @return 空响应
+     */
     @PostMapping("/generate")
     @Operation(summary = "手动生成重复任务（测试用）")
     public Result<Void> generateRepeatTasks(

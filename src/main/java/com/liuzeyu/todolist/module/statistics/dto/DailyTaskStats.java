@@ -7,7 +7,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 /**
- * 每日任务统计DTO
+ * 每日任务统计 DTO — 趋势图数据
+ * <p>
+ * 用于折线图展示每日创建和完成的任务数量。
+ * 由 StatisticsService.getDailyTrend() 生成，按日期升序排列。
  */
 @Data
 @NoArgsConstructor

@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 
 /**
  * 习惯打卡记录
+ * <p>
+ * 对应数据库 habit_records 表。记录每次打卡的日期、完成值、备注。
+ * isMakeup 标记是否为补卡（非当天打卡）。
  */
 @Data
 public class HabitRecord {

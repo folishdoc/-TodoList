@@ -1,3 +1,13 @@
+<!--
+/**
+ * Login.vue — 登录/注册页面
+ *
+ * 提供用户名密码登录和注册功能（单用户模式亦保留此界面）。
+ * 登录成功后跳转到 Dashboard（/）。
+ * 支持两种模式切换：登录 ↔ 注册。
+ * 表单校验：用户名非空、密码非空、注册时密码≥6位且两次一致。
+ */
+-->
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'

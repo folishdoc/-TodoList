@@ -11,11 +11,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Swagger配置
+ * Swagger / OpenAPI 配置
+ * <p>
+ * 配置 API 文档信息（标题、版本、联系方式）以及全局 Bearer JWT 安全方案。
+ * 所有 API 默认需要 Bearer token 认证，UI 上可通过 Authorize 按钮统一设置。
  */
 @Configuration
 public class SwaggerConfig {
 
+    /**
+     * 自定义 OpenAPI 元信息
+     *
+     * @return 配置完成的 OpenAPI 实例
+     */
     @Bean
     public OpenAPI customOpenAPI() {
         final String securitySchemeName = "bearerAuth";

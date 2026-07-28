@@ -9,7 +9,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 批量操作控制器
+ * 批量操作控制器 — 批量完成/删除/移动/设置优先级
+ * <p>
+ * 路径前缀 /api/tasks/batch。提供通用 execute 接口和四个便捷接口。
+ * 所有操作先验证任务归属权再执行。
  */
 @RestController
 @RequestMapping("/api/tasks/batch")
@@ -19,6 +22,13 @@ public class BatchOperationController {
 
     private final BatchOperationService batchOperationService;
 
+    /**
+     * 执行批量操作（通用接口，由请求中的 operation 字段指定类型）
+     *
+     * @param userId  用户 ID
+     * @param request 批量操作请求
+     * @return 受影响的任务数
+     */
     @PostMapping("/execute")
     @Operation(summary = "执行批量操作")
     public Result<Integer> executeBatch(
@@ -34,6 +44,13 @@ public class BatchOperationController {
         }
     }
 
+    /**
+     * 批量完成任务
+     *
+     * @param userId  用户 ID
+     * @param request 请求（需包含 taskIds）
+     * @return 完成的任务数
+     */
     @PostMapping("/complete")
     @Operation(summary = "批量完成任务")
     public Result<Integer> batchComplete(
@@ -48,6 +65,13 @@ public class BatchOperationController {
         }
     }
 
+    /**
+     * 批量删除任务
+     *
+     * @param userId  用户 ID
+     * @param request 请求（需包含 taskIds）
+     * @return 删除的任务数
+     */
     @PostMapping("/delete")
     @Operation(summary = "批量删除任务")
     public Result<Integer> batchDelete(
@@ -62,6 +86,13 @@ public class BatchOperationController {
         }
     }
 
+    /**
+     * 批量移动任务到指定清单
+     *
+     * @param userId  用户 ID
+     * @param request 请求（需包含 taskIds 和 targetListId）
+     * @return 移动的任务数
+     */
     @PostMapping("/move")
     @Operation(summary = "批量移动任务")
     public Result<Integer> batchMove(
@@ -76,6 +107,13 @@ public class BatchOperationController {
         }
     }
 
+    /**
+     * 批量设置优先级
+     *
+     * @param userId  用户 ID
+     * @param request 请求（需包含 taskIds 和 priority）
+     * @return 更新的任务数
+     */
     @PostMapping("/set-priority")
     @Operation(summary = "批量设置优先级")
     public Result<Integer> batchSetPriority(

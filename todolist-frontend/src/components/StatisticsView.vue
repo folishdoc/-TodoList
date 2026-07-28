@@ -1,3 +1,15 @@
+<!--
+/**
+ * StatisticsView.vue — 数据统计概览组件
+ *
+ * 展示任务系统的统计数据：
+ * 1. 总体统计卡片（总任务数、已完成、待完成、完成率）
+ * 2. 优先级分布 + 清单分布（带进度条）
+ * 3. 近7天任务创建/完成趋势图
+ * 4. CSV/JSON 导出按钮
+ * 数据来源：statisticsApi（后端统计接口）
+ */
+-->
 <template>
   <div class="statistics-container">
     <el-row :gutter="20">

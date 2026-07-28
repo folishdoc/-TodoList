@@ -1,3 +1,23 @@
+<!--
+/**
+ * Dashboard.vue — 主应用界面（单页应用唯一路由）
+ *
+ * 整个应用的 shell，包含多层布局：
+ * 1. 左侧图标导航栏：清单/日历/习惯/纪念日/提醒
+ * 2. 左侧边栏（仅清单模块）：LOGO + 菜单（全部/今日/未来/清单列表/统计/标签）
+ * 3. 主内容区：根据 currentModule 和 activeMenu 切换显示不同视图
+ *    - tasks 模块：任务列表 / 数据统计 / 标签管理
+ *    - calendar 模块：CalendarView 日历组件
+ *    - habits 模块：HabitsView 习惯追踪
+ *    - anniversaries 模块：AnniversaryList 纪念日
+ * 4. 右侧编辑面板：选中任务后展开的内联编辑区（备忘录风格）
+ * 5. 新建任务对话框 + 创建清单对话框
+ *
+ * 组合了大量 composable：useTaskCrud / useTaskEdit / useSubtasks / useTags /
+ * useAttachments / useLists / useBatchOps / useReminders / useTaskSync
+ * 每个 composable 管理独立的功能域，通过本组件协调数据流。
+ */
+-->
 <template>
   <div class="dashboard-container">
     <el-container>
@@ -127,7 +147,7 @@
           </el-menu>
         </el-aside>
 
-        <!-- 主内容区 -->
+        <!-- 主内容区：根据 currentModule/activeMenu 动态切换视图 -->
         <el-main class="main-content" @click="handleMainContentClick">
           <!-- 清单模块 -->
           <div v-if="currentModule === 'tasks'">
@@ -853,6 +873,19 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Dashboard 核心逻辑：由多个独立 composable 组合而成，
+ * 本组件负责协调它们之间的数据流和事件传递。
+ * - useTaskSync: Tauri 多窗口同步
+ * - useTaskCrud: 任务列表 CRUD 和树构建
+ * - useTaskEdit: 编辑面板状态和自动保存
+ * - useSubtasks: 子任务管理
+ * - useTags: 标签 CRUD 和任务-标签关联
+ * - useAttachments: 附件上传/下载/删除
+ * - useLists: 清单 CRUD
+ * - useBatchOps: 批量选择/删除
+ * - useReminders: 纪念日提醒轮询
+ */
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
@@ -890,11 +923,12 @@ import HabitsView from '../components/HabitsView.vue'
 import AnniversaryList from '../components/AnniversaryList.vue'
 import type { Task, TaskList, Tag } from '../types'
 
-// ===== 导航状态 =====
+// ── 导航状态 ──
 const currentModule = ref('tasks') // 当前模块: tasks, calendar, habits, anniversaries
 const activeMenu = ref('all')
 
-// ===== 组合式函数 =====
+// ── 组合式函数初始化 ──
+/** 跨窗口任务同步（Tauri 环境） */
 const { emitTaskChanged } = useTaskSync(() => loadTasks())
 
 const taskCrud = useTaskCrud()
@@ -958,7 +992,9 @@ const {
   onMountedReminders, onUnmountedReminders,
 } = remindersMgmt
 
-// ===== 页面剩余状态 =====
+// ── 计算属性 ──
+
+/** 根据当前 activeMenu 获取页面标题 */
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
     all: '全部任务',
@@ -975,7 +1011,9 @@ const pageTitle = computed(() => {
   return titles[activeMenu.value] || '全部任务'
 })
 
-// 菜单选择
+// ── 方法 ──
+
+/** 侧边栏菜单选择：切换 activeMenu，重置分页，加载任务 */
 const handleMenuSelect = (index: string) => {
   activeMenu.value = index
   currentPage.value = 1

@@ -1,8 +1,19 @@
+/**
+ * useTimeUtils — 时间状态、文件大小、Markdown 渲染等综合工具
+ *
+ * 提供任务的时间状态文本/CSS class/剩余天数徽章、文件大小格式化、
+ * Markdown 渲染、时间摘要生成等函数。Dashboard 视图中的时间标签和过期间检查依赖此模块。
+ */
 import { marked } from 'marked'
 import type { Task } from '../types'
 import { formatDateShort, hasTimeValue } from './useDateUtils'
 import { getRepeatLabel } from './useRepeatRule'
 
+/**
+ * 获取任务的时间状态文本
+ * 综合考虑：循环任务状态、开始时间、截止时间、过期情况、精确到分钟的倒计时
+ * 返回值示例："" | "循环 · 今天" | "2天后开始" | "过期1天3小时" | "30分钟后"
+ */
 export function getTimeStatus(task: Partial<Task>) {
   if (!task.startDate && !task.dueDate) return ''
   if (task.status === 1) return ''
@@ -69,6 +80,13 @@ export function getTimeStatus(task: Partial<Task>) {
   return ''
 }
 
+/**
+ * 获取时间状态的 CSS class 名称
+ * - upcoming: 尚未开始
+ * - overdue: 已过期
+ * - active: 进行中
+ * - today: 今天截止
+ */
 export function getTimeStatusClass(task: Partial<Task>) {
   if (!getTimeStatus(task)) return ''
 
@@ -91,6 +109,11 @@ export function getTimeStatusClass(task: Partial<Task>) {
   return ''
 }
 
+/**
+ * 获取剩余天数徽章数据（文本 + 类型）
+ * 类型用于 CSS 颜色控制：empty | overdue | today | upcoming
+ * 徽章显示如："已过期 3 天" / "今天到期" / "还剩 5 天"
+ */
 export function getDueDaysBadge(task: Partial<Task>) {
   if (!task.dueDate) return { text: '', type: 'empty' as const }
   if (task.status === 1) return { text: '', type: 'empty' as const }
@@ -111,17 +134,20 @@ export function getDueDaysBadge(task: Partial<Task>) {
   return { text: `还剩 ${diffDays} 天`, type: 'upcoming' as const }
 }
 
+/** 获取剩余天数徽章的 CSS class */
 export function getDueDaysClass(task: Partial<Task>) {
   const type = getDueDaysBadge(task).type
   return type === 'empty' ? '' : `due-days-badge-${type}`
 }
 
+/** 将字节数格式化为可读文件大小（B / KB / MB） */
 export function formatFileSize(bytes: number) {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
+/** 使用 marked 库渲染 Markdown 文本为 HTML */
 export function renderMarkdown(text: string) {
   if (!text) return ''
   try {
@@ -132,6 +158,11 @@ export function renderMarkdown(text: string) {
   }
 }
 
+/**
+ * 生成编辑面板中时间摘要文本
+ * 组合开始时间、截止时间、循环规则为一行摘要
+ * 如："03/15 ~ 03/20 · 每天"
+ */
 export function getTimeSummary(taskForm: Record<string, any>, editingTask: Record<string, any>) {
   const hasStart = taskForm.startDate
   const hasDue = taskForm.dueDate
@@ -153,6 +184,10 @@ export function getTimeSummary(taskForm: Record<string, any>, editingTask: Recor
   return summary || '时间'
 }
 
+/**
+ * 生成新建任务对话框中的时间摘要文本
+ * 组合开始时间、截止时间、循环规则为一行摘要
+ */
 export function getCreateTimeSummary(taskForm: Record<string, any>, repeatForm: Record<string, any>) {
   const hasStart = taskForm.startDate
   const hasDue = taskForm.dueDate

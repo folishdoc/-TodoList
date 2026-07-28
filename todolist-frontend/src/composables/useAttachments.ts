@@ -1,21 +1,33 @@
+/**
+ * useAttachments — 附件管理逻辑
+ *
+ * 封装任务附件的上传、下载、删除操作。
+ * 上传限制 10MB，上传后自动刷新附件列表。
+ */
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as attachmentApi from '../api/attachment'
 import { formatFileSize } from './useTimeUtils'
 
 export function useAttachments() {
+  // ── 状态 ──
   const taskAttachments = ref<any[]>([])
   const attachmentUploading = ref(false)
   const fileInputRef = ref<HTMLInputElement>()
 
+  // ── 方法 ──
+
+  /** 触发隐藏 file input 的点击事件 */
   const triggerFileUpload = () => {
     fileInputRef.value?.click()
   }
 
+  /** 处理文件选择（上传后刷新列表） */
   const handleFileSelect = async (event: Event, editingTask: any) => {
     const input = event.target as HTMLInputElement
     if (!input.files || input.files.length === 0 || !editingTask) return
     const file = input.files[0]
+    // 限制 10MB
     if (file.size > 10 * 1024 * 1024) {
       ElMessage.warning('文件大小不能超过 10MB')
       return
@@ -34,6 +46,7 @@ export function useAttachments() {
     }
   }
 
+  /** 通过创建隐藏的 <a> 标签触发浏览器下载 */
   const downloadAttachment = (att: any) => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:18080/api'
     const url = `${baseUrl}/attachments/${encodeURIComponent(att.fileName)}`
@@ -46,6 +59,7 @@ export function useAttachments() {
     document.body.removeChild(a)
   }
 
+  /** 确认后删除附件，并从列表中移除 */
   const handleDeleteAttachment = async (att: any, editingTask: any) => {
     if (!editingTask) return
     try {

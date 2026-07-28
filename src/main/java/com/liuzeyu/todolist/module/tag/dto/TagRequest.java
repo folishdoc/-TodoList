@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * 标签请求DTO
+ * 标签请求 DTO
+ * <p>
+ * name 为必填（@NotBlank），color 可选（默认 #409EFF）。
  */
 @Data
 public class TagRequest {

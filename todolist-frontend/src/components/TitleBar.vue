@@ -1,3 +1,13 @@
+<!--
+/**
+ * TitleBar.vue — Tauri 桌面窗口标题栏
+ *
+ * Tauri 桌面环境专用：自定义标题栏，包含窗口标题和应用控制按钮（最小化/最大化/关闭）。
+ * 在浏览器环境中将 --titlebar-height 设为 0px 以隐藏自身。
+ * 使用 data-tauri-drag-region 支持窗口拖拽移动。
+ * 监听窗口 resize 事件同步最大化状态。
+ */
+-->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 

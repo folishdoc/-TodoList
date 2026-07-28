@@ -1,22 +1,42 @@
+/**
+ * useCalendarGrid — 日历网格计算属性
+ *
+ * 纯工具函数 + Vue computed 属性，用于生成月视图、周视图、条形图、日任务栏
+ * 的网格数据和任务定位。包含：
+ * - 日期范围计算（周起始、月日历填充）
+ * - 任务在日历格子中的类型判断（start/end/middle/both）
+ * - 条形图（bar）和日任务栏（daybar）的布局样式计算
+ */
 import { computed, type Ref } from 'vue'
 
-// ===== Pure utility functions =====
+// ── 纯工具函数 ──
 
+/** 获取给定日期所在周的周日（每周第一天） */
 export function getWeekStart(date: Date): Date {
   const d = new Date(date)
   d.setDate(d.getDate() - d.getDay())
   return d
 }
 
+/** 判断任务是否已过期（有截止日期且状态不是已完成且截止日期已过） */
 export function isOverdue(task: any): boolean {
   return task.dueDate && task.status !== 1 && new Date(task.dueDate) < new Date()
 }
 
+/** 格式化时间字符串为 HH:mm */
 export function formatTime(dateStr: string): string {
   const d = new Date(dateStr)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+/**
+ * 判断任务在某个日期单元格中的类型：
+ * - 'start' = 开始日
+ * - 'end' = 截止日
+ * - 'both' = 同一天开始+截止
+ * - 'middle' = 区间中间日
+ * - 'none' = 不在此日期
+ */
 export function getTaskDateType(
   task: any,
   cellDateIso: string,
@@ -37,11 +57,13 @@ export function getTaskDateType(
   return 'none'
 }
 
+/** 在条形图天数数组中查找日期所在的索引 */
 export function findDayIndexInBar(date: Date, barDays: any[]): number {
   const td = new Date(date).toDateString()
   return barDays.findIndex((d) => new Date(d.date).toDateString() === td)
 }
 
+/** 计算条形图任务的 gridColumn 样式 */
 export function getBarStyle(task: any, barDays: any[]) {
   const sd = task.startDate ? new Date(task.startDate) : null,
     dd = task.dueDate ? new Date(task.dueDate) : null
@@ -54,6 +76,7 @@ export function getBarStyle(task: any, barDays: any[]) {
   return { gridColumn: `${si + 1} / span ${Math.max(ei - si + 1, 1)}` }
 }
 
+/** 生成任务 tooltip 提示文本 */
 export function taskTooltipContent(task: any) {
   const fmt = (d: string) => {
     const dt = new Date(d)
@@ -67,12 +90,14 @@ export function taskTooltipContent(task: any) {
   return parts.join('\n')
 }
 
+/** 检查日期字符串是否包含非零时间分量 */
 export function hasTimeComponent(dateStr: string | null): boolean {
   if (!dateStr) return false
   const d = new Date(dateStr)
   return !isNaN(d.getTime()) && (d.getHours() !== 0 || d.getMinutes() !== 0)
 }
 
+/** 获取 daybar 中任务的时间标签文本 */
 export function getDayBarTimeLabel(task: any, dayBarDate: string | Date) {
   if (!task._hasTimeOnTarget) return ''
   const targetDate = new Date(dayBarDate).toDateString()
@@ -96,6 +121,7 @@ export function getDayBarTimeLabel(task: any, dayBarDate: string | Date) {
   return ''
 }
 
+/** 获取 daybar 中任务的起始和结束分钟数（相对于当日 00:00） */
 export function getDayBarMinutes(task: any, dayBarDate: string | Date) {
   if (task._startMin !== undefined && task._endMin !== undefined) {
     return { startMin: task._startMin, endMin: task._endMin }
@@ -115,6 +141,7 @@ export function getDayBarMinutes(task: any, dayBarDate: string | Date) {
   return { startMin, endMin }
 }
 
+/** 根据鼠标 clientY 计算对应的当日分钟数（以 15 分钟为粒度） */
 export function getMinuteFromY(clientY: number, SLOT_HEIGHT: number): number {
   const track = document.querySelector('.daybar-track') as HTMLElement
   if (!track) return -1
@@ -124,11 +151,12 @@ export function getMinuteFromY(clientY: number, SLOT_HEIGHT: number): number {
   return Math.max(0, Math.min(24 * 60, minute))
 }
 
+/** 获取 daybar 中任务的 CSS 样式（由 _barStyle 预处理） */
 export function getDayBarStyle(task: any) {
   return task._barStyle || { top: '0px', height: '24px', width: 'calc(100% - 12px)' }
 }
 
-// ===== Composable: grid computed properties =====
+// ── Composable: 日历网格 computed 属性 ──
 
 export function useCalendarGrid(
   currentDate: Ref<Date>,
@@ -138,6 +166,7 @@ export function useCalendarGrid(
   weekDays: string[],
   SLOT_HEIGHT: number,
 ) {
+  /** 创建单个日期的数据对象（包含日期、是否当月、是否今天、关联任务） */
   const createDayData = (date: Date, isCurrentMonth: boolean, weekDay?: string) => {
     const today = new Date(),
       isToday = date.toDateString() === today.toDateString()
@@ -167,6 +196,7 @@ export function useCalendarGrid(
     }
   }
 
+  /** 月视图全部天数（42 格，包含前后月填充） */
   const calendarDays = computed(() => {
     const year = currentDate.value.getFullYear(),
       month = currentDate.value.getMonth()
@@ -185,6 +215,7 @@ export function useCalendarGrid(
     return days
   })
 
+  /** 周视图 7 天数据 */
   const weekDaysData = computed(() => {
     const start = getWeekStart(currentDate.value)
     const days = []
@@ -196,6 +227,7 @@ export function useCalendarGrid(
     return days
   })
 
+  /** 条形图的天数（取决于 barScale：周或月） */
   const barDays = computed(() =>
     barScale.value === 'week' ? weekDaysData.value : calendarDays.value,
   )
@@ -208,6 +240,7 @@ export function useCalendarGrid(
     gridTemplateColumns: `repeat(${barDays.value.length}, 1fr)`,
   }))
 
+  /** 条形图中显示的任务（按优先级+时间排序） */
   const barTasks = computed(() => {
     return filteredTasks.value
       .filter((t: any) => t.dueDate || t.startDate)
@@ -236,11 +269,13 @@ export function useCalendarGrid(
       })
   })
 
+  /** Daybar 日期文本 */
   const dayBarDateText = computed(() => {
     const d = dayBarDate.value instanceof Date ? dayBarDate.value : new Date(dayBarDate.value)
     return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${weekDays[d.getDay()]}`
   })
 
+  /** 时间槽标签（每 30 分钟一个槽） */
   const timeSlots = computed(() => {
     const slots = []
     for (let h = 0; h < 24; h++) {
@@ -254,6 +289,7 @@ export function useCalendarGrid(
     return slots
   })
 
+  /** 时间刻度线位置（每 30 分钟一条线，每整小时刻度更高） */
   const timeTicks = computed(() => {
     const ticks = []
     for (let i = 0; i < 48; i++) {
@@ -262,6 +298,12 @@ export function useCalendarGrid(
     return ticks
   })
 
+  /**
+   * Daybar 视图中的任务列表
+   * 为每个任务计算 CSS 定位（_barStyle），处理纯日期任务和时间任务的区别：
+   * - 有时间 → 按时间精确定位
+   * - 纯日期（全天） → 在右侧堆叠显示
+   */
   const dayBarTasks = computed(() => {
     const targetDate = new Date(dayBarDate.value).toDateString()
     let dateOnlyOffset = 0
@@ -330,6 +372,7 @@ export function useCalendarGrid(
 
         let isDateOnly = false
 
+        // 全天任务或跨天任务：在右侧区域堆叠
         if (task.dueDate === task.startDate || (!task.startDate && task.dueDate)) {
           if (hasTimeOnTarget) {
             const dd = new Date(task.dueDate)
@@ -374,6 +417,7 @@ export function useCalendarGrid(
       })
   })
 
+  /** 获取指定小时内的任务（月/周视图用） */
   const getTasksByHour = (hour: number) => {
     const ds = currentDate.value.toDateString()
     return filteredTasks.value.filter(

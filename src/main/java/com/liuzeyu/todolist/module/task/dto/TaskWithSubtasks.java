@@ -8,7 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 任务DTO，包含子任务
+ * 任务 DTO — 包含直接子任务列表
+ * <p>
+ * 用于 getTasksWithSubtasks 接口，将 Task 及其直接子任务打包返回。
+ * 前端根据此结构在内存中构建树形层级。子任务只包含直接子级（非递归）。
  */
 @Data
 @NoArgsConstructor

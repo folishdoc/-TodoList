@@ -13,7 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * 标签服务类
+ * 标签服务类 — 标签 CRUD 及任务-标签关联管理
+ * <p>
+ * 提供标签的增删改查、任务标签的添加/移除/查询功能。
+ * 标签名称在用户级别唯一，删除标签时自动清理关联记录。
  */
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,11 @@ public class TagService {
 
     /**
      * 创建标签
+     *
+     * @param userId  用户 ID
+     * @param request 标签请求
+     * @return 创建后的标签
+     * @throws BusinessException 409 标签名称已存在
      */
     @Transactional
     public Tag createTag(Long userId, TagRequest request) {
@@ -44,6 +52,9 @@ public class TagService {
 
     /**
      * 获取用户的所有标签
+     *
+     * @param userId 用户 ID
+     * @return 标签列表
      */
     public List<Tag> getUserTags(Long userId) {
         return tagMapper.findByUserId(userId);
@@ -51,6 +62,12 @@ public class TagService {
 
     /**
      * 更新标签
+     *
+     * @param userId  用户 ID
+     * @param tagId   标签 ID
+     * @param request 更新请求
+     * @return 更新后的标签
+     * @throws BusinessException 404 不存在，403 无权操作，409 名称冲突
      */
     @Transactional
     public Tag updateTag(Long userId, Long tagId, TagRequest request) {
@@ -77,7 +94,11 @@ public class TagService {
     }
 
     /**
-     * 删除标签
+     * 删除标签（级联删除关联记录）
+     *
+     * @param userId 用户 ID
+     * @param tagId  标签 ID
+     * @throws BusinessException 404 不存在，403 无权操作
      */
     @Transactional
     public void deleteTag(Long userId, Long tagId) {
@@ -99,6 +120,11 @@ public class TagService {
 
     /**
      * 为任务添加标签
+     *
+     * @param userId 用户 ID
+     * @param taskId 任务 ID
+     * @param tagId  标签 ID
+     * @throws BusinessException 404 标签不存在，403 无权使用，409 已关联
      */
     @Transactional
     public void addTagToTask(Long userId, Long taskId, Long tagId) {
@@ -127,6 +153,11 @@ public class TagService {
 
     /**
      * 移除任务的标签
+     *
+     * @param userId 用户 ID
+     * @param taskId 任务 ID
+     * @param tagId  标签 ID
+     * @throws BusinessException 400 标签未关联
      */
     @Transactional
     public void removeTagFromTask(Long userId, Long taskId, Long tagId) {
@@ -140,6 +171,9 @@ public class TagService {
 
     /**
      * 获取任务的标签列表
+     *
+     * @param taskId 任务 ID
+     * @return 标签列表
      */
     public List<Tag> getTaskTags(Long taskId) {
         List<Long> tagIds = taskTagMapper.findTagIdsByTaskId(taskId);

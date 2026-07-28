@@ -5,7 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 任务分布DTO
+ * 任务分布 DTO — 按清单或优先级分组的统计数据
+ * <p>
+ * 用于图表展示（饼图/柱状图），包含名称、数量和颜色。
+ * 由 StatisticsService.getTasksByList() / getTasksByPriority() 生成。
  */
 @Data
 @NoArgsConstructor

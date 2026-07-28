@@ -7,7 +7,11 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * 批量操作DTO
+ * 批量操作请求 DTO
+ * <p>
+ * 支持四种批量操作：complete（完成）、delete（删除）、move（移动清单）、setPriority（设置优先级）。
+ * taskIds 为待操作的任务 ID 列表，operation 指定操作类型。
+ * targetListId 和 priority 分别为 move 和 setPriority 操作的附加参数。
  */
 @Data
 @NoArgsConstructor

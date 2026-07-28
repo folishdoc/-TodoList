@@ -1,6 +1,16 @@
+<!--
+/**
+ * AnniversaryList.vue — 纪念日列表组件
+ *
+ * 展示和管理纪念日（生日、节日等）的 CRUD + 倒计时显示。
+ * 布局：工具栏（搜索/标签筛选/排序）→ 卡片列表 → 新建编辑对话框 → 详情抽屉。
+ * 支持搜索、标签筛选、几种排序方式、提醒配置、自动生成关联待办。
+ * 每个卡片显示名称、日期、倒计时（今天/紧迫/临近/遥远四种状态）。
+ */
+-->
 <template>
   <div class="anniversary-list">
-    <!-- 工具栏 -->
+    <!-- 工具栏：搜索、标签筛选、排序、新建 -->
     <div class="toolbar">
       <div class="toolbar-left">
         <el-input
@@ -182,12 +192,19 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 纪念日列表的核心逻辑：
+ * - 状态：列表数据、搜索/筛选/排序参数、对话框/抽屉控制
+ * - 表单：名称、日期、重复类型、提醒配置、标签、备注
+ * - 操作：CRUD、生成待办、倒计时样式计算
+ */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
 import * as anniversaryApi from '../api/anniversary'
 
+// ── 状态 ──
 const loading = ref(false)
 const saving = ref(false)
 const list = ref<any[]>([])
@@ -202,6 +219,7 @@ const detailItem = ref<any>(null)
 const formRef = ref<FormInstance>()
 const remindDaysArr = ref<string[]>(['0'])
 
+// ── 表单数据 ──
 const form = reactive({
   name: '',
   date: '',
@@ -217,6 +235,9 @@ const rules = {
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
 }
 
+// ── 计算属性 ──
+
+/** 从所有纪念日中提取并去重的标签列表 */
 const allTags = computed(() => {
   const tags = new Set<string>()
   list.value.forEach((item) => {
@@ -225,6 +246,9 @@ const allTags = computed(() => {
   return Array.from(tags)
 })
 
+// ── 工具函数 ──
+
+/** 解析逗号分隔的标签字符串为数组 */
 const parseTags = (tags: string) =>
   tags
     .split(',')
@@ -239,6 +263,7 @@ const formatDateTime = (d: string) => {
 const repeatText = (t: string) =>
   (({ NONE: '不重复', YEARLY: '每年', MONTHLY: '每月', WEEKLY: '每周' }) as any)[t] || t
 
+/** 根据剩余天数返回倒计时 CSS class */
 const countdownClass = (days: number) => {
   if (days === 0) return 'countdown-today'
   if (days > 0 && days <= 7) return 'countdown-urgent'
@@ -246,6 +271,9 @@ const countdownClass = (days: number) => {
   return 'countdown-far'
 }
 
+// ── 方法 ──
+
+/** 切换排序方向（升序/降序） */
 const toggleOrder = () => {
   sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
   loadList()

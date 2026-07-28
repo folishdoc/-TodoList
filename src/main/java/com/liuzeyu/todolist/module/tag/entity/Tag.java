@@ -6,15 +6,18 @@ import java.time.LocalDateTime;
 
 /**
  * 标签实体类
+ * <p>
+ * 对应数据库 tags 表。用于对任务进行分类标记，支持颜色、图标、分组和置顶功能。
+ * 通过 TaskTag 关联表与任务建立多对多关系。
  */
 @Data
 public class Tag {
 
     private Long id;
 
-    private String name;
+    private String name; // 标签名称
 
-    private String color = "#409EFF";
+    private String color = "#409EFF"; // 显示颜色
 
     private String icon; // 图标名称
 

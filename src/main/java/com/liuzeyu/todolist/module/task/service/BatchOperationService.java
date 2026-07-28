@@ -14,6 +14,11 @@ import java.util.stream.Collectors;
 
 /**
  * 批量操作服务
+ * <p>
+ * 支持四种批量操作：complete（完成）、delete（删除，含级联子任务）、
+ * move（移动到指定清单）、setPriority（设置优先级）。
+ * 所有操作先验证任务归属权（userId），再执行变更。
+ * 删除操作使用 BFS 收集所有层级子任务后统一删除。
  */
 @Slf4j
 @Service
@@ -24,6 +29,11 @@ public class BatchOperationService {
 
     /**
      * 执行批量操作
+     *
+     * @param userId  用户 ID
+     * @param request 批量操作请求
+     * @return 受影响的任务数
+     * @throws IllegalArgumentException 如果 taskIds 为空或操作类型不支持
      */
     @Transactional
     public int executeBatchOperation(Long userId, BatchOperationRequest request) {
@@ -58,6 +68,10 @@ public class BatchOperationService {
 
     /**
      * 批量完成任务
+     *
+     * @param userId  用户 ID
+     * @param taskIds 任务 ID 列表
+     * @return 完成的任务数
      */
     private int batchComplete(Long userId, List<Long> taskIds) {
         String idsStr = taskIds.stream().map(String::valueOf).collect(Collectors.joining(","));
@@ -80,9 +94,15 @@ public class BatchOperationService {
 
     /**
      * 批量删除任务（级联删除子任务）
+     * <p>
+     * 使用 BFS 收集所有层级的子任务 ID，然后统一删除。
+     *
+     * @param userId  用户 ID
+     * @param taskIds 任务 ID 列表
+     * @return 删除的任务数（不含子任务）
      */
     private int batchDelete(Long userId, List<Long> taskIds) {
-        // 先验证所有task属于该用户
+        // 先验证所有 task 属于该用户
         String idsStr = taskIds.stream().map(String::valueOf).collect(Collectors.joining(","));
         List<Task> tasks = taskMapper.findAllByIds(userId, idsStr);
         java.util.List<Long> allIds = new java.util.ArrayList<>();
@@ -93,7 +113,7 @@ public class BatchOperationService {
             }
         }
         
-        // 迭代收集所有子任务ID（BFS避免栈溢出）
+        // BFS 收集所有子任务 ID
         java.util.Queue<Long> queue = new java.util.LinkedList<>(allIds);
         java.util.List<Long> descendantIds = new java.util.ArrayList<>();
         while (!queue.isEmpty()) {
@@ -112,6 +132,11 @@ public class BatchOperationService {
 
     /**
      * 批量移动任务到指定清单
+     *
+     * @param userId      用户 ID
+     * @param taskIds     任务 ID 列表
+     * @param targetListId 目标清单 ID
+     * @return 移动的任务数
      */
     private int batchMove(Long userId, List<Long> taskIds, Long targetListId) {
         if (targetListId == null) {
@@ -137,6 +162,11 @@ public class BatchOperationService {
 
     /**
      * 批量设置优先级
+     *
+     * @param userId   用户 ID
+     * @param taskIds  任务 ID 列表
+     * @param priority 新优先级（1-3）
+     * @return 更新的任务数
      */
     private int batchSetPriority(Long userId, List<Long> taskIds, Integer priority) {
         if (priority == null || priority < 1 || priority > 3) {

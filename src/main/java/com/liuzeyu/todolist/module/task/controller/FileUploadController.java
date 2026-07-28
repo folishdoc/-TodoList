@@ -20,7 +20,10 @@ import java.nio.file.Paths;
 import java.util.List;
 
 /**
- * 文件上传控制器
+ * 文件附件控制器 — 上传、下载、删除任务附件
+ * <p>
+ * 路径前缀 /api/attachments。上传的文件存储在服务器文件系统，
+ * 下载时验证路径防止路径遍历攻击。
  */
 @RestController
 @RequestMapping("/api/attachments")
@@ -30,6 +33,14 @@ public class FileUploadController {
 
     private final FileUploadService fileUploadService;
 
+    /**
+     * 上传任务附件
+     *
+     * @param userId 用户 ID
+     * @param taskId 任务 ID
+     * @param file   上传文件
+     * @return 附件记录
+     */
     @PostMapping("/tasks/{taskId}")
     @Operation(summary = "上传任务附件")
     public Result<TaskAttachment> uploadFile(
@@ -44,6 +55,13 @@ public class FileUploadController {
         }
     }
 
+    /**
+     * 获取任务附件列表
+     *
+     * @param userId 用户 ID
+     * @param taskId 任务 ID
+     * @return 附件列表
+     */
     @GetMapping("/tasks/{taskId}")
     @Operation(summary = "获取任务附件列表")
     public Result<List<TaskAttachment>> getTaskAttachments(
@@ -53,6 +71,13 @@ public class FileUploadController {
         return Result.success(attachments);
     }
 
+    /**
+     * 删除附件
+     *
+     * @param userId       用户 ID
+     * @param attachmentId 附件 ID
+     * @return 空响应
+     */
     @DeleteMapping("/{attachmentId}")
     @Operation(summary = "删除附件")
     public Result<Void> deleteAttachment(
@@ -66,6 +91,14 @@ public class FileUploadController {
         }
     }
 
+    /**
+     * 下载附件
+     * <p>
+     * 验证文件路径在 uploadDir 范围内，防止路径遍历攻击。
+     *
+     * @param fileName 文件名
+     * @return 文件资源响应
+     */
     @GetMapping("/{fileName}")
     @Operation(summary = "下载附件")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) {

@@ -20,7 +20,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 重复任务服务
+ * 重复任务服务 — 定时生成与手动触发
+ * <p>
+ * 每天凌晨 0 点（@Scheduled(cron = "0 0 0 * * ?")）自动扫描所有已完成且有重复规则的任务，
+ * 根据 RepeatRule 计算下一个截止日期并生成新任务。
+ * 也提供手动触发（generateRepeatTasks）和规则管理（setRepeatRule / cancelRepeatRule）功能。
+ * lastGenerateDate 防止同一天重复生成。
  */
 @Slf4j
 @Service
@@ -39,6 +44,9 @@ public class RepeatTaskService {
 
     /**
      * 每天凌晨检查并生成重复任务（处理所有用户）
+     * <p>
+     * 扫描所有已完成且有 repeatRule 的任务，根据规则生成新任务。
+     * 使用 lastGenerateDate 去重，避免同一天多次执行。
      */
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
@@ -83,7 +91,9 @@ public class RepeatTaskService {
     }
 
     /**
-     * 为指定用户生成重复任务
+     * 为指定用户手动生成重复任务
+     *
+     * @param userId 用户 ID
      */
     @Transactional
     public void generateRepeatTasks(Long userId) {
@@ -107,7 +117,6 @@ public class RepeatTaskService {
                         log.info("生成重复任务: {} -> {}", task.getTitle(), newTask.getTitle());
                     }
 
-                    // 检查循环结束日期是否临近（7天内）
                     checkEndDateApproaching(task, rule, now);
                 } catch (JsonProcessingException e) {
                     log.error("解析重复规则失败: taskId={}", task.getId(), e);
@@ -120,6 +129,13 @@ public class RepeatTaskService {
 
     /**
      * 判断是否应该生成新任务
+     * <p>
+     * 条件：任务已完成、未超过结束日期（如果设置了）。
+     *
+     * @param task 原始任务
+     * @param rule 重复规则
+     * @param now  当前时间
+     * @return true 如果需要生成新任务
      */
     private boolean shouldGenerateNewTask(Task task, RepeatRule rule, LocalDateTime now) {
         // 如果任务未完成，不生成新任务
@@ -138,6 +154,10 @@ public class RepeatTaskService {
 
     /**
      * 检查循环结束日期是否临近（7天内），如果是则记录提醒
+     *
+     * @param task 原始任务
+     * @param rule 重复规则
+     * @param now  当前时间
      */
     private void checkEndDateApproaching(Task task, RepeatRule rule, LocalDateTime now) {
         if (rule.getEndDate() == null) return;
@@ -152,7 +172,11 @@ public class RepeatTaskService {
     }
 
     /**
-     * 创建重复任务
+     * 创建重复任务（基于原始任务复制并计算新日期）
+     *
+     * @param originalTask 原始任务
+     * @param rule         重复规则
+     * @return 新任务（未持久化）
      */
     private Task createRepeatedTask(Task originalTask, RepeatRule rule) {
         Task newTask = new Task();
@@ -161,7 +185,7 @@ public class RepeatTaskService {
         newTask.setTitle(originalTask.getTitle());
         newTask.setDescription(originalTask.getDescription());
         newTask.setPriority(originalTask.getPriority());
-        newTask.setStatus(TaskStatusEnum.INCOMPLETE.getCode()); // 未完成
+        newTask.setStatus(TaskStatusEnum.INCOMPLETE.getCode()); // 新任务默认未完成
         newTask.setSortOrder(originalTask.getSortOrder());
         newTask.setRepeatRule(originalTask.getRepeatRule());
         
@@ -169,7 +193,7 @@ public class RepeatTaskService {
         LocalDateTime newDueDate = calculateNextDueDate(originalTask.getDueDate(), rule);
         newTask.setDueDate(newDueDate);
         
-        // 设置提醒时间
+        // 同步计算新的提醒时间
         if (originalTask.getReminderTime() != null) {
             LocalDateTime newReminderTime = calculateNextDueDate(originalTask.getReminderTime(), rule);
             newTask.setReminderTime(newReminderTime);
@@ -180,6 +204,10 @@ public class RepeatTaskService {
 
     /**
      * 计算下一个截止日期
+     *
+     * @param currentDueDate 当前截止日期
+     * @param rule           重复规则
+     * @return 下一个截止日期
      */
     private LocalDateTime calculateNextDueDate(LocalDateTime currentDueDate, RepeatRule rule) {
         if (currentDueDate == null) {
@@ -197,6 +225,10 @@ public class RepeatTaskService {
 
     /**
      * 为任务设置重复规则
+     *
+     * @param taskId 任务 ID
+     * @param rule   重复规则（序列化为 JSON 存储）
+     * @throws JsonProcessingException JSON 序列化失败
      */
     @Transactional
     public void setRepeatRule(Long taskId, RepeatRule rule) throws JsonProcessingException {
@@ -214,6 +246,8 @@ public class RepeatTaskService {
 
     /**
      * 取消任务的重复规则
+     *
+     * @param taskId 任务 ID
      */
     @Transactional
     public void cancelRepeatRule(Long taskId) {

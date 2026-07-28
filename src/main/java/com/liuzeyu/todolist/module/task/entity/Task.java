@@ -6,6 +6,10 @@ import java.time.LocalDateTime;
 
 /**
  * 任务实体
+ * <p>
+ * 对应数据库 tasks 表。任务以扁平结构存储（parentId 表示父子关系），
+ * 前端在内存中构建树形层级。支持优先级、状态、截止日期、重复规则等字段。
+ * sortOrder 用于同层级任务的手动排序。
  */
 @Data
 public class Task {
@@ -15,7 +19,7 @@ public class Task {
 
     private Long listId;
 
-    private Long parentId; // 父任务ID，用于子任务
+    private Long parentId; // 父任务ID，null 表示顶层任务
 
     private String title;
 
@@ -31,7 +35,7 @@ public class Task {
 
     private LocalDateTime reminderTime;
 
-    private String repeatRule;
+    private String repeatRule; // JSON 格式的 RepeatRule
 
     private LocalDateTime completedAt;
 

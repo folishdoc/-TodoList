@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.charset.StandardCharsets;
 
 /**
- * 数据导出控制器
+ * 数据导出控制器 — CSV / JSON 文件下载
+ * <p>
+ * 路径前缀 /api/export。提供任务数据的 CSV 和 JSON 格式导出，
+ * 以附件形式（Content-Disposition: attachment）返回文件下载。
  */
 @RestController
 @RequestMapping("/api/export")
@@ -22,6 +25,12 @@ public class ExportController {
 
     private final ExportService exportService;
 
+    /**
+     * 导出任务为 CSV 文件
+     *
+     * @param userId 用户 ID
+     * @return CSV 文件响应
+     */
     @GetMapping("/tasks/csv")
     @Operation(summary = "导出任务为CSV")
     public ResponseEntity<byte[]> exportTasksCsv(@AuthenticationPrincipal Long userId) {
@@ -36,6 +45,12 @@ public class ExportController {
             .body(csv.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * 导出任务为 JSON 文件
+     *
+     * @param userId 用户 ID
+     * @return JSON 文件响应
+     */
     @GetMapping("/tasks/json")
     @Operation(summary = "导出任务为JSON")
     public ResponseEntity<byte[]> exportTasksJson(@AuthenticationPrincipal Long userId) {

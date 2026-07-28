@@ -5,8 +5,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 通用分页结果 — 替代 Spring Data Page，与前端期望的 JSON 格式一致。
- * JSON: { "content": [...], "totalElements": N, "totalPages": N, "size": N, "number": N }
+ * 通用分页结果 — 替代 Spring Data Page，与前端期望的 JSON 格式一致
+ * <p>
+ * JSON 结构：{ "content": [...], "totalElements": N, "totalPages": N, "size": N, "number": N }
+ * number 字段为 zero-indexed（前端组件如 Element Plus 的 el-pagination 默认 zero-indexed）。
+ * 提供 {@link #map(Function)} 方法支持内容类型转换（如 Task → TaskWithSubtasks）。
+ *
+ * @param <T> 列表元素类型
  */
 public class PageResult<T> {
 
@@ -19,6 +24,12 @@ public class PageResult<T> {
     public PageResult() {
     }
 
+    /**
+     * @param content    当前页数据
+     * @param totalElements 总记录数
+     * @param pageNum    页码（从 1 开始，内部转换为 zero-indexed）
+     * @param pageSize   每页大小
+     */
     public PageResult(List<T> content, long totalElements, int pageNum, int pageSize) {
         this.content = content;
         this.totalElements = totalElements;
@@ -29,6 +40,10 @@ public class PageResult<T> {
 
     /**
      * 转换内容类型（如 Task → TaskWithSubtasks）
+     *
+     * @param converter 转换函数
+     * @param <R>       目标类型
+     * @return 新类型的 PageResult，分页信息保持不变
      */
     public <R> PageResult<R> map(Function<? super T, ? extends R> converter) {
         PageResult<R> result = new PageResult<>();

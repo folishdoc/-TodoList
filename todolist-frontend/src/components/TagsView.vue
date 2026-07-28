@@ -1,3 +1,12 @@
+<!--
+/**
+ * TagsView.vue — 标签管理组件
+ *
+ * 提供标签的 CRUD 操作界面：以表格展示所有标签（名称、颜色、创建时间），
+ * 支持编辑名称/颜色、删除标签。通常由 Dashboard 的标签管理菜单项加载。
+ * 标签的增删直接操作后端 API，不涉及任务关联。
+ */
+-->
 <template>
   <div class="tags-container">
     <el-card>

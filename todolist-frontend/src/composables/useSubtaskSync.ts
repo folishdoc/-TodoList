@@ -1,5 +1,12 @@
+/**
+ * useSubtaskSync — 子任务同步逻辑
+ *
+ * 将前端子任务快照与后端数据库同步，执行增/删/改操作。
+ * 策略：删除前端不存在的后端子任务，新增前端新增的子任务，更新已有子任务的标题和状态。
+ */
 import * as taskApi from '../api/task'
 
+/** 子任务快照：用于与后端同步的轻量级数据结构 */
 export interface SubtaskSnapshot {
   id?: number
   title: string

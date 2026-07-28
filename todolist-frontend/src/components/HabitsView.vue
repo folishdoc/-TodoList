@@ -1,3 +1,12 @@
+<!--
+/**
+ * HabitsView.vue — 习惯追踪组件
+ *
+ * 展示和管理习惯的打卡数据。每个习惯卡片显示名称、图标、连续天数、总完成次数、
+ * 今日进度条，提供一键打卡按钮。工具栏包含统计趋势切换和创建新习惯。
+ * 统计趋势以柱状图展示指定日期范围内的每日打卡次数汇总，支持补签。
+ */
+-->
 <template>
   <div class="habits-container">
     <!-- 工具栏 -->
@@ -235,12 +244,20 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 习惯追踪核心逻辑：
+ * - 习惯列表 CRUD + 今日打卡状态
+ * - 一键打卡（按频率校验）
+ * - 打卡对话框（补卡、备注、完成值）
+ * - 趋势统计柱状图（7天/30天视图）
+ */
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, MoreFilled, DataAnalysis } from '@element-plus/icons-vue'
 import * as habitApi from '../api/habit'
 import { formatLocalDate } from '../utils/date'
 
+// ── 状态 ──
 const loading = ref(false)
 const habits = ref<any[]>([])
 const todayRecords = ref<any[]>([]) // 今日打卡记录
@@ -249,6 +266,7 @@ const showCheckInDialog = ref(false)
 const editingHabit = ref<any>(null)
 const checkingHabit = ref<any>(null)
 
+// ── 表单数据 ──
 const habitForm = reactive({
   name: '',
   icon: '🎯',
@@ -299,7 +317,9 @@ const checkInForm = reactive({
   checkDate: new Date(),
 })
 
-// 加载习惯列表
+// ── 数据加载 ──
+
+/** 加载习惯列表 */
 const loadHabits = async () => {
   loading.value = true
   try {
@@ -312,7 +332,7 @@ const loadHabits = async () => {
   }
 }
 
-// 加载今日打卡记录
+/** 加载今日打卡记录 */
 const loadTodayRecords = async () => {
   try {
     const res = await habitApi.getTodayRecords()
@@ -322,7 +342,9 @@ const loadTodayRecords = async () => {
   }
 }
 
-// 获取今日进度
+// ── 打卡相关 ──
+
+/** 获取今日完成进度（0 或 100） */
 const getTodayProgress = (habit: any) => {
   const today = formatLocalDate(new Date())
   const completed = todayRecords.value.some(

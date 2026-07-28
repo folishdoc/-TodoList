@@ -7,7 +7,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 重复规则DTO
+ * 重复规则 DTO
+ * <p>
+ * 定义任务的重复模式，以 JSON 格式存储在 Task.repeatRule 字段中。
+ * type 支持：DAILY（每天）、WEEKLY（每周）、MONTHLY（每月）、YEARLY（每年）、CUSTOM（自定义）。
+ * interval 表示间隔（如每2天、每3周），weekDays 用于 WEEKLY 类型指定周几。
+ * count 限制重复次数（null 表示无限），endDate 限制结束日期。
  */
 @Data
 @NoArgsConstructor

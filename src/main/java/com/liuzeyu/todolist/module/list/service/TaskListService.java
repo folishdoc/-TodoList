@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 清单服务
+ * 清单服务 — 清单 CRUD
+ * <p>
+ * 提供清单的增删改查功能。默认清单（isDefault=true）不可删除。
+ * 列表查询按 sortOrder 升序返回。
  */
 @Service
 @RequiredArgsConstructor
@@ -20,6 +23,10 @@ public class TaskListService {
 
     /**
      * 创建清单
+     *
+     * @param userId  用户 ID
+     * @param request 清单请求
+     * @return 创建后的清单
      */
     public TaskList createTaskList(Long userId, TaskListRequest request) {
         TaskList taskList = new TaskList();
@@ -33,12 +40,23 @@ public class TaskListService {
         return taskList;
     }
 
+    /**
+     * 获取用户的清单列表（按 sortOrder 升序）
+     *
+     * @param userId 用户 ID
+     * @return 清单列表
+     */
     public List<TaskList> getTaskLists(Long userId) {
         return taskListMapper.findByUserIdOrderBySortOrderAsc(userId);
     }
 
     /**
-     * 获取清单详情
+     * 获取清单详情（含权限校验）
+     *
+     * @param userId 用户 ID
+     * @param listId 清单 ID
+     * @return 清单实体
+     * @throws BusinessException 404 不存在，403 无权访问
      */
     public TaskList getTaskList(Long userId, Long listId) {
         TaskList taskList = taskListMapper.findById(listId);
@@ -55,6 +73,11 @@ public class TaskListService {
 
     /**
      * 更新清单
+     *
+     * @param userId  用户 ID
+     * @param listId  清单 ID
+     * @param request 更新请求
+     * @return 更新后的清单
      */
     public TaskList updateTaskList(Long userId, Long listId, TaskListRequest request) {
         TaskList taskList = getTaskList(userId, listId);
@@ -71,11 +94,16 @@ public class TaskListService {
 
     /**
      * 删除清单
+     * <p>
+     * 默认清单（isDefault=true）不可删除。
+     *
+     * @param userId 用户 ID
+     * @param listId 清单 ID
+     * @throws BusinessException 400 默认清单不可删除
      */
     public void deleteTaskList(Long userId, Long listId) {
         TaskList taskList = getTaskList(userId, listId);
         
-        // 不允许删除默认清单
         if (taskList.getIsDefault()) {
             throw new BusinessException(400, "不能删除默认清单");
         }

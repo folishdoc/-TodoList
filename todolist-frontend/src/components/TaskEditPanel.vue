@@ -1,4 +1,24 @@
+<!--
+/**
+ * TaskEditPanel.vue — 任务编辑面板组件
+ *
+ * 全功能的任务编辑器，支持 panel（侧边面板）和 dialog（弹窗）两种模式。
+ * 功能：标题编辑、优先级、时间（普通/循环模式）、清单、标签、描述（Markdown）、
+ * 子任务管理、附件上传/下载/删除、删除任务。
+ * 核心特性：300ms 防抖自动保存（autoSave）、子任务同步、循环规则设置。
+ * 数据流：通过 props.task 接收当前编辑任务，emit('changed') 通知父组件数据已变更。
+ */
+-->
 <script setup lang="ts">
+/**
+ * 编辑面板核心逻辑：
+ * - props.task 驱动，watch id 变化自动 init
+ * - autoSave 防抖定时保存（每次修改后 300ms）
+ * - doSave 同步主任务 + 子任务（增删改）
+ * - 时间模式（normal/repeat）互斥切换
+ * - 标签变化 diff 后逐条调用 API
+ * - 附件上传（10MB 限制）后自动刷新列表
+ */
 import { ref, reactive, watch, computed, toRef } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Calendar, Flag, Folder, PriceTag, Upload, Download } from '@element-plus/icons-vue'
@@ -23,6 +43,7 @@ const emit = defineEmits<{
   changed: []
 }>()
 
+// ── 表单状态 ──
 const taskForm = reactive({
   title: '',
   description: '',
@@ -33,6 +54,7 @@ const taskForm = reactive({
   subtasks: [] as any[],
 })
 
+// ── 标签、附件、清单等辅助状态 ──
 const taskTags = ref<any[]>([])
 const selectedTagIds = ref<number[]>([])
 const taskAttachments = ref<any[]>([])
@@ -42,7 +64,7 @@ const descriptionPreview = ref(false)
 const isSaving = ref(false)
 let autoSaveTimer: any = null
 
-// 重复规则
+// ── 重复规则 ──
 const repeatForm = reactive({
   type: '' as string,
   interval: 1,
@@ -151,7 +173,14 @@ watch(
   { immediate: true },
 )
 
-// 自动保存
+// ── 核心保存逻辑 ──
+
+/**
+ * 执行保存：
+ * 1. 更新主任务字段（标题/描述/优先级/时间/清单）
+ * 2. 同步子任务：对比后端已有子任务，删除不存在的、新增的创建、已有的更新
+ * 注意：循环模式下 startDate 同步为 dueDate（循环任务无开始时间）
+ */
 const doSave = async () => {
   if (!props.task || !taskForm.title.trim()) return
   isSaving.value = true

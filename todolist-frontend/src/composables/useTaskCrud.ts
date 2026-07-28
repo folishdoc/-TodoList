@@ -1,3 +1,9 @@
+/**
+ * useTaskCrud — 任务列表 CRUD 逻辑
+ *
+ * 管理任务列表的加载、树结构构建、完成/取消完成、删除（含撤销）、顺延操作。
+ * 以扁平列表 + parentId 方式存储，通过 taskTree computed 构建父子层级供前端渲染。
+ */
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Task } from '../types'
@@ -5,6 +11,7 @@ import * as taskApi from '../api/task'
 import { formatLocalDateTime } from '../utils/date'
 
 export function useTaskCrud() {
+  // ── 状态 ──
   const tasks = ref<Task[]>([])
   const loading = ref(false)
   const total = ref(0)
@@ -13,6 +20,9 @@ export function useTaskCrud() {
   const searchKeyword = ref('')
 
   // 构建任务树（只构建第一层 parentId 关系，前端渲染使用）
+  // ── 计算属性 ──
+
+  /** 构建任务树：将扁平任务列表按 parentId 组装为树形结构，仅一层父子关系 */
   const taskTree = computed(() => {
     const parentMap = new Map<number, Task[]>()
     const topLevel: (Task & { children?: Task[] })[] = []
@@ -36,6 +46,9 @@ export function useTaskCrud() {
     return topLevel
   })
 
+  // ── 方法 ──
+
+  /** 加载任务列表（最多 1000 条），可根据关键字搜索 */
   const loadTasks = async () => {
     loading.value = true
     try {
@@ -56,6 +69,7 @@ export function useTaskCrud() {
     }
   }
 
+  /** 切换任务完成状态（顶层任务使用批量接口，子任务使用单个更新） */
   const handleToggleTask = async (task: Task) => {
     const newStatus = task.status === 1 ? 0 : 1
     try {
@@ -71,6 +85,7 @@ export function useTaskCrud() {
     }
   }
 
+  /** 删除任务（含确认对话框和撤销功能） */
   const handleDeleteTask = async (task: Task, showUndo: (msg: string, undoFn: () => Promise<void>) => void, emitTaskChanged: () => void) => {
     try {
       await ElMessageBox.confirm('确定要删除这个任务吗？', '提示', {
@@ -102,6 +117,7 @@ export function useTaskCrud() {
     }
   }
 
+  /** 将过期任务顺延到今天（更新截止日期为当天） */
   const handlePostponeTask = async (task: Task) => {
     try {
       const today = new Date()

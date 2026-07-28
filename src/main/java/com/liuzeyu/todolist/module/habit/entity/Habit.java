@@ -6,17 +6,21 @@ import java.time.LocalDateTime;
 
 /**
  * 习惯实体
+ * <p>
+ * 对应数据库 habits 表。定义习惯的名称、目标类型（次数/时长/数量）、
+ * 执行频率（每日/每周/工作日/周末/自定义）、时段和统计信息。
+ * currentStreak/maxStreak/totalCompletions 由 HabitService 在打卡时自动更新。
  */
 @Data
 public class Habit {
     
     private Long id;
 
-    private String name; // 习惯名称
+    private String name;
 
-    private String icon; // 图标
+    private String icon; // 图标名称
 
-    private String color = "#409EFF"; // 颜色
+    private String color = "#409EFF"; // 显示颜色
 
     private String targetType = "count"; // 目标类型：count(次数), duration(时长), quantity(数量)
 

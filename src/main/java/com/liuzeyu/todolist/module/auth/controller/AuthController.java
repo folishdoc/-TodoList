@@ -7,6 +7,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * 认证控制器 — 注册与登录接口
+ * <p>
+ * 路径前缀 /api/auth，无需 JWT 认证（在 SecurityConfig 中配置 permitAll）。
+ * 参数校验在 Controller 层完成（非 @Valid，使用手动校验以返回自定义错误码）。
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -17,6 +23,12 @@ public class AuthController {
         this.authService = authService;
     }
 
+    /**
+     * 用户注册
+     *
+     * @param body 请求体：{ username, password, displayName? }
+     * @return 注册结果（含 JWT 令牌）
+     */
     @PostMapping("/register")
     public Result<LoginResponse> register(@RequestBody Map<String, String> body) {
         String username = body.get("username");
@@ -44,6 +56,12 @@ public class AuthController {
         }
     }
 
+    /**
+     * 用户登录
+     *
+     * @param body 请求体：{ username, password }
+     * @return 登录结果（含 JWT 令牌）
+     */
     @PostMapping("/login")
     public Result<LoginResponse> login(@RequestBody Map<String, String> body) {
         String username = body.get("username");

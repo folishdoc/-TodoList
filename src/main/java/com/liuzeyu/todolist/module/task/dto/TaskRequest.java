@@ -7,7 +7,11 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 任务创建/更新请求DTO
+ * 任务创建/更新请求 DTO
+ * <p>
+ * 使用 Jakarta Validation 注解进行参数校验。
+ * title 为必填（@NotBlank），description 可选但限制长度。
+ * parentId 用于创建子任务，null 表示顶层任务。
  */
 @Data
 public class TaskRequest {

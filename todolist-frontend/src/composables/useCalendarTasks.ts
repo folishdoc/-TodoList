@@ -1,3 +1,9 @@
+/**
+ * useCalendarTasks — 日历视图的任务加载与筛选
+ *
+ * 负责根据当前日历视图模式、日期范围从后端加载任务，
+ * 并提供优先级筛选逻辑。视图切换时自动重新加载数据。
+ */
 import { ref, computed, watch, onMounted, type Ref } from 'vue'
 import * as taskApi from '../api/task'
 import { formatLocalDateTime } from '../utils/date'
@@ -11,6 +17,7 @@ export function useCalendarTasks(
   currentDate: Ref<Date>,
   dayBarDate: Ref<Date | string>,
 ) {
+  /** 根据筛选条件过滤已完成任务和优先级 */
   const filteredTasks = computed(() => {
     return allTasks.value.filter((task) => {
       if (task.status === 1) return false
@@ -21,6 +28,10 @@ export function useCalendarTasks(
     })
   })
 
+  /**
+   * 根据当前视图模式和日期计算需要加载的日期范围
+   * daybar：当天；month/bar(month)：当月±7天；week/bar(week)：当周±1天
+   */
   const getVisibleDateRange = (): { start: string; end: string } => {
     if (viewMode.value === 'daybar') {
       const d = new Date(dayBarDate.value)
@@ -48,6 +59,7 @@ export function useCalendarTasks(
     }
   }
 
+  /** 加载任务：优先使用日期范围接口，回退到全量分页加载 */
   const loadTasks = async () => {
     try {
       const { start, end } = getVisibleDateRange()
@@ -63,13 +75,14 @@ export function useCalendarTasks(
     }
   }
 
+  /** 处理筛选命令（由筛选下拉菜单触发） */
   const handleFilterCommand = (command: string) => {
     if (command.startsWith('status-')) filters.value.status = command.replace('status-', '')
     else if (command.startsWith('priority-'))
       filters.value.priority = command.replace('priority-', '')
   }
 
-  // Watches
+  // ── 监听视图变化自动重新加载 ──
   watch(
     () => viewMode.value,
     () => {
