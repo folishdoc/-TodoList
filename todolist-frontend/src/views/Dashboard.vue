@@ -545,7 +545,7 @@
                 }"
                 size="small"
                 closable
-                @close="handleRemoveTag(tag.id)"
+                @close="handleRemoveTag(tag.id, editingTask)"
               >
                 {{ tag.name }}
               </el-tag>
@@ -615,7 +615,7 @@
                   ref="fileInputRef"
                   type="file"
                   style="display: none"
-                  @change="handleFileSelect"
+                  @change="(e: Event) => handleFileSelect(e, editingTask)"
                 />
                 <el-button size="small" @click="triggerFileUpload" :loading="attachmentUploading">
                   <el-icon><Upload /></el-icon>
@@ -630,7 +630,7 @@
                   <el-button size="small" type="primary" link @click="downloadAttachment(att)">
                     <el-icon><Download /></el-icon>
                   </el-button>
-                  <el-button size="small" type="danger" link @click="handleDeleteAttachment(att)">
+                  <el-button size="small" type="danger" link @click="handleDeleteAttachment(att, editingTask)">
                     <el-icon><Delete /></el-icon>
                   </el-button>
                 </div>
