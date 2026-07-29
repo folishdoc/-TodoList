@@ -68,7 +68,7 @@ class TaskServiceTest extends BaseUnitTest {
         TaskRequest request = new TaskRequest();
         request.setTitle("已完成");
         request.setStatus(1);
-        doNothing().when(taskMapper).insert(any(Task.class));
+        when(taskMapper.insert(any(Task.class))).thenReturn(1);
 
         Task result = taskService.createTask(1L, request);
 
@@ -119,7 +119,7 @@ class TaskServiceTest extends BaseUnitTest {
         existing.setUserId(1L);
         existing.setStatus(0);
         when(taskMapper.findById(10L)).thenReturn(existing);
-        doNothing().when(taskMapper).update(any(Task.class));
+        when(taskMapper.update(any(Task.class))).thenReturn(1);
 
         TaskRequest req = new TaskRequest();
         req.setTitle("新标题");
@@ -138,7 +138,7 @@ class TaskServiceTest extends BaseUnitTest {
         existing.setUserId(1L);
         existing.setStatus(0);
         when(taskMapper.findById(10L)).thenReturn(existing);
-        doNothing().when(taskMapper).update(any(Task.class));
+        when(taskMapper.update(any(Task.class))).thenReturn(1);
 
         TaskRequest req = new TaskRequest();
         req.setTitle("t");
@@ -156,7 +156,7 @@ class TaskServiceTest extends BaseUnitTest {
         existing.setId(10L);
         existing.setUserId(1L);
         when(taskMapper.findById(10L)).thenReturn(existing);
-        doNothing().when(taskMapper).update(any(Task.class));
+        when(taskMapper.update(any(Task.class))).thenReturn(1);
 
         TaskTimeRequest req = new TaskTimeRequest();
         req.setStartDate(LocalDateTime.of(2026, 6, 10, 9, 0));
@@ -211,7 +211,7 @@ class TaskServiceTest extends BaseUnitTest {
         existing.setId(10L);
         existing.setUserId(1L);
         when(taskMapper.findById(10L)).thenReturn(existing);
-        doNothing().when(taskMapper).update(any(Task.class));
+        when(taskMapper.update(any(Task.class))).thenReturn(1);
 
         Task result = taskService.completeTask(1L, 10L);
 
@@ -228,7 +228,7 @@ class TaskServiceTest extends BaseUnitTest {
         existing.setStatus(1);
         existing.setCompletedAt(LocalDateTime.now());
         when(taskMapper.findById(10L)).thenReturn(existing);
-        doNothing().when(taskMapper).update(any(Task.class));
+        when(taskMapper.update(any(Task.class))).thenReturn(1);
 
         Task result = taskService.uncompleteTask(1L, 10L);
 

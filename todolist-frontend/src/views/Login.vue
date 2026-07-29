@@ -84,6 +84,18 @@ async function handleSubmit() {
         <p class="login-subtitle">个人待办管理系统</p>
       </div>
 
+      <el-alert
+        v-if="!isRegisterMode"
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 20px"
+      >
+        <template #title>
+          首次使用？默认账号 <strong>admin</strong> / <strong>admin123</strong>
+        </template>
+      </el-alert>
+
       <!-- 用户名密码表单 -->
       <el-form class="login-form" @submit.prevent="handleSubmit">
         <el-form-item label="用户名">

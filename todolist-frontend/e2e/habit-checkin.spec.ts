@@ -29,7 +29,7 @@ async function setupApiMocks(page: Page) {
   ]
   let records: any[] = []
 
-  await page.route('http://localhost:18080/api/**', async (route) => {
+  await page.route('http://localhost:5180/api/**', async (route) => {
     const req = route.request()
     const url = new URL(req.url())
     const path = url.pathname

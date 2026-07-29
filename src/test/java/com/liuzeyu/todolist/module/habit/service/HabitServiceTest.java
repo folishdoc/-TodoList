@@ -85,9 +85,6 @@ class HabitServiceTest extends BaseUnitTest {
         h.setId(1L);
         h.setUserId(1L);
         when(habitMapper.findById(1L)).thenReturn(h);
-        HabitRecord r = new HabitRecord();
-        r.setId(100L);
-        when(habitRecordMapper.findByHabitId(1L)).thenReturn(List.of(r));
 
         habitService.deleteHabit(1L, 1L);
 

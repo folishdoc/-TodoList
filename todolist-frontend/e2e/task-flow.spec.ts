@@ -7,7 +7,7 @@ async function setupApiMocks(page: Page, initialTasks: any[] = []) {
   const tags: Record<number, any[]> = {}
   const attachments: Record<number, any[]> = {}
 
-  await page.route('http://localhost:18080/api/**', async (route) => {
+  await page.route('http://localhost:5180/api/**', async (route) => {
     const req = route.request()
     const url = new URL(req.url())
     const path = url.pathname
@@ -101,7 +101,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('Dashboard 默认显示任务列表（mock 数据）', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -156,7 +156,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('编辑任务：点击任务 → 标题输入框显示该任务标题', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -199,7 +199,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('完成任务：勾选 checkbox → 任务显示 completed 样式', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -256,7 +256,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('删除任务：点击删除按钮 → 任务项仍然显示（删除按钮存在即可）', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -295,7 +295,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('子任务：在编辑面板中点击"+ 添加"出现输入框', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -341,7 +341,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('顺延过期任务：按钮存在并可见', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -383,7 +383,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('关闭编辑面板：emit 后任务列表重新加载', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -421,7 +421,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('描述 Markdown 预览：切换后渲染 HTML', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -464,7 +464,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('任务卡片显示优先级标签（高/中/低/无）', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -509,7 +509,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('标签附加：在编辑面板中选择标签', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -550,7 +550,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('清单切换下拉：在编辑面板中显示当前清单名', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -593,7 +593,7 @@ test.describe('E2E 任务完整流程', () => {
 
   test('重复规则：编辑面板中显示 🔄 标记', async ({ page }) => {
     const rule = JSON.stringify({ type: 'DAILY', interval: 1 })
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -635,7 +635,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('空状态：无任务时显示"暂无任务"提示', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -656,7 +656,7 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('任务卡片显示时间状态（顺延/过期）', async ({ page }) => {
-    await page.route('http://localhost:18080/api/tasks**', async (route) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,

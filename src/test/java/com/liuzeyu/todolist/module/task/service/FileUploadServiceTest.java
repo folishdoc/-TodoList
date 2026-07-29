@@ -42,7 +42,7 @@ class FileUploadServiceTest extends BaseUnitTest {
     @DisplayName("上传文件 - 正常")
     void upload_succeeds() throws IOException {
         MultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "hello".getBytes());
-        doNothing().when(attachmentMapper).insert(any(TaskAttachment.class));
+        when(attachmentMapper.insert(any(TaskAttachment.class))).thenReturn(1);
 
         TaskAttachment attachment = fileUploadService.uploadFile(1L, file);
 
@@ -78,7 +78,7 @@ class FileUploadServiceTest extends BaseUnitTest {
     @DisplayName("上传文件 - 无扩展名时使用原文件名")
     void upload_noExtension() throws IOException {
         MultipartFile file = new MockMultipartFile("file", "README", "text/plain", "hello".getBytes());
-        doNothing().when(attachmentMapper).insert(any(TaskAttachment.class));
+        when(attachmentMapper.insert(any(TaskAttachment.class))).thenReturn(1);
 
         TaskAttachment attachment = fileUploadService.uploadFile(1L, file);
 

@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 
 async function setupApiMocks(page: Page) {
-  await page.route('http://localhost:18080/api/**', async (route) => {
+  await page.route('http://localhost:5180/api/**', async (route) => {
     const ok = (data: any) =>
       route.fulfill({
         status: 200,

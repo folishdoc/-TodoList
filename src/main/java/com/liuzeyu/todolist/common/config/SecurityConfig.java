@@ -20,6 +20,7 @@ import com.liuzeyu.todolist.common.util.JwtUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -66,7 +67,8 @@ public class SecurityConfig {
      * @throws Exception 配置异常
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtil jwtUtil) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtil jwtUtil,
+            @Value("${app.personal.token}") String personalToken) throws Exception {
         OncePerRequestFilter jwtFilter = new OncePerRequestFilter() {
             @Override
             protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -88,13 +90,18 @@ public class SecurityConfig {
                 String token = authHeader.substring(7);
 
                 Long userId;
-                try {
-                    userId = jwtUtil.getUserIdFromToken(token);
-                } catch (Exception e) {
-                    response.setStatus(401);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"code\":401,\"message\":\"Invalid or expired token\"}");
-                    return;
+                // 单用户模式：personal token 直接映射到 userId=1（留空 = 禁用，强制 JWT）
+                if (personalToken != null && !personalToken.isEmpty() && personalToken.equals(token)) {
+                    userId = 1L;
+                } else {
+                    try {
+                        userId = jwtUtil.getUserIdFromToken(token);
+                    } catch (Exception e) {
+                        response.setStatus(401);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"code\":401,\"message\":\"Invalid or expired token\"}");
+                        return;
+                    }
                 }
 
                 // 将 userId 注入 SecurityContext，Controller 通过 @AuthenticationPrincipal 获取

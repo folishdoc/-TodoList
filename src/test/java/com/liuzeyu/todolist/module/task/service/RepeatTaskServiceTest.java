@@ -55,7 +55,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
             t.setDueDate(originalDue);
             t.setRepeatRule("{\"type\":\"DAILY\",\"interval\":1}");
             when(taskMapper.findAll()).thenReturn(List.of(t));
-            doNothing().when(taskMapper).insert(any(Task.class));
+            when(taskMapper.insert(any(Task.class))).thenReturn(1);
 
             repeatTaskService.scheduledGenerateRepeatTasks();
 
@@ -77,7 +77,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
             t.setDueDate(originalDue);
             t.setRepeatRule("{\"type\":\"WEEKLY\",\"interval\":2}");
             when(taskMapper.findAll()).thenReturn(List.of(t));
-            doNothing().when(taskMapper).insert(any(Task.class));
+            when(taskMapper.insert(any(Task.class))).thenReturn(1);
 
             repeatTaskService.scheduledGenerateRepeatTasks();
 
@@ -101,7 +101,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
             yearly.setDueDate(due);
             yearly.setRepeatRule("{\"type\":\"YEARLY\",\"interval\":1}");
             when(taskMapper.findAll()).thenReturn(List.of(monthly, yearly));
-            doNothing().when(taskMapper).insert(any(Task.class));
+            when(taskMapper.insert(any(Task.class))).thenReturn(1);
 
             repeatTaskService.scheduledGenerateRepeatTasks();
 
@@ -142,7 +142,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
             Task t = new Task();
             t.setId(1L);
             when(taskMapper.findById(1L)).thenReturn(t);
-            doNothing().when(taskMapper).update(any(Task.class));
+            when(taskMapper.update(any(Task.class))).thenReturn(1);
 
             RepeatRule rule = new RepeatRule();
             rule.setType("DAILY");
@@ -184,7 +184,7 @@ class RepeatTaskServiceTest extends BaseUnitTest {
             t.setId(1L);
             t.setRepeatRule("{\"type\":\"DAILY\"}");
             when(taskMapper.findById(1L)).thenReturn(t);
-            doNothing().when(taskMapper).update(any(Task.class));
+            when(taskMapper.update(any(Task.class))).thenReturn(1);
 
             repeatTaskService.cancelRepeatRule(1L);
 

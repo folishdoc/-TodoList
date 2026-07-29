@@ -40,7 +40,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
         Task mine = makeTask(1L, 1L, 0);
         Task other = makeTask(2L, 2L, 0);
         when(taskMapper.findAllByIds(eq(1L), anyString())).thenReturn(List.of(mine, other));
-        doNothing().when(taskMapper).batchUpdate(anyList());
+        when(taskMapper.batchUpdate(anyList())).thenReturn(1);
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L, 2L));
@@ -94,7 +94,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
     void move_setsListId() {
         Task t = makeTask(1L, 1L, 0);
         when(taskMapper.findAllByIds(eq(1L), anyString())).thenReturn(List.of(t));
-        doNothing().when(taskMapper).batchUpdate(anyList());
+        when(taskMapper.batchUpdate(anyList())).thenReturn(1);
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L));
@@ -137,7 +137,7 @@ class BatchOperationServiceTest extends BaseUnitTest {
     void setPriority_succeeds() {
         Task t = makeTask(1L, 1L, 0);
         when(taskMapper.findAllByIds(eq(1L), anyString())).thenReturn(List.of(t));
-        doNothing().when(taskMapper).batchUpdate(anyList());
+        when(taskMapper.batchUpdate(anyList())).thenReturn(1);
 
         BatchOperationRequest req = new BatchOperationRequest();
         req.setTaskIds(List.of(1L));
