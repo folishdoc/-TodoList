@@ -680,7 +680,7 @@
                 style="cursor: pointer"
               >
                 <el-icon><Calendar /></el-icon>
-                {{ getCreateTimeSummary() }}
+                {{ getCreateTimeSummary(taskForm, repeatForm) }}
               </el-tag>
             </template>
             <div style="padding: 4px 0">

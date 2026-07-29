@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5180",
+      "localStorage": [
+        { "name": "jwt_token", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJhZG1pbiIsImRpc3BsYXlOYW1lIjoiQWRtaW4ifQ.fake" },
+        { "name": "user_id", "value": "1" },
+        { "name": "username", "value": "admin" },
+        { "name": "display_name", "value": "Admin" }
+      ]
+    }
+  ]
+}
