@@ -4,10 +4,12 @@
  * 使用 Hash 历史模式（兼容无服务端配置的静态部署）。
  *
  * 路由守卫逻辑：
- * - 已登录（auth store 有 token）或配置了 VITE_PERSONAL_TOKEN → 可访问 Dashboard
- * - 未登录且未配置个人 Token → 重定向到 /login
+ * - 初始页面为登录页
+ * - 若 localStorage 存在未过期的 JWT token → 跳转 Dashboard
+ * - token 过期或不存在 → 清除 token 并重定向到登录页
  */
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { isJwtExpired } from '../utils/jwt'
 import Dashboard from '../views/Dashboard.vue'
 import WidgetView from '../views/WidgetView.vue'
 import LoginView from '../views/Login.vue'
@@ -36,11 +38,11 @@ const router = createRouter({
 })
 
 /**
- * 导航守卫 — 未登录时重定向到 /login
+ * 导航守卫 — JWT 过期检查
  *
- * 两种免登录场景：
- * 1. auth store 中已有 JWT token（localStorage 恢复）
- * 2. 配置了 VITE_PERSONAL_TOKEN 环境变量（单用户模式）
+ * - Login/Widget 页面始终可访问
+ * - 访问 Dashboard 前检查 token 是否存在且未过期
+ * - token 过期 → 清除本地会话 → 重定向登录
  */
 router.beforeEach((to, _from, next) => {
   if (to.name === 'Login' || to.name === 'Widget') {
@@ -48,8 +50,13 @@ router.beforeEach((to, _from, next) => {
     return
   }
 
-  const token = localStorage.getItem('jwt_token') || import.meta.env.VITE_PERSONAL_TOKEN
-  if (!token) {
+  const token = localStorage.getItem('jwt_token')
+  if (!token || isJwtExpired(token)) {
+    // token 不存在或已过期 → 清除残留数据 → 跳登录
+    localStorage.removeItem('jwt_token')
+    localStorage.removeItem('user_id')
+    localStorage.removeItem('username')
+    localStorage.removeItem('display_name')
     next({ name: 'Login' })
     return
   }

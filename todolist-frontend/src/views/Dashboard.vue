@@ -81,6 +81,13 @@
             </div>
           </el-popover>
         </div>
+
+        <!-- 底部：登出 -->
+        <div class="icon-nav-bottom">
+          <div class="nav-item" title="退出登录" @click="handleLogout">
+            <el-icon :size="22"><SwitchIcon /></el-icon>
+          </div>
+        </div>
       </el-aside>
 
       <!-- 主容器 -->
@@ -887,7 +894,9 @@
  * - useReminders: 纪念日提醒轮询
  */
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   List,
   Calendar,
@@ -902,6 +911,7 @@ import {
   Bell,
   Upload,
   Download,
+  Switch as SwitchIcon,
 } from '@element-plus/icons-vue'
 import * as anniversaryApi from '../api/anniversary'
 import { isOverdue } from '../composables/useDateUtils'
@@ -926,6 +936,25 @@ import type { Task, TaskList, Tag } from '../types'
 // ── 导航状态 ──
 const currentModule = ref('tasks') // 当前模块: tasks, calendar, habits, anniversaries
 const activeMenu = ref('all')
+
+// ── 认证 ──
+const router = useRouter()
+const authStore = useAuthStore()
+
+/** 登出：清除会话并跳转到登录页 */
+function handleLogout() {
+  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(() => {
+    authStore.logout()
+    router.push('/login')
+    ElMessage.success('已退出登录')
+  }).catch(() => {
+    // 用户取消，不做操作
+  })
+}
 
 // ── 组合式函数初始化 ──
 /** 跨窗口任务同步（Tauri 环境） */
@@ -1103,6 +1132,15 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 8px;
   padding: 12px 0;
+  flex: 1;
+}
+
+.icon-nav-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 .nav-item {
