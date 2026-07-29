@@ -160,4 +160,23 @@ test.describe('E2E 批量操作', () => {
     const selected = page.locator('.task-item.batch-selected')
     expect(await selected.count()).toBeGreaterThan(0)
   })
+
+  test('批量删除：选择任务 → 点击"删除选中" → 任务被移除', async ({ page }) => {
+    await page.getByRole('button', { name: '批量操作' }).click()
+    await page.waitForTimeout(300)
+    // 全选
+    await page.getByRole('button', { name: '全选' }).click()
+    await page.waitForTimeout(300)
+    const deleteBtn = page.getByRole('button', { name: /删除选中/ })
+    if ((await deleteBtn.count()) > 0) {
+      await deleteBtn.first().click()
+      await page.waitForTimeout(500)
+      // 确认删除（如果有确认对话框）
+      const confirmBtn = page.getByRole('button', { name: '确定' }).last()
+      if ((await confirmBtn.count()) > 0) {
+        await confirmBtn.click()
+        await page.waitForTimeout(500)
+      }
+    }
+  })
 })

@@ -44,10 +44,9 @@ const router = createRouter({
  * - 访问 Dashboard 前检查 token 是否存在且未过期
  * - token 过期 → 清除本地会话 → 重定向登录
  */
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to, _from) => {
   if (to.name === 'Login' || to.name === 'Widget') {
-    next()
-    return
+    return true
   }
 
   const token = localStorage.getItem('jwt_token')
@@ -57,11 +56,10 @@ router.beforeEach((to, _from, next) => {
     localStorage.removeItem('user_id')
     localStorage.removeItem('username')
     localStorage.removeItem('display_name')
-    next({ name: 'Login' })
-    return
+    return { name: 'Login' }
   }
 
-  next()
+  return true
 })
 
 export default router

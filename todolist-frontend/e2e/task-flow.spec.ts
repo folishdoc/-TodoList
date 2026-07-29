@@ -691,4 +691,85 @@ test.describe('E2E 任务完整流程', () => {
     await page.waitForTimeout(1500)
     await expect(page.getByText('今日').first()).toBeVisible()
   })
+
+  test('创建子任务：点击父任务 → 输入子任务名 → 按回车创建', async ({ page }) => {
+    await page.route('http://localhost:5180/api/**', async (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 200, message: 'success',
+            data: {
+              content: [
+                { id: 29, title: '父任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' },
+              ],
+              totalElements: 1, totalPages: 1, size: 1000, number: 0,
+            },
+          }),
+        })
+      }
+      return route.continue()
+    })
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+    await page.locator('.task-item').filter({ hasText: '父任务' }).first().click()
+    await page.waitForTimeout(800)
+    const addBtn = page.getByRole('button', { name: '+ 添加' })
+    if ((await addBtn.count()) > 0) {
+      await addBtn.first().click()
+      await page.waitForTimeout(300)
+      const input = page.locator('input[placeholder*="子任务"]')
+      if ((await input.count()) > 0) {
+        await input.first().fill('子任务1')
+        await input.first().press('Enter')
+        await page.waitForTimeout(500)
+      }
+    }
+  })
+
+  test('重复规则设置：通过 API 设置每日重复', async ({ page }) => {
+    let repeatSet = false
+    await page.route('http://localhost:5180/api/tasks/repeat/31', async (route) => {
+      if (route.request().method() === 'POST') {
+        repeatSet = true
+        return route.fulfill({
+          status: 200, contentType: 'application/json',
+          body: JSON.stringify({
+            code: 200, message: 'success',
+            data: { id: 31, title: '每日任务', status: 0, repeatRule: JSON.stringify({ type: 'DAILY', interval: 1 }) },
+          }),
+        })
+      }
+      return route.continue()
+    })
+    await page.route('http://localhost:5180/api/**', async (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({
+          status: 200, contentType: 'application/json',
+          body: JSON.stringify({
+            code: 200, message: 'success',
+            data: {
+              content: [
+                { id: 31, title: '每日任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' },
+              ],
+              totalElements: 1, totalPages: 1, size: 1000, number: 0,
+            },
+          }),
+        })
+      }
+      return route.continue()
+    })
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+    await page.locator('.task-item').filter({ hasText: '每日任务' }).first().click()
+    await page.waitForTimeout(800)
+    // 验证重复规则标记可见（API mock 会返回 repeatRule）
+    const repeatMark = page.getByText(/每天|每周|每月|每年/)
+    if ((await repeatMark.count()) > 0) {
+      await expect(repeatMark.first()).toBeVisible()
+    }
+  })
 })

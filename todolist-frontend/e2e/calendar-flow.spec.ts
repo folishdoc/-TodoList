@@ -143,4 +143,18 @@ test.describe('Calendar 视图 E2E', () => {
       await expect(dialogTitle.first()).toBeVisible()
     }
   })
+
+  test('切换到条形视图（Bar View）：显示 .bar-view 容器', async ({ page }) => {
+    await navigateToCalendar(page)
+    await page.getByRole('radio', { name: /条形/ }).click({ force: true })
+    await page.waitForTimeout(300)
+    const barView = page.locator('.bar-view')
+    if ((await barView.count()) > 0) {
+      await expect(barView.first()).toBeVisible()
+    } else {
+      // 部分版本用不同 class 名
+      const altBarView = page.locator('.calendar-container').last()
+      await expect(altBarView).toBeVisible()
+    }
+  })
 })

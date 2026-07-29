@@ -9,8 +9,8 @@
 | 后端单元测试 | JUnit 5 + Mockito | 197 | 23 | `src/test/java/.../module/**/*Test.java` |
 | 后端集成测试 | Testcontainers MySQL | 3 测试类 (9 用例) | 3 | `src/test/java/.../integration/` |
 | 前端单元测试 | Vitest + Vue Test Utils | 291 | 29 | `src/**/*.test.ts` |
-| E2E 测试 | Playwright | 57 | 10 | `e2e/*.spec.ts` |
-| **总计** | | **548+** | **65** | |
+| E2E 测试 | Playwright | 96 | 18 | `e2e/*.spec.ts` |
+| **总计** | | **587+** | **70** | |
 
 ## 🚀 运行测试
 
@@ -96,6 +96,7 @@ todolist-frontend/
 │   ├── utils/*.test.ts
 │   └── views/Dashboard.test.ts             # Dashboard 容器单测
 ├── e2e/*.spec.ts                           # Playwright E2E
+e2e/fixtures/api-mocks.ts               # 共享 API Mock 工具
 ├── playwright.config.ts                    # port 5180
 └── vitest.config.ts                        # coverage thresholds
 ```

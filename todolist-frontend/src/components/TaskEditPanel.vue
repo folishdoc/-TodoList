@@ -501,8 +501,8 @@ const handleSubtaskEnter = () => {
             style="margin-bottom: 12px"
             @change="onModeChange"
           >
-            <el-radio-button label="normal">🕒 普通任务</el-radio-button>
-            <el-radio-button label="repeat">🔄 循环任务</el-radio-button>
+            <el-radio-button value="normal">🕒 普通任务</el-radio-button>
+            <el-radio-button value="repeat">🔄 循环任务</el-radio-button>
           </el-radio-group>
 
           <!-- 普通模式：开始 + 截止 -->

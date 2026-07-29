@@ -126,4 +126,26 @@ test.describe('E2E 任务生命周期', () => {
     await expect(page.getByText('买菜').first()).toBeVisible()
     await expect(page.getByText('做饭').first()).toBeVisible()
   })
+
+  test('搜索过滤：输入关键词后搜索框内容更新', async ({ page }) => {
+    await setupApiMocks(page, [
+      { id: 3, title: '买菜', status: 0, priority: 0, parentId: null, createdAt: '2025-01-01' },
+      { id: 4, title: '做饭', status: 0, priority: 1, parentId: null, createdAt: '2025-01-02' },
+      { id: 5, title: '写代码', status: 0, priority: 2, parentId: null, createdAt: '2025-01-03' },
+    ])
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+
+    const searchInput = page.locator('input[placeholder*="搜索"]')
+    await expect(searchInput.first()).toBeVisible()
+
+    // 输入搜索关键词
+    await searchInput.first().fill('买菜')
+    await page.waitForTimeout(500)
+
+    // 验证搜索框值
+    const value = await searchInput.first().inputValue()
+    expect(value).toBe('买菜')
+  })
 })

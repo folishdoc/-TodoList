@@ -272,10 +272,9 @@ describe('CalendarView.vue', () => {
   })
 
   describe('handleCreateTask', () => {
-    it('提交时 startDate 字段存在且 ≈ NOW、dueDate 来自表单', async () => {
+    it('提交时 startDate = dueDate 零点、dueDate 来自表单', async () => {
       vi.useFakeTimers()
-      const fakeNow = new Date('2026-07-15T10:00:00')
-      vi.setSystemTime(fakeNow)
+      vi.setSystemTime(new Date('2026-07-15T10:00:00'))
       const wrapper = mountView()
       await flushPromises()
       const form = (wrapper.vm as any).newTaskForm
@@ -290,10 +289,9 @@ describe('CalendarView.vue', () => {
       expect(payload.title).toBe('新任务')
       expect(payload.status).toBe(0)
       expect(payload.priority).toBe(2)
-      expect(payload.startDate).toBeDefined()
       expect(payload.dueDate).toBe('2026-07-20T00:00:00')
-      const start = new Date(payload.startDate)
-      expect(Math.abs(start.getTime() - fakeNow.getTime())).toBeLessThan(1000)
+      // startDate 从 dueDate 派生（零时零分零秒），而非当前时间
+      expect(payload.startDate).toBe('2026-07-20T00:00:00')
     })
 
     it('提交时 time 与 dueDate 合并（小时分钟）', async () => {
