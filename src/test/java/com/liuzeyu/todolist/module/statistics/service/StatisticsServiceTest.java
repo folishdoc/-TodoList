@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +54,7 @@ class StatisticsServiceTest extends BaseUnitTest {
         when(taskMapper.countByUserId(1L)).thenReturn(3L);
         when(taskMapper.countByUserIdAndStatus(1L, 1)).thenReturn(1L);
         when(taskMapper.countByUserIdGroupByPriority(1L)).thenReturn(List.of(
-                new Object[]{3, 1L}, new Object[]{2, 1L}, new Object[]{1, 1L}
+                Map.of("key", 3, "value", 1L), Map.of("key", 2, "value", 1L), Map.of("key", 1, "value", 1L)
         ));
         when(taskMapper.countByUserIdAndDueDateBetween(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(1L);
         when(taskMapper.countByUserIdAndDueDateAfter(eq(1L), any(LocalDateTime.class))).thenReturn(1L);
@@ -94,7 +95,7 @@ class StatisticsServiceTest extends BaseUnitTest {
         list2.setId(2L);
         list2.setName("生活");
         when(taskListMapper.findByUserId(1L)).thenReturn(List.of(list1, list2));
-        when(taskMapper.countByUserIdGroupByListId(1L)).thenReturn(Collections.singletonList(new Object[]{1L, 1L}));
+        when(taskMapper.countByUserIdGroupByListId(1L)).thenReturn(Collections.singletonList(Map.of("key", 1L, "value", 1L)));
 
         List<TaskDistribution> dist = statisticsService.getTasksByList(1L);
 
@@ -105,7 +106,7 @@ class StatisticsServiceTest extends BaseUnitTest {
     @Test
     @DisplayName("按优先级分布 - 只返回非空桶")
     void getTasksByPriority_skipsEmpty() {
-        when(taskMapper.countByUserIdGroupByPriority(1L)).thenReturn(Collections.singletonList(new Object[]{3, 2L}));
+        when(taskMapper.countByUserIdGroupByPriority(1L)).thenReturn(Collections.singletonList(Map.of("key", 3, "value", 2L)));
 
         List<TaskDistribution> dist = statisticsService.getTasksByPriority(1L);
 
@@ -119,9 +120,9 @@ class StatisticsServiceTest extends BaseUnitTest {
     void getDailyTrend_succeeds() {
         LocalDate twoDaysAgo = LocalDate.now().minusDays(2);
         when(taskMapper.countCreatedByDateAfter(eq(1L), any(LocalDateTime.class)))
-                .thenReturn(Collections.singletonList(new Object[]{twoDaysAgo, 1L}));
+                .thenReturn(Collections.singletonList(Map.of("key", twoDaysAgo, "value", 1L)));
         when(taskMapper.countCompletedByDateAfter(eq(1L), any(LocalDateTime.class)))
-                .thenReturn(Collections.singletonList(new Object[]{twoDaysAgo, 1L}));
+                .thenReturn(Collections.singletonList(Map.of("key", twoDaysAgo, "value", 1L)));
 
         List<DailyTaskStats> trend = statisticsService.getDailyTrend(1L, 7);
 

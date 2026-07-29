@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 任务数据访问层（MyBatis Mapper）
@@ -214,9 +215,9 @@ public interface TaskMapper {
      * 按优先级分组统计任务数
      *
      * @param userId 用户 ID
-     * @return [priority, count] 数组列表
+     * @return map 列表（key="key"=priority, key="value"=count）
      */
-    List<Object[]> countByUserIdGroupByPriority(@Param("userId") Long userId);
+    List<Map<String, Object>> countByUserIdGroupByPriority(@Param("userId") Long userId);
 
     /**
      * 统计指定日期范围内的任务数
@@ -241,27 +242,27 @@ public interface TaskMapper {
      * 按清单 ID 分组统计任务数
      *
      * @param userId 用户 ID
-     * @return [listId, count] 数组列表
+     * @return map 列表（key="key"=listId, key="value"=count）
      */
-    List<Object[]> countByUserIdGroupByListId(@Param("userId") Long userId);
+    List<Map<String, Object>> countByUserIdGroupByListId(@Param("userId") Long userId);
 
     /**
      * 统计指定日期之后创建的任务（按日期分组）
      *
      * @param userId 用户 ID
      * @param start  开始时间
-     * @return [date, count] 数组列表
+     * @return map 列表（key="key"=date, key="value"=count）
      */
-    List<Object[]> countCreatedByDateAfter(@Param("userId") Long userId, @Param("start") LocalDateTime start);
+    List<Map<String, Object>> countCreatedByDateAfter(@Param("userId") Long userId, @Param("start") LocalDateTime start);
 
     /**
      * 统计指定日期之后完成的任务（按日期分组）
      *
      * @param userId 用户 ID
      * @param start  开始时间
-     * @return [date, count] 数组列表
+     * @return map 列表（key="key"=date, key="value"=count）
      */
-    List<Object[]> countCompletedByDateAfter(@Param("userId") Long userId, @Param("start") LocalDateTime start);
+    List<Map<String, Object>> countCompletedByDateAfter(@Param("userId") Long userId, @Param("start") LocalDateTime start);
 
     // ── 批量操作 ──
 

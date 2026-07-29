@@ -163,16 +163,16 @@ export function renderMarkdown(text: string) {
  * 组合开始时间、截止时间、循环规则为一行摘要
  * 如："03/15 ~ 03/20 · 每天"
  */
-export function getTimeSummary(taskForm: Record<string, any>, editingTask: Record<string, any>) {
-  const hasStart = taskForm.startDate
-  const hasDue = taskForm.dueDate
+export function getTimeSummary(taskForm: Record<string, any> | undefined, editingTask: Record<string, any>) {
+  const hasStart = taskForm?.startDate
+  const hasDue = taskForm?.dueDate
   const hasRepeat = editingTask?.repeatRule
 
   if (!hasStart && !hasDue && !hasRepeat) return '时间'
 
   const parts: string[] = []
-  if (hasStart) parts.push(formatDateShort(taskForm.startDate))
-  if (hasDue) parts.push(formatDateShort(taskForm.dueDate))
+  if (hasStart) parts.push(formatDateShort(taskForm!.startDate))
+  if (hasDue) parts.push(formatDateShort(taskForm!.dueDate))
 
   let summary = parts.join(' ~ ')
 
@@ -188,16 +188,16 @@ export function getTimeSummary(taskForm: Record<string, any>, editingTask: Recor
  * 生成新建任务对话框中的时间摘要文本
  * 组合开始时间、截止时间、循环规则为一行摘要
  */
-export function getCreateTimeSummary(taskForm: Record<string, any>, repeatForm: Record<string, any>) {
-  const hasStart = taskForm.startDate
-  const hasDue = taskForm.dueDate
+export function getCreateTimeSummary(taskForm: Record<string, any> | undefined, repeatForm: Record<string, any>) {
+  const hasStart = taskForm?.startDate
+  const hasDue = taskForm?.dueDate
   const hasRepeat = repeatForm.type
 
   if (!hasStart && !hasDue && !hasRepeat) return '设置时间'
 
   const parts: string[] = []
-  if (hasStart) parts.push(formatDateShort(taskForm.startDate))
-  if (hasDue) parts.push(formatDateShort(taskForm.dueDate))
+  if (hasStart) parts.push(formatDateShort(taskForm!.startDate))
+  if (hasDue) parts.push(formatDateShort(taskForm!.dueDate))
   let summary = parts.join(' ~ ')
 
   if (hasRepeat) {

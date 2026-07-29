@@ -339,14 +339,14 @@
                     size="default"
                     class="meta-tag clickable"
                     :type="
-                      taskForm.startDate || taskForm.dueDate || editingTask?.repeatRule
+                      taskForm?.startDate || taskForm?.dueDate || editingTask?.repeatRule
                         ? 'warning'
                         : undefined
                     "
                     style="transition: none"
                   >
                     <el-icon><Calendar /></el-icon>
-                    {{ getTimeSummary() }}
+                    {{ getTimeSummary(taskForm, editingTask) }}
                   </el-tag>
                 </template>
                 <div style="padding: 4px 0">
@@ -675,7 +675,7 @@
               <el-tag
                 size="default"
                 :type="
-                  taskForm.startDate || taskForm.dueDate || repeatForm.type ? 'warning' : 'info'
+                  taskForm?.startDate || taskForm?.dueDate || repeatForm.type ? 'warning' : 'info'
                 "
                 style="cursor: pointer"
               >

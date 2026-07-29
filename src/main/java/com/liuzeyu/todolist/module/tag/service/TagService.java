@@ -177,6 +177,9 @@ public class TagService {
      */
     public List<Tag> getTaskTags(Long taskId) {
         List<Long> tagIds = taskTagMapper.findTagIdsByTaskId(taskId);
+        if (tagIds.isEmpty()) {
+            return List.of();
+        }
         return tagMapper.findAllByIds(tagIds);
     }
 

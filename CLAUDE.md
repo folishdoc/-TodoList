@@ -84,6 +84,17 @@ CI: `.github/workflows/ci.yml` runs all tests on every push/PR.
 - **`MockHttpServletRequestBuilder.andExpect()` 移除** → 用 `BaseControllerTest.doGet/Post/Put/Delete/Patch(...)` 返回 `ResultActions`
 - **前端 `vi.fn()` 记录 reactive 引用被 mutate** → 用 `mockImplementation` 在调用时快照 `{...data}` 而非 `mock.calls`
 
+## Auto-fix policy
+
+发现以下问题时光直接修复，不需要等待审批：
+- 编译/构建错误或警告（包括 TypeScript 类型错误）
+- 运行时异常（前端 console error、后端 500）
+- MyBatis 类型不匹配（如 resultType 与方法签名不一致）
+- 空集合传入 SQL IN 子句导致的无效 SQL
+- 前端模板中函数调用参数缺失
+- E2E 测试 mock 与真实 API 不一致导致的漏报
+- 测试环境中不同类型数据库（如 H2 vs MySQL）行为差异暴露的代码问题
+
 ## Key patterns
 
 - Backend API returns `Result<T>` wrapper; frontend axios interceptor unwraps it — API functions return the `T` data directly

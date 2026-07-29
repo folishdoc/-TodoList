@@ -47,7 +47,7 @@ public interface AnniversaryMapper {
      * @param userId 用户 ID
      * @return 纪念日列表
      */
-    @Select("SELECT * FROM anniversaries WHERE user_id = #{userId} AND remind_enabled = 1")
+    @Select("SELECT * FROM anniversaries WHERE user_id = #{userId} AND remind_enabled IS TRUE")
     List<Anniversary> findRemindEnabledByUserId(Long userId);
 
     /**

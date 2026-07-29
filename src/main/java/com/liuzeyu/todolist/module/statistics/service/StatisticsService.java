@@ -42,11 +42,11 @@ public class StatisticsService {
         long pendingTasks = totalTasks - completedTasks;
         double completionRate = totalTasks > 0 ? (completedTasks * 100.0 / totalTasks) : 0;
 
-        List<Object[]> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
+        List<Map<String, Object>> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
         long highPriority = 0, mediumPriority = 0, lowPriority = 0;
-        for (Object[] row : priorityCounts) {
-            Integer priority = (Integer) row[0];
-            Long count = (Long) row[1];
+        for (Map<String, Object> row : priorityCounts) {
+            Integer priority = (Integer) row.get("key");
+            Long count = (Long) row.get("value");
             if (priority == 3) highPriority = count;
             else if (priority == 2) mediumPriority = count;
             else if (priority == 1) lowPriority = count;
@@ -76,11 +76,11 @@ public class StatisticsService {
      */
     public List<TaskDistribution> getTasksByList(Long userId) {
         List<TaskList> lists = taskListMapper.findByUserId(userId);
-        List<Object[]> countByList = taskMapper.countByUserIdGroupByListId(userId);
+        List<Map<String, Object>> countByList = taskMapper.countByUserIdGroupByListId(userId);
 
         java.util.Map<Long, Long> countMap = new java.util.HashMap<>();
-        for (Object[] row : countByList) {
-            countMap.put((Long) row[0], (Long) row[1]);
+        for (Map<String, Object> row : countByList) {
+            countMap.put((Long) row.get("key"), (Long) row.get("value"));
         }
 
         List<TaskDistribution> distributions = new ArrayList<>();
@@ -108,12 +108,12 @@ public class StatisticsService {
      * @return 分布列表
      */
     public List<TaskDistribution> getTasksByPriority(Long userId) {
-        List<Object[]> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
+        List<Map<String, Object>> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
 
         List<TaskDistribution> distributions = new ArrayList<>();
-        for (Object[] row : priorityCounts) {
-            Integer priority = (Integer) row[0];
-            Long count = (Long) row[1];
+        for (Map<String, Object> row : priorityCounts) {
+            Integer priority = (Integer) row.get("key");
+            Long count = (Long) row.get("value");
             if (priority == 3 && count > 0) distributions.add(new TaskDistribution("高优先级", count, "#FF6B6B"));
             else if (priority == 2 && count > 0) distributions.add(new TaskDistribution("中优先级", count, "#4ECDC4"));
             else if (priority == 1 && count > 0) distributions.add(new TaskDistribution("低优先级", count, "#45B7D1"));
@@ -136,18 +136,20 @@ public class StatisticsService {
         LocalDate startDate = endDate.minusDays(days - 1);
         LocalDateTime startDateTime = startDate.atStartOfDay();
 
-        List<Object[]> createdRaw = taskMapper.countCreatedByDateAfter(userId, startDateTime);
-        List<Object[]> completedRaw = taskMapper.countCompletedByDateAfter(userId, startDateTime);
+        List<Map<String, Object>> createdRaw = taskMapper.countCreatedByDateAfter(userId, startDateTime);
+        List<Map<String, Object>> completedRaw = taskMapper.countCompletedByDateAfter(userId, startDateTime);
 
         java.util.Map<LocalDate, Long> createdMap = new java.util.HashMap<>();
-        for (Object[] row : createdRaw) {
-            LocalDate date = row[0] instanceof java.sql.Date ? ((java.sql.Date) row[0]).toLocalDate() : (LocalDate) row[0];
-            createdMap.put(date, (Long) row[1]);
+        for (Map<String, Object> row : createdRaw) {
+            Object key = row.get("key");
+            LocalDate date = key instanceof java.sql.Date ? ((java.sql.Date) key).toLocalDate() : (LocalDate) key;
+            createdMap.put(date, (Long) row.get("value"));
         }
         java.util.Map<LocalDate, Long> completedMap = new java.util.HashMap<>();
-        for (Object[] row : completedRaw) {
-            LocalDate date = row[0] instanceof java.sql.Date ? ((java.sql.Date) row[0]).toLocalDate() : (LocalDate) row[0];
-            completedMap.put(date, (Long) row[1]);
+        for (Map<String, Object> row : completedRaw) {
+            Object key = row.get("key");
+            LocalDate date = key instanceof java.sql.Date ? ((java.sql.Date) key).toLocalDate() : (LocalDate) key;
+            completedMap.put(date, (Long) row.get("value"));
         }
 
         List<DailyTaskStats> trend = new ArrayList<>();
