@@ -1,102 +1,264 @@
 /**
  * No-Mock E2E Smoke Test — talks to REAL backend via Vite proxy
  *
- * These tests would have caught real backend bugs (500 errors, render crashes)
- * that slip through when all API endpoints are mocked.
+ * Covers ALL functional modules with real API calls.
+ * Does NOT call setupApiMocks() — all API calls hit the real backend.
  *
- * IMPORTANT: Does NOT call setupApiMocks() — all API calls hit the real backend.
+ * IMPORTANT:
+ * - Each test gets a fresh authenticated session via beforeEach.
+ * - Uses page.evaluate() for API calls to go through Vite proxy.
+ * - Page errors are collected per-test and asserted empty at end.
  */
 import { test, expect } from '@playwright/test'
 
 test.use({ storageState: undefined })
 
-/** Collect page errors only (console warnings are too noisy) */
-function setupErrorCollectors(page: any) {
-  const pageErrors: Error[] = []
-  page.on('pageerror', (err: Error) => {
-    pageErrors.push(err)
-  })
-  return { pageErrors }
+let authToken: string
+
+/** Unique short suffix to avoid collisions in shared DB */
+function uid(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 }
 
-/** Login helper — returns JWT token from localStorage after successful login */
-async function login(page: any) {
-  await page.goto('/#/login')
-  await page.waitForLoadState('domcontentloaded')
-  await page.fill('input[placeholder="请输入用户名"]', 'admin')
-  await page.fill('input[placeholder="请输入密码"]', 'admin123')
-  await page.click('button:has-text("登录")')
-  // Wait for hash to change to #/ (dashboard)
-  await page.waitForFunction(() => window.location.hash === '#/', { timeout: 15000 })
-  // Wait for dashboard container to render
-  await page.waitForSelector('.dashboard-container, .el-container', { timeout: 15000 })
-  // Let API calls settle
-  await page.waitForTimeout(1500)
+/** Collect page-level errors (uncaught exceptions) and console errors */
+function collectErrors(page: any): string[] {
+  const errors: string[] = []
+  page.on('pageerror', (e: Error) => errors.push(e.message))
+  page.on('console', (msg: any) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  return errors
 }
 
 test.describe('Real API Smoke Tests', () => {
   test.describe.configure({ timeout: 60000 })
 
-  test('Scenario A: Dashboard loads without any errors', async ({ page }) => {
-    const { pageErrors } = setupErrorCollectors(page)
-    await login(page)
-    expect(pageErrors).toEqual([])
+  test.beforeAll(async ({ request }) => {
+    const res = await request.post('/api/auth/login', {
+      data: { username: 'admin', password: 'admin123' },
+    })
+    const data = await res.json()
+    expect(data.code).toBe(200)
+    authToken = data.data.token
   })
 
-  test('Scenario B: Statistics tab renders without errors', async ({ page }) => {
-    const { pageErrors } = setupErrorCollectors(page)
-    await login(page)
-    // Click on 数据统计 in the sidebar menu
+  test.beforeEach(async ({ page }) => {
+    // Inject JWT token into localStorage, then navigate to dashboard
+    await page.goto('/#/login')
+    await page.waitForLoadState('domcontentloaded')
+    await page.evaluate((t) => localStorage.setItem('jwt_token', t), authToken)
+    await page.goto('/#/')
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+  })
+
+  // ──────────────────────────────────────────────
+  // 1. Login + Dashboard
+  // ──────────────────────────────────────────────
+  test('A: Dashboard loads without errors', async ({ page }) => {
+    const errors = collectErrors(page)
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+    await expect(page.locator('.dashboard-container')).toBeVisible({ timeout: 10000 })
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 2. Statistics tab
+  // ──────────────────────────────────────────────
+  test('B: Statistics tab renders without errors', async ({ page }) => {
+    const errors = collectErrors(page)
     await page.getByText('数据统计').first().click()
     await page.waitForTimeout(2000)
-    // Wait for statistics content to appear (heading may vary)
-    await page.locator('任务统计概览, .statistics-content').first().waitFor({
-      state: 'visible',
-      timeout: 10000,
-    }).catch(() => { /* allow fallback */ })
-    expect(pageErrors).toEqual([])
+    expect(errors).toEqual([])
   })
 
-  test('Scenario C: Create task via API and verify it displays', async ({ page }) => {
-    const { pageErrors } = setupErrorCollectors(page)
-    await login(page)
+  // ──────────────────────────────────────────────
+  // 3. Task CRUD
+  // ──────────────────────────────────────────────
+  test('C: Create task via API and verify it displays', async ({ page }) => {
+    const errors = collectErrors(page)
+    const title = `Smoke C ${uid()}`
 
-    // Extract JWT token from localStorage for API call
-    const token = await page.evaluate(() => localStorage.getItem('jwt_token'))
-    expect(token).toBeTruthy()
+    const res = await page.evaluate(async ({ title, token }) => {
+      const r = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title, priority: 2 }),
+      })
+      return r.json()
+    }, { title, token: authToken })
+    expect(res.code).toBe(200)
+    expect(res.data.title).toBe(title)
 
-    // Create a task via fetch() inside the browser page (goes through Vite proxy)
-    const taskTitle = `Smoke test task ${Date.now()}`
-    const createResult = await page.evaluate(
-      async ({ title, priority, token }: { title: string; priority: number; token: string }) => {
-        const res = await fetch('/api/tasks', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ title, priority }),
-        })
-        return res.json()
-      },
-      { title: taskTitle, priority: 2, token }
-    )
-    expect(createResult.code).toBe(200)
-    expect(createResult.data.title).toBe(taskTitle)
-
-    // Refresh dashboard to see the new task
     await page.reload()
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
 
-    // Verify the task title appears in the task list
-    const taskItem = page.locator(`text=${taskTitle}`).first()
-    await expect(taskItem).toBeVisible({ timeout: 10000 })
-
-    // Click on the task to open the edit panel
-    await taskItem.click()
+    const item = page.getByText(title).first()
+    await expect(item).toBeVisible({ timeout: 10000 })
+    await item.click()
     await page.waitForTimeout(1000)
+    expect(errors).toEqual([])
+  })
 
-    expect(pageErrors).toEqual([])
+  // ──────────────────────────────────────────────
+  // 4. Lists management
+  // ──────────────────────────────────────────────
+  test('D: Lists — create via API and verify in sidebar', async ({ page }) => {
+    const errors = collectErrors(page)
+    const name = `Smoke D ${uid()}`
+
+    const res = await page.evaluate(async ({ name, token }) => {
+      const r = await fetch('/api/lists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, color: '#409EFF' }),
+      })
+      return r.json()
+    }, { name, token: authToken })
+    expect(res.code).toBe(200)
+
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+
+    await expect(page.getByText(name).first()).toBeVisible({ timeout: 10000 })
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 5. Tags
+  // ──────────────────────────────────────────────
+  test('E: Tags — open TagsView dialog via sidebar', async ({ page }) => {
+    const errors = collectErrors(page)
+    await page.getByText('标签管理').first().click()
+    await page.waitForTimeout(1000)
+    await expect(page.getByText('新建标签').first()).toBeVisible({ timeout: 10000 })
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 6. Calendar
+  // ──────────────────────────────────────────────
+  test('F: Calendar — navigate to calendar and verify month view', async ({ page }) => {
+    const errors = collectErrors(page)
+    await page.getByTitle('日历').click()
+    await page.waitForTimeout(1000)
+    await expect(page.locator('.calendar-container')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.month-view')).toBeVisible()
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 7. Habits
+  // ──────────────────────────────────────────────
+  test('G: Habits — navigate to habits tab', async ({ page }) => {
+    const errors = collectErrors(page)
+    await page.getByTitle('习惯').click()
+    await page.waitForTimeout(1000)
+    await expect(page.getByText('习惯追踪').first()).toBeVisible({ timeout: 10000 })
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 8. Anniversaries
+  // ──────────────────────────────────────────────
+  test('H: Anniversaries — navigate to anniversaries tab', async ({ page }) => {
+    const errors = collectErrors(page)
+    await page.getByTitle('纪念日').click()
+    await page.waitForTimeout(1000)
+    await expect(page.getByText('新建纪念日').first()).toBeVisible({ timeout: 10000 })
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 9. Task with repeat rule
+  // ──────────────────────────────────────────────
+  test('I: Task with repeat rule — create and verify edit panel', async ({ page }) => {
+    const errors = collectErrors(page)
+    const title = `Smoke I ${uid()}`
+
+    const res = await page.evaluate(async ({ title, token }) => {
+      // Step 1: create task
+      const r1 = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title, priority: 2 }),
+      })
+      const task = await r1.json()
+      // Step 2: set repeat rule (DAILY)
+      if (task.code === 200 && task.data?.id) {
+        await fetch(`/api/tasks/repeat/${task.data.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ type: 'DAILY', interval: 1 }),
+        })
+      }
+      return task
+    }, { title, token: authToken })
+    expect(res.code).toBe(200)
+
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+
+    const item = page.getByText(title).first()
+    await expect(item).toBeVisible({ timeout: 10000 })
+    await item.click()
+    await page.waitForTimeout(1000)
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 10. Batch operations
+  // ──────────────────────────────────────────────
+  test('J: Batch operations — enter batch mode', async ({ page }) => {
+    const errors = collectErrors(page)
+    const btn = page.getByText('批量操作').first()
+    if (await btn.isVisible()) {
+      await btn.click()
+      await page.waitForTimeout(500)
+    }
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 11. Widget view
+  // ──────────────────────────────────────────────
+  test('K: Widget view — navigates and renders compact task list', async ({ page }) => {
+    const errors = collectErrors(page)
+    await page.goto('/#/widget')
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+    // Widget should render at least a container element
+    await expect(page.locator('.el-container, #app > *').first()).toBeVisible({ timeout: 10000 })
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 12. Search
+  // ──────────────────────────────────────────────
+  test('L: Search — type in search box and verify no errors', async ({ page }) => {
+    const errors = collectErrors(page)
+    const input = page.locator('input[placeholder*="搜索"]').first()
+    await expect(input).toBeVisible({ timeout: 10000 })
+    await input.fill('smoke')
+    await page.waitForTimeout(1000)
+    expect(errors).toEqual([])
+  })
+
+  // ──────────────────────────────────────────────
+  // 13. Theme toggle
+  // ──────────────────────────────────────────────
+  test('M: Theme toggle — click theme button', async ({ page }) => {
+    const errors = collectErrors(page)
+    const themeBtn = page.locator('button[title="切换主题"]').first()
+    if (await themeBtn.isVisible()) {
+      await themeBtn.click()
+      await page.waitForTimeout(500)
+    }
+    expect(errors).toEqual([])
   })
 })

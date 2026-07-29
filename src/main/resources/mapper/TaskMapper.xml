@@ -115,17 +115,17 @@
     </select>
 
     <select id="countCreatedByDateAfter" resultType="java.util.HashMap">
-        SELECT DATE(created_at) as "key", COUNT(*) as "value"
+        SELECT CAST(created_at AS DATE) as "key", COUNT(*) as "value"
         FROM tasks
         WHERE user_id = #{userId} AND created_at &gt;= #{start}
-        GROUP BY DATE(created_at)
+        GROUP BY CAST(created_at AS DATE)
     </select>
 
     <select id="countCompletedByDateAfter" resultType="java.util.HashMap">
-        SELECT DATE(completed_at) as "key", COUNT(*) as "value"
+        SELECT CAST(completed_at AS DATE) as "key", COUNT(*) as "value"
         FROM tasks
         WHERE user_id = #{userId} AND completed_at &gt;= #{start}
-        GROUP BY DATE(completed_at)
+        GROUP BY CAST(completed_at AS DATE)
     </select>
 
     <!-- ===== 批量操作 ===== -->
