@@ -19,10 +19,19 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] }
     }
   ],
-  webServer: {
-    command: 'npm run dev -- --port 5180 --strictPort',
-    url: 'http://localhost:5180',
-    reuseExistingServer: true,
-    timeout: 60000
-  }
+  webServer: [
+    {
+      command: 'npm run dev -- --port 5180 --strictPort',
+      url: 'http://localhost:5180',
+      reuseExistingServer: true,
+      timeout: 60000
+    },
+    {
+      command: './mvnw spring-boot:run',
+      port: 18080,
+      cwd: '..',
+      reuseExistingServer: true,
+      timeout: 120000
+    }
+  ]
 })
