@@ -830,7 +830,6 @@ import {
   Flag,
   Bell,
   Switch as SwitchIcon,
-  MagicStick,
 } from '@element-plus/icons-vue'
 import * as anniversaryApi from '../api/anniversary'
 import { getPriorityType, getPriorityText } from '../composables/usePriority'
@@ -900,7 +899,7 @@ const {
   handleMainContentClick, closeEditPanel, autoSave,
   handlePriorityChange, handleListChange, getSelectedListName: getSelectedListNameFromCmp,
   handleSubmitTask, handleCompleteTask,
-  resetRepeatForm, onRepeatTypeChange, onModeChange,
+  resetTaskForm, resetRepeatForm, onRepeatTypeChange, onModeChange,
   handleAddRepeatInPanel, handleUpdateRepeatEndDate, handleCancelRepeat,
 } = taskEdit
 
@@ -929,6 +928,7 @@ const getSelectedListName = () => getSelectedListNameFromCmp(taskLists.value)
 const aiTaskInputRef = ref<InstanceType<typeof AiTaskInput> | null>(null)
 
 function handleAiConfirm(data: ParsedTask) {
+  resetTaskForm()
   if (data.title) taskForm.title = data.title
   if (data.description) taskForm.description = data.description
   if (data.priority) taskForm.priority = data.priority
