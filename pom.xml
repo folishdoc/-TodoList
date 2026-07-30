@@ -140,6 +140,18 @@
 
         <!-- H2 在 runtime scope 中已包含，测试也可用 -->
 
+        <!-- LangChain4j AI 任务解析 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai-spring-boot4-starter</artifactId>
+            <version>1.18.1-beta28</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-spring-boot4-starter</artifactId>
+            <version>1.18.1-beta28</version>
+        </dependency>
+
         <!-- Testcontainers -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -182,6 +182,10 @@
                       <el-icon><Plus /></el-icon>
                       新建任务
                     </el-button>
+                    <el-button @click="aiTaskInputRef?.open()">
+                      <el-icon><MagicStick /></el-icon>
+                      AI 录入
+                    </el-button>
                   </template>
                 </div>
               </div>
@@ -864,6 +868,9 @@
       </template>
     </el-dialog>
 
+    <!-- AI 智能录入 -->
+    <AiTaskInput ref="aiTaskInputRef" @confirm="handleAiConfirm" />
+
     <!-- 创建清单对话框 -->
     <el-dialog v-model="showCreateListDialog" title="新建清单" width="400px">
       <el-form :model="listForm" :rules="listRules" ref="listFormRef" label-width="60px">
@@ -915,6 +922,7 @@ import {
   Flag,
   Bell,
   Switch as SwitchIcon,
+  MagicStick,
 } from '@element-plus/icons-vue'
 import * as anniversaryApi from '../api/anniversary'
 import { isOverdue } from '../composables/useDateUtils'
@@ -934,7 +942,9 @@ import TagsView from '../components/TagsView.vue'
 import CalendarView from '../components/CalendarView.vue'
 import HabitsView from '../components/HabitsView.vue'
 import AnniversaryList from '../components/AnniversaryList.vue'
+import AiTaskInput from '../components/AiTaskInput.vue'
 import type { Task, TaskList, Tag } from '../types'
+import type { ParsedTask } from '../api/ai'
 
 // ── 导航状态 ──
 const currentModule = ref('tasks') // 当前模块: tasks, calendar, habits, anniversaries
@@ -1003,6 +1013,19 @@ const {
 const handleDeleteList = (list: TaskList) => handleDeleteListFromCmp(list, activeMenu, (v: string) => { activeMenu.value = v }, loadTasks)
 // Wrapper: template calls getSelectedListName() with no args, composable expects taskLists parameter
 const getSelectedListName = () => getSelectedListNameFromCmp(taskLists.value)
+
+// ── AI 智能录入 ──
+const aiTaskInputRef = ref<InstanceType<typeof AiTaskInput> | null>(null)
+
+function handleAiConfirm(data: ParsedTask) {
+  if (data.title) taskForm.title = data.title
+  if (data.description) taskForm.description = data.description
+  if (data.priority) taskForm.priority = data.priority
+  if (data.dueDate) taskForm.dueDate = data.dueDate
+  if (data.startDate) taskForm.startDate = data.startDate
+  // 打开新建任务对话框让用户确认
+  openCreateTaskDialog()
+}
 
 const batchOps = useBatchOps(tasks)
 const {
