@@ -892,7 +892,7 @@ const handleDeleteTask = (task: Task) => handleDeleteTaskFromCmp(task, showUndo,
 const taskEdit = useTaskEdit(loadTasks, emitTaskChanged)
 const {
   editingTask, showCreateTaskDialog, submitLoading, descriptionPreview,
-  taskForm, taskTags, selectedTagIds,
+  taskForm, taskFormRef, taskTags, selectedTagIds,
   repeatForm, editRepeatEndDate, showRepeatForm, taskTimeMode,
   datePickerFormat, taskRules,
   openCreateTaskDialog, handleEditTask, handleCalendarTaskClick,
@@ -905,6 +905,8 @@ const {
 
 // 暴露 closeEditPanel 给测试，内部未被模板直接引用
 void closeEditPanel
+// taskFormRef 被 el-form ref="taskFormRef" 引用，void 避免 TS6133 误判
+void taskFormRef
 
 const {
   addSubtask, removeSubtask, handleSubtaskEnter,
