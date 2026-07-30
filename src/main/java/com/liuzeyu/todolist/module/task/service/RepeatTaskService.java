@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
-import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.dto.RepeatRule;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
@@ -32,11 +31,13 @@ import java.util.List;
 public class RepeatTaskService {
 
     private final TaskMapper taskMapper;
+    private final TaskService taskService;
     private final ObjectMapper objectMapper;
     private LocalDate lastGenerateDate = null;
 
-    public RepeatTaskService(TaskMapper taskMapper) {
+    public RepeatTaskService(TaskMapper taskMapper, TaskService taskService) {
         this.taskMapper = taskMapper;
+        this.taskService = taskService;
         this.objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -58,8 +59,9 @@ public class RepeatTaskService {
         }
 
         log.info("开始定时生成重复任务...");
-        
+
         LocalDateTime now = LocalDateTime.now();
+        // 系统级定时任务，无用户上下文，直接访问 Mapper 是有意为之
         List<Task> allTasks = taskMapper.findAll();
         
         int generatedCount = 0;
@@ -226,39 +228,37 @@ public class RepeatTaskService {
     /**
      * 为任务设置重复规则
      *
+     * @param userId 用户 ID
      * @param taskId 任务 ID
      * @param rule   重复规则（序列化为 JSON 存储）
      * @throws JsonProcessingException JSON 序列化失败
      */
     @Transactional
-    public void setRepeatRule(Long taskId, RepeatRule rule) throws JsonProcessingException {
-        Task task = taskMapper.findById(taskId);
-        if (task == null) {
-            throw new BusinessException(404, "任务不存在");
-        }
-        
+    public void setRepeatRule(Long userId, Long taskId, RepeatRule rule) throws JsonProcessingException {
+        // 通过 TaskService 查找任务，自带权限校验
+        Task task = taskService.getTask(userId, taskId);
+
         String ruleJson = objectMapper.writeValueAsString(rule);
         task.setRepeatRule(ruleJson);
         taskMapper.update(task);
-        
+
         log.info("设置重复规则: taskId={}, rule={}", taskId, rule.getType());
     }
 
     /**
      * 取消任务的重复规则
      *
+     * @param userId 用户 ID
      * @param taskId 任务 ID
      */
     @Transactional
-    public void cancelRepeatRule(Long taskId) {
-        Task task = taskMapper.findById(taskId);
-        if (task == null) {
-            throw new BusinessException(404, "任务不存在");
-        }
-        
+    public void cancelRepeatRule(Long userId, Long taskId) {
+        // 通过 TaskService 查找任务，自带权限校验
+        Task task = taskService.getTask(userId, taskId);
+
         task.setRepeatRule(null);
         taskMapper.update(task);
-        
+
         log.info("取消重复规则: taskId={}", taskId);
     }
 }

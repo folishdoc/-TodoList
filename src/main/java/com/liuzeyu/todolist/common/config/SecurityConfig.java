@@ -1,26 +1,16 @@
 package com.liuzeyu.todolist.common.config;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.liuzeyu.todolist.common.filter.JwtAuthenticationFilter;
 import com.liuzeyu.todolist.common.util.JwtUtil;
-import java.io.IOException;
-import java.util.ArrayList;
-
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -59,60 +49,32 @@ public class SecurityConfig {
     }
 
     /**
+     * JWT 认证过滤器 Bean — 由 SecurityConfig 管理，避免自动注册为全局 servlet 过滤器。
+     * <p>
+     * 通过 {@link #securityFilterChain(HttpSecurity, JwtAuthenticationFilter)} 的 {@code addFilterBefore}
+     * 注册到 Spring Security 过滤器链中，不会干扰 {@code @WebMvcTest} 切片测试。
+     *
+     * @param jwtUtil       JWT 工具类
+     * @param personalToken 个人令牌（单用户模式）
+     * @return JWT 认证过滤器实例
+     */
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtil jwtUtil,
+            @Value("${app.personal.token}") String personalToken) {
+        return new JwtAuthenticationFilter(jwtUtil, personalToken);
+    }
+
+    /**
      * 构建 SecurityFilterChain：配置路由权限 + JWT 过滤器
      *
-     * @param http    HttpSecurity 构建器
-     * @param jwtUtil JWT 工具类，用于解析令牌
+     * @param http               HttpSecurity 构建器
+     * @param jwtFilter          提取为独立类的 JWT 认证过滤器
      * @return 配置完成的 SecurityFilterChain
      * @throws Exception 配置异常
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtUtil jwtUtil,
-            @Value("${app.personal.token}") String personalToken) throws Exception {
-        OncePerRequestFilter jwtFilter = new OncePerRequestFilter() {
-            @Override
-            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-                    throws ServletException, IOException {
-                String path = request.getRequestURI();
-                // /api/auth/** 路径不需要 JWT 检查（登录、刷新令牌等）
-                if (path.startsWith("/api/auth/")) {
-                    chain.doFilter(request, response);
-                    return;
-                }
-
-                String authHeader = request.getHeader("Authorization");
-                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                    response.setStatus(401);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"code\":401,\"message\":\"Missing or invalid token\"}");
-                    return;
-                }
-                String token = authHeader.substring(7);
-
-                Long userId;
-                // 单用户模式：personal token 直接映射到 userId=1（留空 = 禁用，强制 JWT）
-                if (personalToken != null && !personalToken.isEmpty() && personalToken.equals(token)) {
-                    userId = 1L;
-                } else {
-                    try {
-                        userId = jwtUtil.getUserIdFromToken(token);
-                    } catch (Exception e) {
-                        response.setStatus(401);
-                        response.setContentType("application/json");
-                        response.getWriter().write("{\"code\":401,\"message\":\"Invalid or expired token\"}");
-                        return;
-                    }
-                }
-
-                // 将 userId 注入 SecurityContext，Controller 通过 @AuthenticationPrincipal 获取
-                UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                chain.doFilter(request, response);
-            }
-        };
-
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+            JwtAuthenticationFilter jwtFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -1,6 +1,7 @@
 package com.liuzeyu.todolist.module.auth.controller;
 
 import com.liuzeyu.todolist.common.exception.BusinessException;
+import com.liuzeyu.todolist.module.auth.dto.LoginResponse;
 import com.liuzeyu.todolist.module.auth.service.AuthService;
 import com.liuzeyu.todolist.support.BaseControllerTest;
 import org.junit.jupiter.api.DisplayName;

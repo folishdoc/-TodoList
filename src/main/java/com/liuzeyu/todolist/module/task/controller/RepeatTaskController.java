@@ -38,7 +38,7 @@ public class RepeatTaskController {
             @PathVariable Long taskId,
             @RequestBody RepeatRule rule) {
         try {
-            repeatTaskService.setRepeatRule(taskId, rule);
+            repeatTaskService.setRepeatRule(userId, taskId, rule);
             return Result.success(null);
         } catch (JsonProcessingException e) {
             return Result.error("设置重复规则失败: " + e.getMessage());
@@ -57,7 +57,7 @@ public class RepeatTaskController {
     public Result<Void> cancelRepeatRule(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long taskId) {
-        repeatTaskService.cancelRepeatRule(taskId);
+        repeatTaskService.cancelRepeatRule(userId, taskId);
         return Result.success(null);
     }
 

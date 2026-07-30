@@ -22,11 +22,6 @@ const pinia = createPinia()
 // 从 localStorage 读取并应用已保存的主题（light/dark）
 initTheme()
 
-// 注册页面关闭监听器（开发环境）- 已禁用以避免意外关闭
-// if (import.meta.env.DEV) {
-//   registerShutdownListener()
-// }
-
 // 将所有 Element Plus 图标注册为全局组件，以便在模板中直接通过 <icon-name> 使用
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)

@@ -16,7 +16,7 @@ class RepeatTaskControllerTest extends BaseControllerTest {
     @Test
     @DisplayName("POST /api/tasks/repeat/{taskId} - set repeat rule")
     void setRepeat_succeeds() throws Exception {
-        doNothing().when(repeatTaskService).setRepeatRule(eq(1L), any(RepeatRule.class));
+        doNothing().when(repeatTaskService).setRepeatRule(eq(1L), eq(1L), any(RepeatRule.class));
 
         mockMvc.perform(authPost("/api/tasks/repeat/{taskId}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -27,7 +27,7 @@ class RepeatTaskControllerTest extends BaseControllerTest {
     @Test
     @DisplayName("DELETE /api/tasks/repeat/{taskId} - cancel repeat")
     void cancelRepeat_succeeds() throws Exception {
-        doNothing().when(repeatTaskService).cancelRepeatRule(1L);
+        doNothing().when(repeatTaskService).cancelRepeatRule(eq(1L), eq(1L));
 
         doDelete("/api/tasks/repeat/{taskId}", 1L)
                 .andExpect(status().isOk());

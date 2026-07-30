@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Personal todolist application — Spring Boot 4.0.6 (Java 17, JPA/Hibernate, MySQL 8.0) backend + Vue 3/TypeScript/Vite/Element Plus frontend. Single-user mode: no login, uses a hardcoded personal JWT token.
+Personal todolist application — Spring Boot 4.0.6 (Java 17, MyBatis, MySQL 8.0) backend + Vue 3/TypeScript/Vite/Element Plus frontend. Supports personal JWT token (single-user mode via env var) and username/password login flow.
 
 ## Commands
 
@@ -47,34 +47,41 @@ CI: `.github/workflows/ci.yml` runs all tests on every push/PR.
 
 ### Backend (`src/main/java/com/liuzeyu/todolist/`)
 
-- **`common/`** — Cross-cutting: `Result<T>` unified response (`{code, message, data}`), `JwtAuthenticationFilter` extracts `@AuthenticationPrincipal Long userId`, `SecurityConfig` (stateless JWT, CORS allowed), `GlobalExceptionHandler`
-- **`module/task/`** — Core tasks CRUD. `Task` entity has `parentId` for subtask hierarchy (flat storage, tree built in frontend). Also: batch operations, file attachments, repeat rules
+- **`common/`** — Cross-cutting: `Result<T>` unified response (`{code, message, data}`), `PageResult`, `BusinessException`, `GlobalExceptionHandler`, `JwtUtil`, `SecurityConfig` (stateless JWT, CORS allowed, `JwtAuthenticationFilter` (in `common/filter/`) for auth)
+- **`module/auth/`** — Authentication: `AuthController` (login/register), `AuthService`, `User` entity, `UserMapper`, `DataInitializer` (creates initial admin user on startup)
+- **`module/task/`** — Core tasks CRUD. `Task` entity has `parentId` for subtask hierarchy (flat storage, tree built in frontend). Also: batch operations, repeat rules
 - **`module/list/`** — Task lists/groups
 - **`module/tag/`** — Tag management with `TaskTag` join table
 - **`module/anniversary/`** — Anniversary/memorial day tracking. `AnniversaryReminderService` runs `@Scheduled(cron = "0 * * * * ?")` to check reminders. Reminder dedup via `ReminderLog` table
 - **`module/habit/`** — Habit tracking with daily `HabitRecord`
 - **`module/statistics/`** — Dashboard statistics
-- **`module/export/`** — CSV/JSON export
-- **`module/reminder/`** — Legacy reminder service
 
-**Auth**: `SecurityConfig` requires auth on all endpoints except `/api/auth/**` and Swagger. The `JwtAuthenticationFilter` checks for a personal token (`app.personal.token=dev-personal-token-2026-secure-key`) which maps directly to `userId=1L`. Controllers inject the user via `@AuthenticationPrincipal Long userId`.
+**Auth**: `SecurityConfig` requires auth on all endpoints except `/api/auth/**` and Swagger. `JwtAuthenticationFilter` (in `common/filter/`) checks for a personal token (`app.personal.token` via `${PERSONAL_TOKEN:}` env var, maps to `userId=1L`) or a valid JWT from login. Controllers inject the user via `@AuthenticationPrincipal Long userId`.
 
-**Database**: JPA `ddl-auto=update` manages schema. SQL migration files in `database/` are for reference/initial setup only.
+**Database**: MyBatis mappers (`@Mapper` + annotated SQL) handle data access. Schema managed manually via `database/init.sql` (for reference/initial setup). No JPA/Hibernate, no Flyway/Liquibase.
 
 ### Frontend (`todolist-frontend/src/`)
 
-- **Single-page app**: `App.vue` is just `<router-view/>`. The only route is `/` → `Dashboard.vue`
-- **`Dashboard.vue`** (~2432 lines) — The entire application shell. Contains task list views (today/upcoming/list-X/calendar/statistics/habits/anniversaries tabs), task edit panel, subtask rendering. Loads tasks flat via `getTasks({size:1000})` and builds tree in frontend
-- **`components/CalendarView.vue`** (~800 lines) — Multi-mode calendar: month, week, daybar, bar. Uses pointer events for drag-based time editing. Custom grid layout
-- **`components/AnniversaryList.vue`** — Anniversary CRUD with countdown display
+- **Router** (`router/index.ts`) — Three routes: `/login` -> `Login.vue`, `/` -> `Dashboard.vue`, `/widget` -> `WidgetView.vue` (Tauri desktop embed)
+- **`views/Dashboard.vue`** (~1500 lines) — Main application shell. Contains task list views (today/upcoming/list-X/calendar/statistics/habits/anniversaries tabs), task edit panel coordination, subtask rendering. Loads tasks flat via `getTasks({size:1000})` and builds tree in frontend. Logic delegated to `composables/`
+- **`views/WidgetView.vue`** (~900 lines) — Tauri desktop widget view with standalone task management
+- **`views/Login.vue`** — Login/register page
+- **`composables/`** — 24 composable files extracting business logic from Dashboard: `useTaskEdit`/`useTaskCrud`/`useTaskSync`/`useSubtasks`/`useTags`/`useLists`/`useReminders`/`useBatchOps`/`useRepeatRule`/`useCalendarView`/`useCalendarGrid`/`useCalendarDrag`/`useDateUtils`/`useTimeUtils` etc.
+- **`components/TaskEditPanel.vue`** (~830 lines) — Task edit panel (extracted from Dashboard)
+- **`components/TaskListView.vue`** (~390 lines) — Task list rendering (extracted from Dashboard: list items, subtask tree, batch selection)
+- **`components/CalendarView.vue`** (~600 lines) — Multi-mode calendar: month, week, daybar, bar. Uses pointer events for drag-based time editing. Custom grid layout
 - **`components/HabitsView.vue`** — Habit tracking UI
+- **`components/AnniversaryList.vue`** — Anniversary CRUD with countdown display
 - **`components/StatisticsView.vue`** — Charts and stats
-- **`components/SubtasksView.vue`** — Subtask rendering in edit panel
 - **`components/TagsView.vue`** — Tag management dialog
+- **`components/TitleBar.vue`** — Custom title bar for Tauri desktop
 - **`api/`** — One file per backend module; all use the shared `request.ts` axios instance
 - **`utils/request.ts`** — Axios instance (`baseURL: http://localhost:8080/api`), injects Bearer token, unwraps `Result<T>` (checks `code === 200`, returns `res.data`)
-- **`stores/user.ts`** — Pinia store, statically returns default user (no real auth flow)
+- **`utils/jwt.ts`** — JWT decode/expiry check for frontend auth guard
+- **`utils/date.ts`** — Local date formatting for API params
 - **`utils/theme.ts`** — Light/dark theme toggle via CSS class on `<html>`
+- **`stores/auth.ts`** — Pinia store for auth state (token, user)
+- **`types/index.ts`** — Shared TypeScript type definitions
 - **`styles/dark-theme.css`** — Dark theme CSS variable overrides
 
 ## Spring 7 / Vitest 4 适配要点

@@ -1,4 +1,4 @@
-package com.liuzeyu.todolist.common.config;
+package com.liuzeyu.todolist.module.auth.config;
 
 import com.liuzeyu.todolist.module.auth.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -36,4 +36,3 @@ public class DataInitializer implements CommandLineRunner {
         log.info("默认管理员账号已创建: admin / admin123");
     }
 }
-

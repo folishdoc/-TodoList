@@ -1,4 +1,4 @@
-package com.liuzeyu.todolist.module.auth.controller;
+package com.liuzeyu.todolist.module.auth.dto;
 
 /**
  * 登录响应 DTO — Java 14+ Record
