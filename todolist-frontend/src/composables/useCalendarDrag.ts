@@ -16,7 +16,6 @@ import {
   findDayIndexInBar,
   getDayBarMinutes,
   getMinuteFromY,
-  hasTimeComponent,
 } from './useCalendarGrid'
 
 export function useCalendarDrag(

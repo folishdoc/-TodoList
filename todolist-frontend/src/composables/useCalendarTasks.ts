@@ -4,7 +4,7 @@
  * 负责根据当前日历视图模式、日期范围从后端加载任务，
  * 并提供优先级筛选逻辑。视图切换时自动重新加载数据。
  */
-import { ref, computed, watch, onMounted, type Ref } from 'vue'
+import { computed, watch, onMounted, type Ref } from 'vue'
 import * as taskApi from '../api/task'
 import { formatLocalDateTime } from '../utils/date'
 import { getWeekStart } from './useCalendarGrid'

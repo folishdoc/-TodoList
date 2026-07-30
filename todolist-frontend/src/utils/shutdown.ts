@@ -9,8 +9,6 @@
  * - visibilitychange to hidden → 等 5s 再发（用户切标签但可能回来）
  * - 两者互斥：任一发送后标记已发，另一不再重复
  */
-import { ElMessage } from 'element-plus'
-
 let shutdownSent = false
 let visibilityTimer: ReturnType<typeof setTimeout> | null = null
 let beforeunloadHandler: ((e: BeforeUnloadEvent) => void) | null = null

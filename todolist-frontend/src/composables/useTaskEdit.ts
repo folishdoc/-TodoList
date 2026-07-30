@@ -385,7 +385,7 @@ export function useTaskEdit(
     if (!editingTask.value) return
     try {
       await repeatApi.cancelRepeatRule(editingTask.value.id)
-      editingTask.value.repeatRule = null
+      editingTask.value.repeatRule = undefined
       editRepeatEndDate.value = ''
       ElMessage.success('已取消循环')
       loadTasks()

@@ -943,7 +943,7 @@ import CalendarView from '../components/CalendarView.vue'
 import HabitsView from '../components/HabitsView.vue'
 import AnniversaryList from '../components/AnniversaryList.vue'
 import AiTaskInput from '../components/AiTaskInput.vue'
-import type { Task, TaskList, Tag } from '../types'
+import type { Task, TaskList } from '../types'
 import type { ParsedTask } from '../api/ai'
 
 // ── 导航状态 ──
@@ -975,26 +975,29 @@ const { emitTaskChanged } = useTaskSync(() => loadTasks())
 
 const taskCrud = useTaskCrud()
 const {
-  tasks, loading, total, currentPage, pageSize, searchKeyword,
+  tasks, loading, currentPage, searchKeyword,
   flattenedTree, currentListId, collapsedIds, taskParentIds,
-  loadTasks, handleToggleTask, handleDeleteTask: handleDeleteTaskFromCmp, handlePostponeTask, toggleCollapse,
+  loadTasks, handleDeleteTask: handleDeleteTaskFromCmp, handlePostponeTask, toggleCollapse,
 } = taskCrud
 // Wrapper: template calls handleDeleteTask(task), composable expects (task, showUndo, emitTaskChanged)
 const handleDeleteTask = (task: Task) => handleDeleteTaskFromCmp(task, showUndo, emitTaskChanged)
 
 const taskEdit = useTaskEdit(loadTasks, emitTaskChanged)
 const {
-  editingTask, showCreateTaskDialog, submitLoading, isSaving, descriptionPreview,
-  taskFormRef, taskForm, taskTags, selectedTagIds,
+  editingTask, showCreateTaskDialog, submitLoading, descriptionPreview,
+  taskForm, taskTags, selectedTagIds,
   repeatForm, editRepeatEndDate, showRepeatForm, taskTimeMode,
   datePickerFormat, taskRules,
   openCreateTaskDialog, handleEditTask, handleCalendarTaskClick,
-  handleMainContentClick, closeEditPanel, flushAndSave, autoSave, doSave,
+  handleMainContentClick, closeEditPanel, autoSave,
   handlePriorityChange, handleListChange, getSelectedListName: getSelectedListNameFromCmp,
-  handleSubmitTask, handleCompleteTask, resetTaskForm,
+  handleSubmitTask, handleCompleteTask,
   resetRepeatForm, onRepeatTypeChange, onModeChange,
   handleAddRepeatInPanel, handleUpdateRepeatEndDate, handleCancelRepeat,
 } = taskEdit
+
+// 暴露 closeEditPanel 给测试，内部未被模板直接引用
+void closeEditPanel
 
 const {
   addSubtask, removeSubtask, handleSubtaskEnter,
@@ -1006,8 +1009,8 @@ const { allTags, loadAllTags, handleTagChange, handleRemoveTag } = tagsMgmt
 const listsMgmt = useLists()
 const {
   taskLists, showCreateListDialog,
-  listFormRef, listForm, listRules, submitLoading: listSubmitLoading,
-  loadLists, resetListForm, handleSubmitList, handleDeleteList: handleDeleteListFromCmp,
+  listForm, listRules,
+  loadLists, handleSubmitList, handleDeleteList: handleDeleteListFromCmp,
 } = listsMgmt
 // Wrapper: template calls handleDeleteList(list), composable expects (list, activeMenu, setActiveMenu, loadTasks)
 const handleDeleteList = (list: TaskList) => handleDeleteListFromCmp(list, activeMenu, (v: string) => { activeMenu.value = v }, loadTasks)

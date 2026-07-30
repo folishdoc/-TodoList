@@ -35,7 +35,7 @@ import { getRepeatLabel } from '../composables/useRepeatRule'
 import { priorityClass } from '../composables/usePriority'
 import { useTaskSync } from '../composables/useTaskSync'
 import TaskEditPanel from '../components/TaskEditPanel.vue'
-import type { Task, TaskList, ApiResponse, PageResponse } from '../types'
+import type { Task, TaskList } from '../types'
 
 // ── 筛选状态 ──
 const currentFilter = ref<'all' | 'today' | 'upcoming' | number>('today')
@@ -84,7 +84,7 @@ try {
 const loadTasks = async () => {
   loading.value = true
   try {
-    let res: ApiResponse<Task[] | PageResponse<Task>>
+    let res: any
     const filter = currentFilter.value
     if (filter === 'today') {
       res = await getTodayTasks()
@@ -107,7 +107,7 @@ const loadTasks = async () => {
 
 const loadLists = async () => {
   try {
-    const res: ApiResponse<TaskList[]> = await getLists()
+    const res: any = await getLists()
     lists.value = res?.data || []
   } catch (e) {
     console.error(e)

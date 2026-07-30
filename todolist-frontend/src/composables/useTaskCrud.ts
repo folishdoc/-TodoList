@@ -117,15 +117,11 @@ export function useTaskCrud() {
     }
   }
 
-  /** 切换任务完成状态（顶层任务使用批量接口，子任务使用单个更新） */
+  /** 切换任务完成状态 */
   const handleToggleTask = async (task: Task) => {
     const newStatus = task.status === 1 ? 0 : 1
     try {
-      if (task.parentId) {
-        await taskApi.updateTask(task.id, { status: newStatus })
-      } else {
-        await taskApi.batchToggleTasks([{ taskId: task.id, status: newStatus }])
-      }
+      await taskApi.updateTask(task.id, { status: newStatus })
       // 乐观更新（flattenedTree 是 task 副本，直接更新原始数组）
       const original = tasks.value.find(t => t.id === task.id)
       if (original) original.status = newStatus

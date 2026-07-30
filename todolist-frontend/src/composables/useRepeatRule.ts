@@ -4,7 +4,7 @@
  * 提供循环规则的文本描述生成（如"每天"、"每2周"等）和类型翻译。
  * 循环规则以 JSON 字符串形式存在 Task.repeatRule 字段中。
  */
-import type { Task, RepeatRule } from '../types'
+import type { Task } from '../types'
 
 /**
  * 将 JSON 格式的循环规则解析为可读文本

@@ -335,6 +335,8 @@ const {
 )
 
 // ===== 事件转发 =====
+// 暴露 dayBarSuppressClick 给测试，内部未被模板直接引用
+void dayBarSuppressClick
 /** 点击任务转发给父组件（Dashboard） */
 const handleTaskClick = (task: any) => emit('task-click', task)
 

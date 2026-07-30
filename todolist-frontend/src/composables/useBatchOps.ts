@@ -6,7 +6,7 @@
  */
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { Task, BatchOperationRequest } from '../types'
+import type { Task } from '../types'
 import * as batchApi from '../api/batch'
 
 export function useBatchOps(tasks: { value: Task[] }) {

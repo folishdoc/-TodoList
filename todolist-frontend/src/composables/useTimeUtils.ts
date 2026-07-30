@@ -6,7 +6,7 @@
  */
 import { marked } from 'marked'
 import type { Task } from '../types'
-import { formatDateShort, hasTimeValue } from './useDateUtils'
+import { formatDateShort } from './useDateUtils'
 import { getRepeatLabel } from './useRepeatRule'
 
 /**
