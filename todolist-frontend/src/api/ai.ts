@@ -27,5 +27,5 @@ export const parseTask = (input: string): Promise<ParsedTask> => {
     url: '/ai/parse-task',
     method: 'post',
     data: { input },
-  })
+  }).then((res: any) => res.data)
 }

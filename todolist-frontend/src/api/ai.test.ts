@@ -13,7 +13,7 @@ describe('api/ai.ts', () => {
   })
 
   it('parseTask: POST /ai/parse-task with input', async () => {
-    const mockResult = {
+    const mockParsed = {
       title: '开会讨论Q3规划',
       description: '',
       priority: 3,
@@ -22,14 +22,15 @@ describe('api/ai.ts', () => {
       listName: '',
       tags: ['会议', '规划'],
     }
-    requestMock.mockResolvedValue(mockResult as any)
+    // 模拟 request 拦截器返回的完整 Result 包装，parseTask 内部解包取 .data
+    requestMock.mockResolvedValue({ code: 200, message: 'success', data: mockParsed } as any)
     const result = await parseTask('明天下午3点开会讨论Q3规划，高优先级，标签：会议、规划')
     expect(requestMock).toHaveBeenCalledWith({
       url: '/ai/parse-task',
       method: 'post',
       data: { input: '明天下午3点开会讨论Q3规划，高优先级，标签：会议、规划' },
     })
-    expect(result).toEqual(mockResult)
+    expect(result).toEqual(mockParsed)
   })
 
   it('parseTask: throws when AI unavailable (503)', async () => {

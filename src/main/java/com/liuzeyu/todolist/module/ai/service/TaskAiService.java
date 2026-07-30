@@ -1,17 +1,15 @@
 package com.liuzeyu.todolist.module.ai.service;
 
 import com.liuzeyu.todolist.module.ai.dto.ParsedTask;
-import dev.langchain4j.service.spring.AiService;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
 /**
  * AI 任务解析服务 — 将自然语言描述解析为结构化任务 POJO。
  * <p>
- * 由 langchain4j {@code @AiService} 注解自动生成代理实现，
- * 依赖 {@code OpenAiChatModel} bean（由 langchain4j-open-ai-spring-boot4-starter 自动配置）。
+ * 代理实现由 {@code AiConfig} 显式创建（{@code AiServices.builder()}），
+ * 依赖 {@code ChatModel} bean（由 langchain4j-open-ai-spring-boot4-starter 自动配置）。
  */
-@AiService
 public interface TaskAiService {
 
     @SystemMessage("""
