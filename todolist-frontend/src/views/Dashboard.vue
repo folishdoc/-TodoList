@@ -929,13 +929,20 @@ const getSelectedListName = () => getSelectedListNameFromCmp(taskLists.value)
 // ── AI 智能录入 ──
 const aiTaskInputRef = ref<InstanceType<typeof AiTaskInput> | null>(null)
 
+// AI 返回日期 "yyyy-MM-dd HH:mm"，转成 el-date-picker value-format "YYYY-MM-DDTHH:mm:ss"
+function toPickerDate(aiDate: string): string {
+  if (!aiDate) return ''
+  const iso = aiDate.replace(' ', 'T')
+  return iso.length === 16 ? iso + ':00' : iso
+}
+
 function handleAiConfirm(data: ParsedTask) {
   resetTaskForm()
   if (data.title) taskForm.title = data.title
   if (data.description) taskForm.description = data.description
   if (data.priority) taskForm.priority = data.priority
-  if (data.dueDate) taskForm.dueDate = data.dueDate
-  if (data.startDate) taskForm.startDate = data.startDate
+  if (data.dueDate) taskForm.dueDate = toPickerDate(data.dueDate)
+  if (data.startDate) taskForm.startDate = toPickerDate(data.startDate)
   // 打开新建任务对话框让用户确认
   openCreateTaskDialog()
 }
