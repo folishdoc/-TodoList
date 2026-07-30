@@ -1,12 +1,11 @@
 package com.liuzeyu.todolist.module.statistics.service;
 
 import com.liuzeyu.todolist.module.list.entity.TaskList;
-import com.liuzeyu.todolist.module.list.mapper.TaskListMapper;
+import com.liuzeyu.todolist.module.list.service.TaskListService;
 import com.liuzeyu.todolist.module.statistics.dto.DailyTaskStats;
 import com.liuzeyu.todolist.module.statistics.dto.TaskDistribution;
 import com.liuzeyu.todolist.module.statistics.dto.TaskStatistics;
-import com.liuzeyu.todolist.module.task.entity.Task;
-import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
+import com.liuzeyu.todolist.module.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,14 +18,14 @@ import java.util.stream.Collectors;
  * 统计服务类 — 仪表盘数据聚合
  * <p>
  * 提供任务总体统计、按清单/优先级分布统计、每日趋势统计。
- * 数据来源于 TaskMapper 的聚合查询（XML 实现），避免全表扫描。
+ * 数据来源于 TaskService / TaskListService 的委托查询。
  */
 @Service
 @RequiredArgsConstructor
 public class StatisticsService {
 
-    private final TaskMapper taskMapper;
-    private final TaskListMapper taskListMapper;
+    private final TaskService taskService;
+    private final TaskListService taskListService;
 
     /**
      * 获取任务总体统计
@@ -37,12 +36,12 @@ public class StatisticsService {
      * @return 任务统计
      */
     public TaskStatistics getTaskStatistics(Long userId) {
-        long totalTasks = taskMapper.countByUserId(userId);
-        long completedTasks = taskMapper.countByUserIdAndStatus(userId, 1);
+        long totalTasks = taskService.countByUserId(userId);
+        long completedTasks = taskService.countByUserIdAndStatus(userId, 1);
         long pendingTasks = totalTasks - completedTasks;
         double completionRate = totalTasks > 0 ? (completedTasks * 100.0 / totalTasks) : 0;
 
-        List<Map<String, Object>> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
+        List<Map<String, Object>> priorityCounts = taskService.countByUserIdGroupByPriority(userId);
         long highPriority = 0, mediumPriority = 0, lowPriority = 0;
         for (Map<String, Object> row : priorityCounts) {
             Integer priority = (Integer) row.get("key");
@@ -55,9 +54,9 @@ public class StatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
-        long todayTasks = taskMapper.countByUserIdAndDueDateBetween(userId, startOfDay, endOfDay);
+        long todayTasks = taskService.countByUserIdAndDueDateBetween(userId, startOfDay, endOfDay);
 
-        long upcomingTasks = taskMapper.countByUserIdAndDueDateAfter(userId, endOfDay);
+        long upcomingTasks = taskService.countByUserIdAndDueDateAfter(userId, endOfDay);
 
         return new TaskStatistics(
             totalTasks, completedTasks, pendingTasks, completionRate,
@@ -75,8 +74,8 @@ public class StatisticsService {
      * @return 分布列表
      */
     public List<TaskDistribution> getTasksByList(Long userId) {
-        List<TaskList> lists = taskListMapper.findByUserId(userId);
-        List<Map<String, Object>> countByList = taskMapper.countByUserIdGroupByListId(userId);
+        List<TaskList> lists = taskListService.getTaskLists(userId);
+        List<Map<String, Object>> countByList = taskService.countByUserIdGroupByListId(userId);
 
         java.util.Map<Long, Long> countMap = new java.util.HashMap<>();
         for (Map<String, Object> row : countByList) {
@@ -108,7 +107,7 @@ public class StatisticsService {
      * @return 分布列表
      */
     public List<TaskDistribution> getTasksByPriority(Long userId) {
-        List<Map<String, Object>> priorityCounts = taskMapper.countByUserIdGroupByPriority(userId);
+        List<Map<String, Object>> priorityCounts = taskService.countByUserIdGroupByPriority(userId);
 
         List<TaskDistribution> distributions = new ArrayList<>();
         for (Map<String, Object> row : priorityCounts) {
@@ -136,8 +135,8 @@ public class StatisticsService {
         LocalDate startDate = endDate.minusDays(days - 1);
         LocalDateTime startDateTime = startDate.atStartOfDay();
 
-        List<Map<String, Object>> createdRaw = taskMapper.countCreatedByDateAfter(userId, startDateTime);
-        List<Map<String, Object>> completedRaw = taskMapper.countCompletedByDateAfter(userId, startDateTime);
+        List<Map<String, Object>> createdRaw = taskService.countCreatedByDateAfter(userId, startDateTime);
+        List<Map<String, Object>> completedRaw = taskService.countCompletedByDateAfter(userId, startDateTime);
 
         java.util.Map<LocalDate, Long> createdMap = new java.util.HashMap<>();
         for (Map<String, Object> row : createdRaw) {

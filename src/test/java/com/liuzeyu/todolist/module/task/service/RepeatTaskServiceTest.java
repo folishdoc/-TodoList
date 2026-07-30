@@ -2,6 +2,7 @@ package com.liuzeyu.todolist.module.task.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.dto.RepeatRule;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
@@ -24,6 +25,9 @@ class RepeatTaskServiceTest extends BaseUnitTest {
 
     @Mock
     private TaskMapper taskMapper;
+
+    @Mock
+    private TaskService taskService;
 
     @InjectMocks
     private RepeatTaskService repeatTaskService;
@@ -141,14 +145,15 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         void setRepeatRule_serializesJson() throws JsonProcessingException {
             Task t = new Task();
             t.setId(1L);
-            when(taskMapper.findById(1L)).thenReturn(t);
+            t.setUserId(1L);
+            when(taskService.getTask(1L, 1L)).thenReturn(t);
             when(taskMapper.update(any(Task.class))).thenReturn(1);
 
             RepeatRule rule = new RepeatRule();
             rule.setType("DAILY");
             rule.setInterval(2);
 
-            repeatTaskService.setRepeatRule(1L, rule);
+            repeatTaskService.setRepeatRule(1L, 1L, rule);
 
             ArgumentCaptor<Task> captor = ArgumentCaptor.forClass(Task.class);
             verify(taskMapper).update(captor.capture());
@@ -158,21 +163,36 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         @Test
         @DisplayName("设置重复规则 - 任务不存在抛异常")
         void setRepeatRule_notFound_throws() {
-            when(taskMapper.findById(1L)).thenReturn(null);
+            when(taskService.getTask(1L, 1L))
+                    .thenThrow(new BusinessException(404, "任务不存在"));
 
             RepeatRule rule = new RepeatRule();
             rule.setType("DAILY");
-            assertThatThrownBy(() -> repeatTaskService.setRepeatRule(1L, rule))
+            assertThatThrownBy(() -> repeatTaskService.setRepeatRule(1L, 1L, rule))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("任务不存在");
         }
 
         @Test
+        @DisplayName("设置重复规则 - 无权访问抛异常")
+        void setRepeatRule_wrongUser_throws() {
+            when(taskService.getTask(2L, 1L))
+                    .thenThrow(new BusinessException(403, "无权访问该任务"));
+
+            RepeatRule rule = new RepeatRule();
+            rule.setType("DAILY");
+            assertThatThrownBy(() -> repeatTaskService.setRepeatRule(2L, 1L, rule))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessage("无权访问该任务");
+        }
+
+        @Test
         @DisplayName("取消重复规则 - 任务不存在抛异常")
         void cancelRepeatRule_notFound_throws() {
-            when(taskMapper.findById(1L)).thenReturn(null);
+            when(taskService.getTask(1L, 1L))
+                    .thenThrow(new BusinessException(404, "任务不存在"));
 
-            assertThatThrownBy(() -> repeatTaskService.cancelRepeatRule(1L))
+            assertThatThrownBy(() -> repeatTaskService.cancelRepeatRule(1L, 1L))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("任务不存在");
         }
@@ -182,11 +202,12 @@ class RepeatTaskServiceTest extends BaseUnitTest {
         void cancelRepeatRule_succeeds() {
             Task t = new Task();
             t.setId(1L);
+            t.setUserId(1L);
             t.setRepeatRule("{\"type\":\"DAILY\"}");
-            when(taskMapper.findById(1L)).thenReturn(t);
+            when(taskService.getTask(1L, 1L)).thenReturn(t);
             when(taskMapper.update(any(Task.class))).thenReturn(1);
 
-            repeatTaskService.cancelRepeatRule(1L);
+            repeatTaskService.cancelRepeatRule(1L, 1L);
 
             ArgumentCaptor<Task> captor = ArgumentCaptor.forClass(Task.class);
             verify(taskMapper).update(captor.capture());

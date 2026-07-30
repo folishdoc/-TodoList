@@ -56,17 +56,14 @@ npm run lint:fix
 src/test/java/com/liuzeyu/todolist/
 ├── support/                                # 公共基类
 │   ├── BaseUnitTest.java                   # MockitoExtension 基类
-│   ├── RepositoryTest.java                 # @DataJpaTest + H2
 │   ├── BaseControllerTest.java             # @WebMvcTest + 11 个 @MockitoBean
 │   ├── BaseIntegrationTest.java            # Testcontainers MySQL（@Tag integration）
 │   └── TestSecurityConfig.java             # @TestConfiguration 覆盖 SecurityFilterChain
-├── common/controller/SystemControllerTest.java
 └── module/
     ├── task/
     │   ├── controller/
     │   │   ├── TaskControllerTest.java
     │   │   ├── BatchOperationControllerTest.java
-    │   │   ├── FileUploadControllerTest.java
     │   │   └── RepeatTaskControllerTest.java
     │   ├── service/
     │   │   ├── TaskServiceTest.java

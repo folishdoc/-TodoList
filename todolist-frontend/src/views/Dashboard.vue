@@ -159,125 +159,33 @@
           <!-- 清单模块 -->
           <div v-if="currentModule === 'tasks'">
             <!-- 任务视图 -->
-            <div v-if="!['statistics', 'tags'].includes(activeMenu)">
-              <div class="content-header">
-                <h2>{{ pageTitle }}</h2>
-                <div class="content-header-actions">
-                  <template v-if="batchMode">
-                    <el-button
-                      type="danger"
-                      :disabled="selectedTaskIds.size === 0"
-                      @click="handleBatchDelete"
-                    >
-                      <el-icon><Delete /></el-icon>
-                      删除选中 ({{ selectedTaskIds.size }})
-                    </el-button>
-                    <el-button @click="handleSelectAll">全选</el-button>
-                    <el-button @click="selectedTaskIds.clear()">取消选择</el-button>
-                    <el-button @click="exitBatchMode">退出批量模式</el-button>
-                  </template>
-                  <template v-else>
-                    <el-button @click="enterBatchMode">批量操作</el-button>
-                    <el-button type="primary" @click="openCreateTaskDialog">
-                      <el-icon><Plus /></el-icon>
-                      新建任务
-                    </el-button>
-                    <el-button @click="aiTaskInputRef?.open()">
-                      <el-icon><MagicStick /></el-icon>
-                      AI 录入
-                    </el-button>
-                  </template>
-                </div>
-              </div>
-
-              <!-- 搜索框 -->
-              <el-input
-                v-if="activeMenu === 'all'"
-                v-model="searchKeyword"
-                placeholder="搜索任务..."
-                prefix-icon="Search"
-                clearable
-                @input="handleSearch"
-                style="margin-bottom: 20px"
-              />
-
-              <!-- 任务列表 -->
-              <el-card v-loading="loading" class="task-card">
-                <div class="task-card-inner">
-                  <el-empty v-if="tasks.length === 0" description="暂无任务" />
-                    <div v-else class="task-list">
-                    <div
-                      v-for="task in flattenedTree"
-                      :key="task.id"
-                      class="task-item"
-                      :class="{
-                        completed: task.status === 1,
-                        subtask: task.parentId != null,
-                        'batch-selected': batchMode && selectedTaskIds.has(task.id),
-                      }"
-                      :style="{ paddingLeft: 20 + (task.level || 0) * 30 + 'px' }"
-                      @click.stop="batchMode ? toggleTaskSelection(task.id) : handleEditTask(task)"
-                    >
-                      <span
-                        v-if="taskParentIds.has(task.id)"
-                        class="collapse-toggle"
-                        @click.stop="toggleCollapse(task.id)"
-                      >
-                        <el-icon :size="14">
-                          <template v-if="collapsedIds.has(task.id)">&#x25B6;</template>
-                          <template v-else>&#x25BC;</template>
-                        </el-icon>
-                      </span>
-                      <el-checkbox
-                        v-if="batchMode"
-                        :model-value="selectedTaskIds.has(task.id)"
-                        @click.stop
-                        @change="toggleTaskSelection(task.id)"
-                      />
-                      <el-checkbox
-                        v-else
-                        :model-value="task.status === 1"
-                        @click.stop
-                        @change="handleCompleteTask(task)"
-                        :class="'priority-' + task.priority"
-                      />
-                      <div class="task-content">
-                        <div class="task-title">{{ task.title }}</div>
-                      </div>
-                      <div v-if="!batchMode" class="task-actions">
-                        <!-- 时间提示 -->
-                        <span
-                          :class="['time-status', getTimeStatusClass(task)]"
-                          :style="{ visibility: getTimeStatus(task) ? 'visible' : 'hidden' }"
-                        >
-                          {{ getTimeStatus(task) || ' ' }}
-                        </span>
-                        <!-- 距离结束剩余天数 -->
-                        <span
-                          v-if="getDueDaysBadge(task).text"
-                          :class="['due-days-badge', getDueDaysClass(task)]"
-                        >
-                          {{ getDueDaysBadge(task).text }}
-                        </span>
-                        <el-button
-                          v-if="isOverdue(task)"
-                          size="small"
-                          type="warning"
-                          text
-                          @click.stop="handlePostponeTask(task)"
-                          title="顺延至今天"
-                        >
-                          顺延
-                        </el-button>
-                        <el-button size="small" @click.stop="handleDeleteTask(task)">
-                          <el-icon><Delete /></el-icon>
-                        </el-button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </el-card>
-            </div>
+            <TaskListView
+              v-if="!['statistics', 'tags'].includes(activeMenu)"
+              :tasks="flattenedTree"
+              :loading="loading"
+              :batch-mode="batchMode"
+              :selected-task-ids="selectedTaskIds"
+              :collapsed-ids="collapsedIds"
+              :task-parent-ids="taskParentIds"
+              :page-title="pageTitle"
+              :search-keyword="searchKeyword"
+              :active-menu="activeMenu"
+              @edit-task="handleEditTask"
+              @toggle-complete="handleCompleteTask"
+              @delete-task="handleDeleteTask"
+              @postpone-task="handlePostponeTask"
+              @toggle-collapse="toggleCollapse"
+              @toggle-task-selection="toggleTaskSelection"
+              @select-all="handleSelectAll"
+              @clear-selection="selectedTaskIds.clear()"
+              @exit-batch-mode="exitBatchMode"
+              @enter-batch-mode="enterBatchMode"
+              @batch-delete="handleBatchDelete"
+              @create-task="openCreateTaskDialog"
+              @ai-input="aiTaskInputRef?.open()"
+              @update:search-keyword="searchKeyword = $event"
+              @search="handleSearch"
+            />
 
             <!-- 数据统计视图 -->
             <div v-else-if="activeMenu === 'statistics'" class="statistics-view">
@@ -925,7 +833,6 @@ import {
   MagicStick,
 } from '@element-plus/icons-vue'
 import * as anniversaryApi from '../api/anniversary'
-import { isOverdue } from '../composables/useDateUtils'
 import { getPriorityType, getPriorityText } from '../composables/usePriority'
 import { useTaskSync } from '../composables/useTaskSync'
 import { useTaskCrud } from '../composables/useTaskCrud'
@@ -935,8 +842,9 @@ import { useTags } from '../composables/useTags'
 import { useLists } from '../composables/useLists'
 import { useBatchOps } from '../composables/useBatchOps'
 import { useReminders } from '../composables/useReminders'
-import { getTimeStatus, getTimeStatusClass, getDueDaysBadge, getDueDaysClass, renderMarkdown, getTimeSummary, getCreateTimeSummary } from '../composables/useTimeUtils'
+import { renderMarkdown, getTimeSummary, getCreateTimeSummary } from '../composables/useTimeUtils'
 import { getRepeatLabel } from '../composables/useRepeatRule'
+import TaskListView from '../components/TaskListView.vue'
 import StatisticsView from '../components/StatisticsView.vue'
 import TagsView from '../components/TagsView.vue'
 import CalendarView from '../components/CalendarView.vue'
@@ -1296,47 +1204,6 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.content-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  flex-shrink: 0;
-}
-
-.content-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.content-header h2 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.task-list {
-  overflow-y: auto;
-  padding: 0;
-  flex: 1;
-}
-
-.task-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.task-card :deep(.el-card__body) {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0;
-}
-
-.task-card-inner {
-  display: flex;
-  flex-direction: column;
-}
-
 /* 右侧编辑面板 */
 .edit-panel {
   width: 500px;
@@ -1348,190 +1215,6 @@ onUnmounted(() => {
   flex-shrink: 0;
   position: sticky;
   top: 0;
-}
-
-.task-item {
-  display: flex;
-  align-items: center;
-  padding: 15px;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.3s;
-  cursor: pointer;
-}
-
-.task-item :deep(.el-checkbox) {
-  margin-top: 0;
-  display: flex;
-  align-items: center;
-}
-
-.task-item:hover {
-  background-color: #f9f9f9;
-}
-
-.task-item.batch-selected {
-  background-color: #ecf5ff;
-  outline: 1px solid #409eff;
-}
-
-.task-item.completed .task-title {
-  text-decoration: line-through;
-  color: #999;
-}
-
-.task-item.subtask {
-  background-color: #f8f9fa;
-}
-
-.collapse-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  flex-shrink: 0;
-  color: #999;
-  transition: color 0.2s;
-}
-.collapse-toggle:hover {
-  color: #409eff;
-}
-
-.task-content {
-  flex: 1;
-  margin-left: 10px;
-}
-
-.task-title {
-  font-weight: 500;
-  margin-bottom: 5px;
-}
-
-.task-desc {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.task-meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-/* 时间状态样式 */
-.time-status {
-  font-size: 13px;
-  font-weight: 500;
-  min-width: 80px;
-  text-align: right;
-  margin-right: 8px;
-  display: inline-block;
-}
-
-.time-status-upcoming {
-  color: #409eff;
-}
-
-.time-status-active {
-  color: #409eff;
-}
-
-.time-status-overdue {
-  color: #f56c6c;
-}
-
-.time-status-today {
-  color: #e6a23c;
-}
-
-/* 距离结束剩余天数徽章 */
-.due-days-badge {
-  font-size: 13px;
-  font-weight: 500;
-  min-width: 80px;
-  text-align: right;
-  margin-right: 8px;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.due-days-badge-upcoming {
-  color: #409eff;
-}
-
-.due-days-badge-today {
-  color: #e6a23c;
-  font-weight: 600;
-}
-
-.due-days-badge-overdue {
-  color: #f56c6c;
-}
-
-.task-actions {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-
-/* 优先级颜色 */
-.priority-0 :deep(.el-checkbox__inner) {
-  background-color: #fff;
-  border-color: #909399;
-}
-
-.priority-0 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: #fff;
-  border-color: #909399;
-}
-
-.priority-0 :deep(.el-checkbox__input.is-checked .el-checkbox__inner::after) {
-  border-color: #909399;
-}
-
-.priority-1 :deep(.el-checkbox__inner) {
-  background-color: #fff;
-  border-color: #409eff;
-}
-
-.priority-1 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: #fff;
-  border-color: #409eff;
-}
-
-.priority-1 :deep(.el-checkbox__input.is-checked .el-checkbox__inner::after) {
-  border-color: #409eff;
-}
-
-.priority-2 :deep(.el-checkbox__inner) {
-  background-color: #fff;
-  border-color: #e6a23c;
-}
-
-.priority-2 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: #fff;
-  border-color: #e6a23c;
-}
-
-.priority-2 :deep(.el-checkbox__input.is-checked .el-checkbox__inner::after) {
-  border-color: #e6a23c;
-}
-
-.priority-3 :deep(.el-checkbox__inner) {
-  background-color: #fff;
-  border-color: #f56c6c;
-}
-
-.priority-3 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: #fff;
-  border-color: #f56c6c;
-}
-
-.priority-3 :deep(.el-checkbox__input.is-checked .el-checkbox__inner::after) {
-  border-color: #f56c6c;
 }
 
 /* 统计和标签视图 */

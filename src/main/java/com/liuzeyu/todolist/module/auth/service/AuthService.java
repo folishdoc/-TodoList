@@ -2,7 +2,7 @@ package com.liuzeyu.todolist.module.auth.service;
 
 import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.common.util.JwtUtil;
-import com.liuzeyu.todolist.module.auth.controller.LoginResponse;
+import com.liuzeyu.todolist.module.auth.dto.LoginResponse;
 import com.liuzeyu.todolist.module.auth.entity.User;
 import com.liuzeyu.todolist.module.auth.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;

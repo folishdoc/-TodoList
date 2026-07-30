@@ -11,8 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 任务服务 — 核心业务逻辑
@@ -289,5 +291,61 @@ public class TaskService {
         return taskMapper.findByDateRange(userId, rangeStart, rangeEnd);
     }
 
+    // ── 统计查询方法（委托给 TaskMapper，供 StatisticsService 使用）──
 
+    /**
+     * 统计用户的任务总数
+     */
+    public long countByUserId(Long userId) {
+        return taskMapper.countByUserId(userId);
+    }
+
+    /**
+     * 按状态统计任务数
+     */
+    public long countByUserIdAndStatus(Long userId, Integer status) {
+        return taskMapper.countByUserIdAndStatus(userId, status);
+    }
+
+    /**
+     * 按优先级分组统计任务数
+     */
+    public List<Map<String, Object>> countByUserIdGroupByPriority(Long userId) {
+        return taskMapper.countByUserIdGroupByPriority(userId);
+    }
+
+    /**
+     * 统计指定日期范围内的任务数
+     */
+    public long countByUserIdAndDueDateBetween(Long userId, LocalDateTime start, LocalDateTime end) {
+        return taskMapper.countByUserIdAndDueDateBetween(userId, start, end);
+    }
+
+    /**
+     * 统计指定日期之后的任务数
+     */
+    public long countByUserIdAndDueDateAfter(Long userId, LocalDateTime date) {
+        return taskMapper.countByUserIdAndDueDateAfter(userId, date);
+    }
+
+    /**
+     * 按清单 ID 分组统计任务数
+     */
+    public List<Map<String, Object>> countByUserIdGroupByListId(Long userId) {
+        return taskMapper.countByUserIdGroupByListId(userId);
+    }
+
+    /**
+     * 统计指定日期之后创建的任务（按日期分组）
+     */
+    public List<Map<String, Object>> countCreatedByDateAfter(Long userId, LocalDateTime start) {
+        return taskMapper.countCreatedByDateAfter(userId, start);
+    }
+
+    /**
+     * 统计指定日期之后完成的任务（按日期分组）
+     */
+    public List<Map<String, Object>> countCompletedByDateAfter(Long userId, LocalDateTime start) {
+        return taskMapper.countCompletedByDateAfter(userId, start);
+    }
 }
