@@ -23,6 +23,10 @@
             <el-icon><Plus /></el-icon>
             新建任务
           </el-button>
+          <el-button @click="$emit('ai-input')">
+            <el-icon><MagicStick /></el-icon>
+            AI 录入
+          </el-button>
         </template>
       </div>
     </div>
@@ -161,6 +165,7 @@ defineEmits<{
   (e: 'enter-batch-mode'): void
   (e: 'batch-delete'): void
   (e: 'create-task'): void
+  (e: 'ai-input'): void
   (e: 'update:searchKeyword', value: string): void
   (e: 'search'): void
 }>()
