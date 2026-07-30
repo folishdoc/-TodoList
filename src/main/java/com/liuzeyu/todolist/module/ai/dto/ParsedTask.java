@@ -18,10 +18,10 @@ public record ParsedTask(
         @Description("优先级：1-低，2-中，3-高")
         Integer priority,
 
-        @Description("截止时间，格式 yyyy-MM-dd HH:mm")
+        @Description("截止时间，ISO 格式 yyyy-MM-ddTHH:mm:ss")
         String dueDate,
 
-        @Description("开始时间，格式 yyyy-MM-dd HH:mm")
+        @Description("开始时间，ISO 格式 yyyy-MM-ddTHH:mm:ss")
         String startDate,
 
         @Description("所属列表名称")
