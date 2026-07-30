@@ -21,12 +21,11 @@
  */
 import { ref, reactive, watch, computed, toRef } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Calendar, Flag, Folder, PriceTag, Upload, Download } from '@element-plus/icons-vue'
+import { Calendar, Flag, Folder, PriceTag } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import * as taskApi from '../api/task'
 import * as listApi from '../api/list'
 import * as tagApi from '../api/tag'
-import * as attachmentApi from '../api/attachment'
 import * as repeatApi from '../api/repeat'
 import { formatDateShort, hasTimeValue } from '../composables/useDateUtils'
 import { getRepeatLabel } from '../composables/useRepeatRule'
@@ -54,10 +53,9 @@ const taskForm = reactive({
   subtasks: [] as any[],
 })
 
-// ── 标签、附件、清单等辅助状态 ──
+// ── 标签、清单等辅助状态 ──
 const taskTags = ref<any[]>([])
 const selectedTagIds = ref<number[]>([])
-const taskAttachments = ref<any[]>([])
 const allTags = ref<any[]>([])
 const taskLists = ref<any[]>([])
 const descriptionPreview = ref(false)
@@ -158,11 +156,6 @@ const init = async () => {
     taskTags.value = tagsRes?.data || []
     selectedTagIds.value = taskTags.value.map((t: any) => t.id)
   } catch (e) { console.warn('加载标签失败', e); taskTags.value = []; selectedTagIds.value = [] }
-
-  try {
-    const attachmentsRes: any = await attachmentApi.getTaskAttachments(task.id)
-    taskAttachments.value = attachmentsRes?.data || []
-  } catch (e) { console.warn('加载附件失败', e); taskAttachments.value = [] }
 }
 
 watch(
@@ -287,41 +280,6 @@ const handleRemoveTag = async (tagId: number) => {
     selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId)
     taskTags.value = taskTags.value.filter((t: any) => t.id !== tagId)
   } catch (e) { console.error('移除标签失败', e); ElMessage.error('移除标签失败') }
-}
-
-// 附件
-const handleUploadAttachment = async (e: Event) => {
-  if (!props.task) return
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-  if (file.size > 10 * 1024 * 1024) {
-    ElMessage.warning('文件大小不能超过10MB')
-    return
-  }
-  try {
-    await attachmentApi.uploadFile(props.task.id, file)
-    const res: any = await attachmentApi.getTaskAttachments(props.task.id)
-    taskAttachments.value = res?.data || []
-    ElMessage.success('上传成功')
-  } catch {
-    ElMessage.error('上传失败')
-  }
-  input.value = ''
-}
-
-const handleDownloadAttachment = (att: any) => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:18080/api'
-  const url = `${baseUrl}/attachments/${encodeURIComponent(att.fileName)}`
-  window.open(url)
-}
-
-const handleDeleteAttachment = async (att: any) => {
-  if (!props.task) return
-  try {
-    await attachmentApi.deleteAttachment(att.id)
-    taskAttachments.value = taskAttachments.value.filter((a: any) => a.fileName !== att.fileName)
-  } catch (e) { console.error('删除附件失败', e); ElMessage.error('删除附件失败') }
 }
 
 // 子任务
@@ -782,29 +740,6 @@ const handleSubtaskEnter = () => {
       </div>
     </div>
 
-    <!-- 附件 -->
-    <div class="panel-section">
-      <div class="section-header">
-        <h4 class="section-title">附件</h4>
-        <label style="cursor: pointer">
-          <el-button size="small" tag="span"
-            ><el-icon><Upload /></el-icon> 上传</el-button
-          >
-          <input type="file" style="display: none" @change="handleUploadAttachment" />
-        </label>
-      </div>
-      <div v-for="att in taskAttachments" :key="att.fileName" class="attachment-item">
-        <span class="att-name">{{ att.originalName }}</span>
-        <span class="att-size">{{ (att.fileSize / 1024).toFixed(1) }} KB</span>
-        <el-button size="small" text @click="handleDownloadAttachment(att)"
-          ><el-icon><Download /></el-icon
-        ></el-button>
-        <el-button size="small" text type="danger" @click="handleDeleteAttachment(att)"
-          ><el-icon><Delete /></el-icon
-        ></el-button>
-      </div>
-    </div>
-
     <!-- 操作 -->
     <div v-if="mode === 'dialog'" class="panel-footer">
       <el-button @click="emit('close')">关闭</el-button>
@@ -888,21 +823,6 @@ const handleSubtaskEnter = () => {
 }
 .subtask-input {
   flex: 1;
-}
-
-.attachment-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-  font-size: 12px;
-}
-.att-name {
-  flex: 1;
-}
-.att-size {
-  color: var(--text-secondary, #888);
-  white-space: nowrap;
 }
 
 .panel-footer {

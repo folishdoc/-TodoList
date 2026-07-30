@@ -19,7 +19,7 @@ public class TaskRequest {
     @Size(max = 200, message = "任务标题不能超过200个字符")
     private String title;
 
-    @Size(max = 5000, message = "任务描述不能超过5000个字符")
+    @Size(max = 65535, message = "任务描述不能超过65535个字符")
     private String description;
 
     private Long listId;

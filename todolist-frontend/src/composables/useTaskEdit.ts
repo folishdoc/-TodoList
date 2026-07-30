@@ -1,11 +1,10 @@
 import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import type { Task, Tag, TaskAttachment, TaskList } from '../types'
+import type { Task, Tag, TaskList } from '../types'
 import * as taskApi from '../api/task'
 import { syncSubtasks } from './useSubtaskSync'
 import * as tagApi from '../api/tag'
-import * as attachmentApi from '../api/attachment'
 import * as repeatApi from '../api/repeat'
 import { useTaskTimeMode } from './useTaskTimeMode'
 import { hasTimeValue } from './useDateUtils'
@@ -32,9 +31,8 @@ export function useTaskEdit(
     subtasks: [] as Array<Task & { completed: boolean }>,
   })
 
-  // 标签和附件状态（由编辑面板管理，也可由父组件提供）
+  // 标签状态
   const taskTags = ref<Tag[]>([])
-  const taskAttachments = ref<TaskAttachment[]>([])
   const selectedTagIds = ref<number[]>([])
 
   // 循环相关
@@ -149,13 +147,6 @@ export function useTaskEdit(
       selectedTagIds.value = []
     }
 
-    try {
-      const res = await attachmentApi.getTaskAttachments(task.id)
-      taskAttachments.value = res.data || []
-    } catch (e) {
-      console.warn('加载附件失败', e)
-      taskAttachments.value = []
-    }
   }
 
   const handleCalendarTaskClick = (task: Task) => {
@@ -335,7 +326,6 @@ export function useTaskEdit(
     taskForm.listId = null
     taskForm.subtasks = []
     taskTags.value = []
-    taskAttachments.value = []
     selectedTagIds.value = []
     taskTimeMode.value = 'normal'
   }
@@ -414,7 +404,6 @@ export function useTaskEdit(
     taskFormRef,
     taskForm,
     taskTags,
-    taskAttachments,
     selectedTagIds,
     repeatForm,
     editRepeatEndDate,

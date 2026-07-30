@@ -61,11 +61,6 @@ vi.mock('../api/tag', () => ({
   removeTaskTag: vi.fn().mockResolvedValue({ code: 200, message: 'success' }),
   setTaskTags: vi.fn().mockResolvedValue({ code: 200, message: 'success' }),
 }))
-vi.mock('../api/attachment', () => ({
-  getTaskAttachments: vi.fn().mockResolvedValue({ data: [], code: 200, message: 'success' }),
-  uploadAttachment: vi.fn().mockResolvedValue({ code: 200, message: 'success' }),
-  deleteAttachment: vi.fn().mockResolvedValue({ code: 200, message: 'success' }),
-}))
 vi.mock('../api/repeat', () => ({
   setRepeatRule: vi.fn().mockResolvedValue({ code: 200, message: 'success' }),
   cancelRepeatRule: vi.fn().mockResolvedValue({ code: 200, message: 'success' }),

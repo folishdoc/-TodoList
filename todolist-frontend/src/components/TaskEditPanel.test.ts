@@ -10,9 +10,6 @@ const getTaskTagsMock = vi.fn()
 const addTagToTaskMock = vi.fn()
 const removeTagFromTaskMock = vi.fn()
 const getTagsMock = vi.fn()
-const getTaskAttachmentsMock = vi.fn()
-const uploadFileMock = vi.fn()
-const deleteAttachmentMock = vi.fn()
 const setRepeatRuleMock = vi.fn()
 const cancelRepeatRuleMock = vi.fn()
 
@@ -36,12 +33,6 @@ vi.mock('../api/tag', () => ({
   addTagToTask: (...args: unknown[]) => addTagToTaskMock(...args),
   removeTagFromTask: (...args: unknown[]) => removeTagFromTaskMock(...args),
   getTags: (...args: unknown[]) => getTagsMock(...args),
-}))
-
-vi.mock('../api/attachment', () => ({
-  getTaskAttachments: (...args: unknown[]) => getTaskAttachmentsMock(...args),
-  uploadFile: (...args: unknown[]) => uploadFileMock(...args),
-  deleteAttachment: (...args: unknown[]) => deleteAttachmentMock(...args),
 }))
 
 vi.mock('../api/repeat', () => ({
@@ -222,9 +213,6 @@ describe('TaskEditPanel.vue', () => {
     addTagToTaskMock.mockResolvedValue({} as any)
     removeTagFromTaskMock.mockResolvedValue({} as any)
     getTagsMock.mockResolvedValue({ data: [] } as any)
-    getTaskAttachmentsMock.mockResolvedValue({ data: [] } as any)
-    uploadFileMock.mockResolvedValue({} as any)
-    deleteAttachmentMock.mockResolvedValue({} as any)
     setRepeatRuleMock.mockResolvedValue({} as any)
     cancelRepeatRuleMock.mockResolvedValue({} as any)
   })
@@ -244,20 +232,16 @@ describe('TaskEditPanel.vue', () => {
     expect(form.listId).toBe(2)
   })
 
-  it('init() 加载列表、现有标签、子任务、附件', async () => {
+  it('init() 加载列表、现有标签、子任务', async () => {
     getListsMock.mockResolvedValueOnce({ data: [{ id: 1, name: 'A' }] } as any)
     getSubtasksMock.mockResolvedValueOnce({ data: [{ id: 10, title: '子1', status: 0 }] } as any)
     getTaskTagsMock.mockResolvedValueOnce({ data: [{ id: 5, name: '重要' }] } as any)
-    getTaskAttachmentsMock.mockResolvedValueOnce({
-      data: [{ id: 1, fileName: 'a.pdf', originalName: '文档.pdf', fileSize: 1024 }],
-    } as any)
     const wrapper = mountPanel(baseTask)
     await vi.runAllTimersAsync()
     await flushPromises()
     expect((wrapper.vm as any).taskLists.length).toBe(1)
     expect((wrapper.vm as any).taskForm.subtasks.length).toBe(1)
     expect((wrapper.vm as any).taskTags.length).toBe(1)
-    expect((wrapper.vm as any).taskAttachments.length).toBe(1)
   })
 
   it('标题修改 + blur → 触发 autoSave（debounce 300ms）', async () => {
@@ -442,58 +426,6 @@ describe('TaskEditPanel.vue', () => {
     await (wrapper.vm as any).handleSubtaskEnter()
     await flushPromises()
     expect((wrapper.vm as any).taskForm.subtasks.length).toBe(before + 1)
-  })
-
-  it('附件上传 ≤10MB → uploadFile + 重新加载', async () => {
-    const wrapper = mountPanel(baseTask)
-    await vi.runAllTimersAsync()
-    await flushPromises()
-    const file = new File(['x'.repeat(1024)], 'test.txt', { type: 'text/plain' })
-    Object.defineProperty(file, 'size', { value: 1024 })
-    const event = { target: { files: [file], value: '' } } as any
-    await (wrapper.vm as any).handleUploadAttachment(event)
-    await flushPromises()
-    expect(uploadFileMock).toHaveBeenCalledWith(1, file)
-  })
-
-  it('附件上传 >10MB → 警告，不上传', async () => {
-    const { ElMessage } = await import('element-plus')
-    const wrapper = mountPanel(baseTask)
-    await vi.runAllTimersAsync()
-    await flushPromises()
-    const file = new File(['x'], 'big.bin')
-    Object.defineProperty(file, 'size', { value: 11 * 1024 * 1024 })
-    const event = { target: { files: [file], value: '' } } as any
-    await (wrapper.vm as any).handleUploadAttachment(event)
-    await flushPromises()
-    expect(ElMessage.warning).toHaveBeenCalledWith('文件大小不能超过10MB')
-    expect(uploadFileMock).not.toHaveBeenCalled()
-  })
-
-  it('附件下载 → window.open URL（编码 fileName）', async () => {
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const wrapper = mountPanel(baseTask)
-    await vi.runAllTimersAsync()
-    await flushPromises()
-    ;(wrapper.vm as any).handleDownloadAttachment({ fileName: '文档.pdf' })
-    expect(openSpy).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('文档.pdf')))
-    openSpy.mockRestore()
-  })
-
-  it('附件删除 → deleteAttachment + 从列表移除', async () => {
-    getTaskAttachmentsMock.mockResolvedValue({
-      data: [
-        { id: 1, fileName: 'a.pdf' },
-        { id: 2, fileName: 'b.pdf' },
-      ],
-    } as any)
-    const wrapper = mountPanel(baseTask)
-    await vi.runAllTimersAsync()
-    await flushPromises()
-    await (wrapper.vm as any).handleDeleteAttachment({ id: 1, fileName: 'a.pdf' })
-    await flushPromises()
-    expect(deleteAttachmentMock).toHaveBeenCalledWith(1)
-    expect((wrapper.vm as any).taskAttachments.length).toBe(1)
   })
 
   it('删除任务 → deleteTask + emit close + emit changed', async () => {

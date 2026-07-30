@@ -16,7 +16,6 @@ import com.liuzeyu.todolist.module.list.service.TaskListService;
 import com.liuzeyu.todolist.module.statistics.service.StatisticsService;
 import com.liuzeyu.todolist.module.tag.service.TagService;
 import com.liuzeyu.todolist.module.task.service.BatchOperationService;
-import com.liuzeyu.todolist.module.task.service.FileUploadService;
 import com.liuzeyu.todolist.module.task.service.RepeatTaskService;
 import com.liuzeyu.todolist.module.task.service.TaskService;
 
@@ -45,7 +44,6 @@ public abstract class BaseControllerTest {
      */
     @MockitoBean protected AnniversaryService anniversaryService;
     @MockitoBean protected BatchOperationService batchOperationService;
-    @MockitoBean protected FileUploadService fileUploadService;
     @MockitoBean protected HabitService habitService;
     @MockitoBean protected RepeatTaskService repeatTaskService;
     @MockitoBean protected StatisticsService statisticsService;

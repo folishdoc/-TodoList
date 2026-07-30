@@ -599,9 +599,10 @@
                 v-model="taskForm.description"
                 type="textarea"
                 :rows="8"
-                placeholder="添加详细描述...（支持 Markdown）"
+                placeholder="添加详细描述...（支持 Markdown，可直接粘贴图片）"
                 class="memo-textarea"
                 @blur="autoSave"
+                @paste="handleDescriptionPaste"
               />
               <div v-else class="markdown-preview" v-html="renderMarkdown(taskForm.description)" />
             </div>
@@ -639,36 +640,7 @@
               </el-button>
             </div>
 
-            <!-- 附件区域 -->
-            <div class="memo-attachments">
-              <h4 class="section-title">附件</h4>
-              <div class="attachment-upload">
-                <input
-                  ref="fileInputRef"
-                  type="file"
-                  style="display: none"
-                  @change="(e: Event) => handleFileSelect(e, editingTask)"
-                />
-                <el-button size="small" @click="triggerFileUpload" :loading="attachmentUploading">
-                  <el-icon><Upload /></el-icon>
-                  上传文件
-                </el-button>
-                <span class="upload-hint">最大 10MB</span>
-              </div>
-              <div v-if="taskAttachments.length > 0" class="attachment-list">
-                <div v-for="att in taskAttachments" :key="att.id" class="attachment-item">
-                  <span class="attachment-name">{{ att.fileName }}</span>
-                  <span class="attachment-size">{{ formatFileSize(att.fileSize) }}</span>
-                  <el-button size="small" type="primary" link @click="downloadAttachment(att)">
-                    <el-icon><Download /></el-icon>
-                  </el-button>
-                  <el-button size="small" type="danger" link @click="handleDeleteAttachment(att, editingTask)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </div>
-              </div>
-              <el-empty v-else description="暂无附件" :image-size="40" />
-            </div>
+
           </div>
         </aside>
       </el-container>
@@ -685,7 +657,8 @@
             v-model="taskForm.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入任务描述"
+            placeholder="请输入任务描述（支持 Markdown，可直接粘贴图片）"
+            @paste="handleDescriptionPaste"
           />
         </el-form-item>
         <el-form-item label="优先级" prop="priority">
@@ -941,8 +914,6 @@ import {
   TrendCharts,
   Flag,
   Bell,
-  Upload,
-  Download,
   Switch as SwitchIcon,
 } from '@element-plus/icons-vue'
 import * as anniversaryApi from '../api/anniversary'
@@ -953,11 +924,10 @@ import { useTaskCrud } from '../composables/useTaskCrud'
 import { useTaskEdit } from '../composables/useTaskEdit'
 import { useSubtasks } from '../composables/useSubtasks'
 import { useTags } from '../composables/useTags'
-import { useAttachments } from '../composables/useAttachments'
 import { useLists } from '../composables/useLists'
 import { useBatchOps } from '../composables/useBatchOps'
 import { useReminders } from '../composables/useReminders'
-import { getTimeStatus, getTimeStatusClass, getDueDaysBadge, getDueDaysClass, formatFileSize, renderMarkdown, getTimeSummary, getCreateTimeSummary } from '../composables/useTimeUtils'
+import { getTimeStatus, getTimeStatusClass, getDueDaysBadge, getDueDaysClass, renderMarkdown, getTimeSummary, getCreateTimeSummary } from '../composables/useTimeUtils'
 import { getRepeatLabel } from '../composables/useRepeatRule'
 import StatisticsView from '../components/StatisticsView.vue'
 import TagsView from '../components/TagsView.vue'
@@ -1005,7 +975,7 @@ const handleDeleteTask = (task: Task) => handleDeleteTaskFromCmp(task, showUndo,
 const taskEdit = useTaskEdit(loadTasks, emitTaskChanged)
 const {
   editingTask, showCreateTaskDialog, submitLoading, isSaving, descriptionPreview,
-  taskFormRef, taskForm, taskTags, taskAttachments, selectedTagIds,
+  taskFormRef, taskForm, taskTags, selectedTagIds,
   repeatForm, editRepeatEndDate, showRepeatForm, taskTimeMode,
   datePickerFormat, taskRules,
   openCreateTaskDialog, handleEditTask, handleCalendarTaskClick,
@@ -1022,12 +992,6 @@ const {
 
 const tagsMgmt = useTags()
 const { allTags, loadAllTags, handleTagChange, handleRemoveTag } = tagsMgmt
-
-const attachmentsMgmt = useAttachments()
-const {
-  attachmentUploading, fileInputRef, triggerFileUpload,
-  handleFileSelect, downloadAttachment, handleDeleteAttachment,
-} = attachmentsMgmt
 
 const listsMgmt = useLists()
 const {
@@ -1131,6 +1095,34 @@ const handleReminderClick = async (r: { id: number; isRead: boolean; anniversary
     await loadReminders()
   }
   currentModule.value = 'anniversaries'
+}
+
+/** 描述区粘贴图片 → 转为 base64 Markdown 图片 */
+const handleDescriptionPaste = (e: ClipboardEvent) => {
+  const items = e.clipboardData?.items
+  if (!items) return
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.startsWith('image/')) {
+      e.preventDefault()
+      const file = items[i].getAsFile()
+      if (!file) continue
+      const reader = new FileReader()
+      reader.onload = () => {
+        const imgMd = `![image](${reader.result})`
+        const textarea = e.target as HTMLTextAreaElement
+        const start = textarea.selectionStart
+        const end = textarea.selectionEnd
+        const before = taskForm.description.slice(0, start)
+        const after = taskForm.description.slice(end)
+        taskForm.description = before + imgMd + after
+        // 自动切换到预览模式，让用户即时看到图片
+        descriptionPreview.value = true
+        // 不自动保存 — base64 很大，等用户 blur 或手动保存
+      }
+      reader.readAsDataURL(file)
+      break
+    }
+  }
 }
 
 onMounted(async () => {
@@ -1808,56 +1800,4 @@ onUnmounted(() => {
   align-items: center;
 }
 
-/* 附件区域 */
-.memo-attachments {
-  border-top: 1px solid #e8e8e8;
-  padding-top: 20px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.attachment-upload {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.upload-hint {
-  font-size: 12px;
-  color: #c0c4cc;
-}
-
-.attachment-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.attachment-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.attachment-item:hover {
-  background: #ecf5ff;
-}
-
-.attachment-name {
-  flex: 1;
-  font-size: 13px;
-  color: #303133;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.attachment-size {
-  font-size: 12px;
-  color: #909399;
-}
 </style>
