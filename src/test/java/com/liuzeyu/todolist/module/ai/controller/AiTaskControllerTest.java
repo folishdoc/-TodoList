@@ -25,7 +25,8 @@ class AiTaskControllerTest extends BaseControllerTest {
                 "2026-08-01 10:00",
                 null,
                 "购物",
-                List.of("日常")
+                List.of("日常"),
+                null
         );
         when(taskAiService.parseTask(anyString())).thenReturn(parsed);
 
@@ -44,6 +45,37 @@ class AiTaskControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.data.dueDate").value("2026-08-01 10:00"))
                 .andExpect(jsonPath("$.data.listName").value("购物"))
                 .andExpect(jsonPath("$.data.tags[0]").value("日常"));
+    }
+
+    @Test
+    @DisplayName("POST /api/ai/parse-task - 循环任务解析返回 repeatRule")
+    void parseTask_repeatTask() throws Exception {
+        ParsedTask.AiRepeatRule rule = new ParsedTask.AiRepeatRule("DAILY", 1, null, null, null);
+        ParsedTask parsed = new ParsedTask(
+                "喝水",
+                "每天喝水8杯",
+                2,
+                "2026-08-01 09:00",
+                null,
+                "健康",
+                List.of("日常"),
+                rule
+        );
+        when(taskAiService.parseTask(anyString())).thenReturn(parsed);
+
+        String body = """
+                {
+                  "input": "每天早上9点喝水8杯"
+                }
+                """;
+        mockMvc.perform(authPost("/api/ai/parse-task")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.title").value("喝水"))
+                .andExpect(jsonPath("$.data.repeatRule.type").value("DAILY"))
+                .andExpect(jsonPath("$.data.repeatRule.interval").value(1));
     }
 
     @Test

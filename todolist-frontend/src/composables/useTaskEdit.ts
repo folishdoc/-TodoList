@@ -286,6 +286,16 @@ export function useTaskEdit(
                 ElMessage.warning('循环规则设置失败')
               }
             }
+            // 关联标签（AI 录入或手动选择的 selectedTagIds，逐个绑定到新任务）
+            if (res.data?.id && selectedTagIds.value.length > 0) {
+              for (const tagId of selectedTagIds.value) {
+                try {
+                  await tagApi.addTagToTask(res.data.id, tagId)
+                } catch (e) {
+                  console.warn('添加标签失败', e)
+                }
+              }
+            }
             ElMessage.success('创建成功')
             showCreateTaskDialog.value = false
             resetRepeatForm()

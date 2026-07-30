@@ -6,6 +6,15 @@
  */
 import request from '../utils/request'
 
+/** AI 解析输出的循环规则 */
+export interface AiRepeatRule {
+  type: string
+  interval?: number
+  weekDays?: string | null
+  dayOfMonth?: number | null
+  endDate?: string | null
+}
+
 /** AI 解析返回的结构化任务 */
 export interface ParsedTask {
   title: string
@@ -15,6 +24,7 @@ export interface ParsedTask {
   startDate: string
   listName: string
   tags: string[]
+  repeatRule?: AiRepeatRule | null
 }
 
 /**

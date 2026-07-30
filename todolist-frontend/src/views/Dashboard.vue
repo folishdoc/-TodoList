@@ -929,15 +929,38 @@ const getSelectedListName = () => getSelectedListNameFromCmp(taskLists.value)
 // ── AI 智能录入 ──
 const aiTaskInputRef = ref<InstanceType<typeof AiTaskInput> | null>(null)
 
-function handleAiConfirm(data: ParsedTask) {
+async function handleAiConfirm(data: ParsedTask) {
   resetTaskForm()
+  // 先打开对话框（内部会重置循环表单 + normal 模式），再填充字段
+  openCreateTaskDialog()
   if (data.title) taskForm.title = data.title
   if (data.description) taskForm.description = data.description
   if (data.priority) taskForm.priority = data.priority
   if (data.dueDate) taskForm.dueDate = data.dueDate
   if (data.startDate) taskForm.startDate = data.startDate
-  // 打开新建任务对话框让用户确认
-  openCreateTaskDialog()
+  // 清单：按名称匹配现有清单，匹配不到忽略
+  if (data.listName) {
+    const matchedList = taskLists.value.find((l) => l.name === data.listName)
+    if (matchedList) taskForm.listId = matchedList.id
+  }
+  // 标签：按名称匹配现有标签，匹配不到忽略（不创建新标签）
+  if (data.tags && data.tags.length > 0) {
+    await loadAllTags()
+    selectedTagIds.value = data.tags
+      .map((name) => allTags.value.find((t) => t.name === name)?.id)
+      .filter((id): id is number => id != null)
+  }
+  // 填充循环规则并切换到循环模式
+  if (data.repeatRule?.type) {
+    repeatForm.type = data.repeatRule.type
+    repeatForm.interval = data.repeatRule.interval || 1
+    repeatForm.weekDays = data.repeatRule.weekDays
+      ? data.repeatRule.weekDays.split(',').map(Number).filter((n: number) => n >= 1 && n <= 7)
+      : []
+    repeatForm.dayOfMonth = data.repeatRule.dayOfMonth || 1
+    repeatForm.endDate = data.repeatRule.endDate || ''
+    taskTimeMode.value = 'repeat'
+  }
 }
 
 const batchOps = useBatchOps(tasks)

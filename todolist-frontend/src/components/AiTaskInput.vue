@@ -78,6 +78,10 @@
             </el-tag>
           </div>
         </div>
+        <div class="preview-field" v-if="parsedResult.repeatRule">
+          <span class="field-label">循环</span>
+          <span class="field-value">{{ repeatLabel }}</span>
+        </div>
       </div>
       <div class="ai-input-actions">
         <el-button @click="step = 'input'">重新输入</el-button>
@@ -95,6 +99,7 @@ import { ElMessage } from 'element-plus'
 import { MagicStick } from '@element-plus/icons-vue'
 import { parseTask } from '../api/ai'
 import type { ParsedTask } from '../api/ai'
+import { getRepeatLabel } from '../composables/useRepeatRule'
 
 const emit = defineEmits<{
   confirm: [data: ParsedTask]
@@ -112,6 +117,7 @@ const parsedResult = ref<ParsedTask>({
   startDate: '',
   listName: '',
   tags: [],
+  repeatRule: null,
 })
 
 const priorityType = computed(() => {
@@ -124,11 +130,16 @@ const priorityText = computed(() => {
   return texts[parsedResult.value.priority] || '无'
 })
 
+const repeatLabel = computed(() => {
+  if (!parsedResult.value.repeatRule) return ''
+  return getRepeatLabel(JSON.stringify(parsedResult.value.repeatRule), { dueDate: parsedResult.value.dueDate })
+})
+
 function open() {
   visible.value = true
   step.value = 'input'
   inputText.value = ''
-  parsedResult.value = { title: '', description: '', priority: 0, dueDate: '', startDate: '', listName: '', tags: [] }
+  parsedResult.value = { title: '', description: '', priority: 0, dueDate: '', startDate: '', listName: '', tags: [], repeatRule: null }
 }
 
 async function handleParse() {

@@ -120,6 +120,33 @@ describe('AiTaskInput.vue', () => {
     expect(wrapper.text()).toContain('规划')
   })
 
+  it('shows repeat rule in preview when parsed', async () => {
+    parseTaskMock.mockResolvedValue({
+      title: '喝水',
+      description: '',
+      priority: 2,
+      dueDate: '2026-08-01 09:00',
+      startDate: '',
+      listName: '',
+      tags: [],
+      repeatRule: { type: 'DAILY', interval: 1 },
+    } as any)
+
+    const wrapper = createWrapper()
+    wrapper.vm.open()
+    await wrapper.vm.$nextTick()
+
+    const input = wrapper.find('input')
+    await input.setValue('每天喝水')
+
+    const buttons = wrapper.findAll('button')
+    await buttons[buttons.length - 1].trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.preview-card').exists()).toBe(true)
+    expect(wrapper.text()).toContain('每天')
+  })
+
   it('emits confirm with parsed data on confirmation', async () => {
     const mockResult = {
       title: '测试任务',
