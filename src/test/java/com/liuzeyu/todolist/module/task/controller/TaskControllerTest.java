@@ -144,16 +144,6 @@ class TaskControllerTest extends BaseControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/tasks/search - search tasks")
-    void searchTasks_succeeds() throws Exception {
-        when(taskService.searchTasks(eq(1L), eq("milk"), eq(0), eq(20)))
-                .thenReturn(new PageResult<>(List.of(), 0, 1, 20));
-
-        doGet("/api/tasks/search?keyword=milk")
-                .andExpect(status().isOk());
-    }
-
-    @Test
     @DisplayName("GET /api/tasks/range - date range query")
     void getTasksByDateRange_succeeds() throws Exception {
         when(taskService.getTasksByDateRange(eq(1L), any(), any())).thenReturn(List.of());

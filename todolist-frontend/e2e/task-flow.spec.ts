@@ -1,96 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-
-async function setupApiMocks(page: Page, initialTasks: any[] = []) {
-  let tasks: any[] = [...initialTasks]
-  let nextId = 100
-  const subtasks: Record<number, any[]> = {}
-  const tags: Record<number, any[]> = {}
-  const attachments: Record<number, any[]> = {}
-
-  await page.route('http://localhost:5180/api/**', async (route) => {
-    const req = route.request()
-    const url = new URL(req.url())
-    const path = url.pathname
-    const method = req.method()
-    let body: any = null
-    try {
-      body = req.postDataJSON()
-    } catch {}
-
-    const ok = (data: any) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ code: 200, message: 'success', data }),
-      })
-
-    if (path === '/api/tasks' && method === 'GET') {
-      return ok({
-        content: tasks,
-        totalElements: tasks.length,
-        totalPages: 1,
-        size: 1000,
-        number: 0,
-      })
-    }
-    if (path === '/api/tasks' && method === 'POST') {
-      const t = {
-        id: nextId++,
-        status: 0,
-        priority: 2,
-        parentId: null,
-        ...body,
-        createdAt: new Date().toISOString(),
-      }
-      tasks.push(t)
-      return ok(t)
-    }
-    const idMatch = path.match(/^\/api\/tasks\/(\d+)$/)
-    if (idMatch && method === 'PUT') {
-      const id = Number(idMatch[1])
-      const idx = tasks.findIndex((t) => t.id === id)
-      if (idx >= 0) {
-        tasks[idx] = { ...tasks[idx], ...body }
-        return ok(tasks[idx])
-      }
-    }
-    if (idMatch && method === 'DELETE') {
-      const id = Number(idMatch[1])
-      tasks = tasks.filter((t) => t.id !== id)
-      return ok(null)
-    }
-    const subtaskMatch = path.match(/^\/api\/tasks\/(\d+)\/subtasks$/)
-    if (subtaskMatch && method === 'GET') {
-      return ok(subtasks[Number(subtaskMatch[1])] || [])
-    }
-    const tagMatch = path.match(/^\/api\/tasks\/(\d+)\/tags$/)
-    if (tagMatch && method === 'GET') return ok(tags[Number(tagMatch[1])] || [])
-    const attMatch = path.match(/^\/api\/tasks\/(\d+)\/attachments$/)
-    if (attMatch && method === 'GET') return ok(attachments[Number(attMatch[1])] || [])
-    if (path === '/api/lists' && method === 'GET')
-      return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
-    if (path === '/api/tags' && method === 'GET')
-      return ok([
-        { id: 1, name: '重要', color: '#f56c6c' },
-        { id: 2, name: '工作', color: '#409EFF' },
-      ])
-    if (path === '/api/statistics/overview' && method === 'GET')
-      return ok({
-        totalTasks: tasks.length,
-        completedTasks: 0,
-        pendingTasks: tasks.length,
-        completionRate: 0,
-      })
-    if (path === '/api/statistics/by-list' && method === 'GET') return ok([])
-    if (path === '/api/statistics/by-priority' && method === 'GET') return ok([])
-    if (path === '/api/statistics/trend' && method === 'GET') return ok([])
-    if (path === '/api/habits' && method === 'GET') return ok([])
-    if (path === '/api/anniversaries' && method === 'GET') return ok([])
-    if (path === '/api/anniversaries/pending-reminders' && method === 'GET') return ok([])
-
-    return ok(null)
-  })
-}
+import { test, expect } from '@playwright/test'
+import { setupApiMocks } from './fixtures/api-mocks'
 
 test.describe('E2E 任务完整流程', () => {
   test.beforeEach(async ({ page }) => {
@@ -101,42 +10,11 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('Dashboard 默认显示任务列表（mock 数据）', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 1,
-                  title: '买菜',
-                  status: 0,
-                  priority: 1,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-                {
-                  id: 2,
-                  title: '做饭',
-                  status: 1,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-02',
-                },
-              ],
-              totalElements: 2,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [
+        { id: 1, title: '买菜', status: 0, priority: 1, parentId: null, createdAt: '2025-01-01' },
+        { id: 2, title: '做饭', status: 1, priority: 2, parentId: null, createdAt: '2025-01-02' },
+      ],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -150,40 +28,12 @@ test.describe('E2E 任务完整流程', () => {
     await newBtn.click()
     await page.waitForTimeout(500)
     const titleInput = page.locator('input[placeholder*="任务标题"]')
-    if ((await titleInput.count()) > 0) {
-      await expect(titleInput.first()).toBeVisible()
-    }
+    await expect(titleInput.first()).toBeVisible()
   })
 
   test('编辑任务：点击任务 → 标题输入框显示该任务标题', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 5,
-                  title: '可编辑任务',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 5, title: '可编辑任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -192,52 +42,13 @@ test.describe('E2E 任务完整流程', () => {
     await taskItem.click()
     await page.waitForTimeout(800)
     const titleInput = page.locator('input[placeholder*="任务标题"]')
-    if ((await titleInput.count()) > 0) {
-      const value = await titleInput.first().inputValue()
-      expect(value).toBe('可编辑任务')
-    }
+    const value = await titleInput.first().inputValue()
+    expect(value).toBe('可编辑任务')
   })
 
   test('完成任务：勾选 checkbox → 任务显示 completed 样式', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 7,
-                  title: '待完成',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      if (route.request().method() === 'PUT') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: { id: 7, title: '待完成', status: 1 },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 7, title: '待完成', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -250,40 +61,12 @@ test.describe('E2E 任务完整流程', () => {
     await checkbox.click({ force: true })
     await page.waitForTimeout(500)
     const completedItem = page.locator('.task-item.completed').filter({ hasText: '待完成' })
-    if ((await completedItem.count()) > 0) {
-      await expect(completedItem.first()).toBeVisible()
-    }
+    await expect(completedItem.first()).toBeVisible()
   })
 
   test('删除任务：点击删除按钮 → 任务项仍然显示（删除按钮存在即可）', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 9,
-                  title: '待删除',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 9, title: '待删除', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -295,122 +78,35 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('子任务：在编辑面板中点击"+ 添加"出现输入框', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 11,
-                  title: '父任务',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 11, title: '父任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
     await page.locator('.task-item').filter({ hasText: '父任务' }).first().click()
     await page.waitForTimeout(800)
-    const addSubtaskBtn = page.getByRole('button', { name: '+ 添加' })
-    if ((await addSubtaskBtn.count()) > 0) {
-      await addSubtaskBtn.first().click()
-      await page.waitForTimeout(300)
-      const subtaskInput = page.locator('input[placeholder*="子任务"]')
-      if ((await subtaskInput.count()) > 0) {
-        await expect(subtaskInput.first()).toBeVisible()
-      }
-    }
+    const addSubtaskBtn = page.getByRole('button', { name: '添加子任务' })
+    await addSubtaskBtn.first().click()
+    await page.waitForTimeout(300)
+    const subtaskInput = page.locator('.subtask-input').first()
+    await expect(subtaskInput).toBeVisible()
   })
 
   test('顺延过期任务：按钮存在并可见', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 13,
-                  title: '过期任务',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  dueDate: '2020-01-01',
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 13, title: '过期任务', status: 0, priority: 2, parentId: null, dueDate: '2020-01-01', createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
     const postponeBtn = page.getByRole('button', { name: '顺延' }).first()
-    if ((await postponeBtn.count()) > 0) {
-      await expect(postponeBtn).toBeVisible()
-    } else {
-      await expect(page.getByText('过期任务').first()).toBeVisible()
-    }
+    await expect(postponeBtn).toBeVisible()
   })
 
   test('关闭编辑面板：emit 后任务列表重新加载', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 15,
-                  title: '可关闭',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 15, title: '可关闭', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -421,35 +117,8 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('描述 Markdown 预览：切换后渲染 HTML', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 17,
-                  title: '有描述',
-                  description: '**粗体文本**',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 17, title: '有描述', description: '**粗体文本**', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -457,49 +126,16 @@ test.describe('E2E 任务完整流程', () => {
     await page.locator('.task-item').filter({ hasText: '有描述' }).first().click()
     await page.waitForTimeout(800)
     const previewSwitch = page.getByText('预览')
-    if ((await previewSwitch.count()) > 0) {
-      await previewSwitch.first().click()
-      await page.waitForTimeout(500)
-    }
+    await previewSwitch.first().click()
+    await page.waitForTimeout(500)
   })
 
   test('任务卡片显示优先级标签（高/中/低/无）', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 19,
-                  title: '高优',
-                  status: 0,
-                  priority: 3,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-                {
-                  id: 20,
-                  title: '中优',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-02',
-                },
-              ],
-              totalElements: 2,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [
+        { id: 19, title: '高优', status: 0, priority: 3, parentId: null, createdAt: '2025-01-01' },
+        { id: 20, title: '中优', status: 0, priority: 2, parentId: null, createdAt: '2025-01-02' },
+      ],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -509,34 +145,12 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('标签附加：在编辑面板中选择标签', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 21,
-                  title: '标签测试',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 21, title: '标签测试', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }],
+      tags: [
+        { id: 1, name: '重要', color: '#f56c6c' },
+        { id: 2, name: '工作', color: '#409EFF' },
+      ],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -544,41 +158,13 @@ test.describe('E2E 任务完整流程', () => {
     await page.locator('.task-item').filter({ hasText: '标签测试' }).first().click()
     await page.waitForTimeout(800)
     const tagTrigger = page.locator('.meta-tag').filter({ hasText: /标签/ })
-    if ((await tagTrigger.count()) > 0) {
-      await expect(tagTrigger.first()).toBeVisible()
-    }
+    await expect(tagTrigger.first()).toBeVisible()
   })
 
   test('清单切换下拉：在编辑面板中显示当前清单名', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 23,
-                  title: '有清单',
-                  status: 0,
-                  priority: 2,
-                  listId: 1,
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 23, title: '有清单', status: 0, priority: 2, listId: 1, parentId: null, createdAt: '2025-01-01' }],
+      lists: [{ id: 1, name: '默认清单', color: '#409EFF' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -586,42 +172,13 @@ test.describe('E2E 任务完整流程', () => {
     await page.locator('.task-item').filter({ hasText: '有清单' }).first().click()
     await page.waitForTimeout(1000)
     const listTag = page.locator('.meta-tag').filter({ hasText: /默认清单/ })
-    if ((await listTag.count()) > 0) {
-      await expect(listTag.first()).toBeVisible()
-    }
+    await expect(listTag.first()).toBeVisible()
   })
 
   test('重复规则：编辑面板中显示 🔄 标记', async ({ page }) => {
     const rule = JSON.stringify({ type: 'DAILY', interval: 1 })
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 25,
-                  title: '循环任务',
-                  status: 0,
-                  priority: 2,
-                  parentId: null,
-                  repeatRule: rule,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 25, title: '循环任务', status: 0, priority: 2, parentId: null, repeatRule: rule, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -629,26 +186,11 @@ test.describe('E2E 任务完整流程', () => {
     await page.locator('.task-item').filter({ hasText: '循环任务' }).first().click()
     await page.waitForTimeout(800)
     const repeatMark = page.getByText(/每天|每周|每月|每年/)
-    if ((await repeatMark.count()) > 0) {
-      await expect(repeatMark.first()).toBeVisible()
-    }
+    await expect(repeatMark.first()).toBeVisible()
   })
 
   test('空状态：无任务时显示"暂无任务"提示', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: { content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 },
-          }),
-        })
-      }
-      return route.continue()
-    })
+    await setupApiMocks(page, { tasks: [] })
     await page.reload()
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
@@ -656,35 +198,8 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('任务卡片显示时间状态（顺延/过期）', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200,
-            message: 'success',
-            data: {
-              content: [
-                {
-                  id: 27,
-                  title: '今日',
-                  status: 0,
-                  priority: 2,
-                  dueDate: new Date().toISOString(),
-                  parentId: null,
-                  createdAt: '2025-01-01',
-                },
-              ],
-              totalElements: 1,
-              totalPages: 1,
-              size: 1000,
-              number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 27, title: '今日', status: 0, priority: 2, dueDate: new Date().toISOString(), parentId: null, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
@@ -693,83 +208,48 @@ test.describe('E2E 任务完整流程', () => {
   })
 
   test('创建子任务：点击父任务 → 输入子任务名 → 按回车创建', async ({ page }) => {
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200, message: 'success',
-            data: {
-              content: [
-                { id: 29, title: '父任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' },
-              ],
-              totalElements: 1, totalPages: 1, size: 1000, number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    await setupApiMocks(page, {
+      tasks: [{ id: 29, title: '父任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
     await page.locator('.task-item').filter({ hasText: '父任务' }).first().click()
     await page.waitForTimeout(800)
-    const addBtn = page.getByRole('button', { name: '+ 添加' })
-    if ((await addBtn.count()) > 0) {
-      await addBtn.first().click()
-      await page.waitForTimeout(300)
-      const input = page.locator('input[placeholder*="子任务"]')
-      if ((await input.count()) > 0) {
-        await input.first().fill('子任务1')
-        await input.first().press('Enter')
-        await page.waitForTimeout(500)
-      }
-    }
+    const addBtn = page.getByRole('button', { name: '添加子任务' })
+    await addBtn.first().click()
+    await page.waitForTimeout(300)
+    const input = page.locator('.subtask-input input').first()
+    await input.fill('子任务1')
+    await input.press('Enter')
+    await page.waitForTimeout(500)
   })
 
   test('重复规则设置：通过 API 设置每日重复', async ({ page }) => {
-    let repeatSet = false
-    await page.route('http://localhost:5180/api/tasks/repeat/31', async (route) => {
-      if (route.request().method() === 'POST') {
-        repeatSet = true
-        return route.fulfill({
-          status: 200, contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200, message: 'success',
-            data: { id: 31, title: '每日任务', status: 0, repeatRule: JSON.stringify({ type: 'DAILY', interval: 1 }) },
-          }),
-        })
-      }
-      return route.continue()
-    })
-    await page.route('http://localhost:5180/api/**', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200, contentType: 'application/json',
-          body: JSON.stringify({
-            code: 200, message: 'success',
-            data: {
-              content: [
-                { id: 31, title: '每日任务', status: 0, priority: 2, parentId: null, createdAt: '2025-01-01' },
-              ],
-              totalElements: 1, totalPages: 1, size: 1000, number: 0,
-            },
-          }),
-        })
-      }
-      return route.continue()
+    const rule = JSON.stringify({ type: 'DAILY', interval: 1 })
+    await setupApiMocks(page, {
+      tasks: [{ id: 31, title: '每日任务', status: 0, priority: 2, parentId: null, repeatRule: rule, createdAt: '2025-01-01' }],
     })
     await page.reload()
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
     await page.locator('.task-item').filter({ hasText: '每日任务' }).first().click()
     await page.waitForTimeout(800)
-    // 验证重复规则标记可见（API mock 会返回 repeatRule）
     const repeatMark = page.getByText(/每天|每周|每月|每年/)
-    if ((await repeatMark.count()) > 0) {
-      await expect(repeatMark.first()).toBeVisible()
-    }
+    await expect(repeatMark.first()).toBeVisible()
+  })
+
+  test('编辑面板显示任务的时间设置（开始/截止日期）', async ({ page }) => {
+    await setupApiMocks(page, {
+      tasks: [{ id: 33, title: '有时间', status: 0, priority: 2, parentId: null, startDate: '2026-07-01T09:00:00', dueDate: '2026-07-01T18:00:00', createdAt: '2025-01-01' }],
+    })
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+    await page.locator('.task-item').filter({ hasText: '有时间' }).first().click()
+    await page.waitForTimeout(800)
+    // 编辑面板应显示时间设置标签
+    const timeTag = page.locator('.meta-tag.clickable').first()
+    await expect(timeTag).toBeVisible()
   })
 })

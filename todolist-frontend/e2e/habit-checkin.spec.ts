@@ -1,81 +1,36 @@
-import { test, expect, type Page } from '@playwright/test'
-
-async function setupApiMocks(page: Page) {
-  let habits: any[] = [
-    {
-      id: 1,
-      name: '晨跑',
-      icon: '🏃',
-      color: '#67C23A',
-      targetType: 'count',
-      targetValue: 1,
-      frequency: 'daily',
-      timePeriod: 'morning',
-      currentStreak: 5,
-      totalCompletions: 20,
-    },
-    {
-      id: 2,
-      name: '阅读',
-      icon: '📚',
-      color: '#409EFF',
-      targetType: 'duration',
-      targetValue: 30,
-      frequency: 'daily',
-      timePeriod: 'evening',
-      currentStreak: 12,
-      totalCompletions: 50,
-    },
-  ]
-  let records: any[] = []
-
-  await page.route('http://localhost:5180/api/**', async (route) => {
-    const req = route.request()
-    const url = new URL(req.url())
-    const path = url.pathname
-    const method = req.method()
-
-    const ok = (data: any) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ code: 200, message: 'success', data }),
-      })
-
-    if (path === '/api/habits' && method === 'GET') return ok(habits)
-    if (path === '/api/habits/records/today' && method === 'GET') return ok(records)
-    if (path === '/api/lists' && method === 'GET')
-      return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
-    if (path === '/api/tags' && method === 'GET') return ok([])
-    if (path === '/api/tasks' && method === 'GET')
-      return ok({ content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 })
-    if (path === '/api/anniversaries' && method === 'GET') return ok([])
-    if (path === '/api/anniversaries/pending-reminders' && method === 'GET') return ok([])
-
-    const checkinMatch = path.match(/^\/api\/habits\/(\d+)\/checkin$/)
-    if (checkinMatch && method === 'POST') {
-      const id = Number(checkinMatch[1])
-      const habit = habits.find((h) => h.id === id)
-      if (habit) {
-        const today = new Date().toISOString().slice(0, 10)
-        if (!records.find((r: any) => r.habitId === id && r.checkDate === today)) {
-          records.push({ habitId: id, checkDate: today, completionValue: habit.targetValue })
-          habit.currentStreak++
-          habit.totalCompletions++
-        }
-      }
-      return ok(null)
-    }
-    const recordsRangeMatch = path.match(/^\/api\/habits\/(\d+)\/records\/range$/)
-    if (recordsRangeMatch && method === 'GET') return ok([])
-
-    return ok(null)
-  })
-}
+import { test, expect } from '@playwright/test'
+import { setupApiMocks } from './fixtures/api-mocks'
 
 test.describe('E2E 习惯打卡', () => {
   test.beforeEach(async ({ page }) => {
-    await setupApiMocks(page)
+    await setupApiMocks(page, {
+      habits: [
+        {
+          id: 1,
+          name: '晨跑',
+          icon: '🏃',
+          color: '#67C23A',
+          targetType: 'count',
+          targetValue: 1,
+          frequency: 'daily',
+          timePeriod: 'morning',
+          currentStreak: 5,
+          totalCompletions: 20,
+        },
+        {
+          id: 2,
+          name: '阅读',
+          icon: '📚',
+          color: '#409EFF',
+          targetType: 'duration',
+          targetValue: 30,
+          frequency: 'daily',
+          timePeriod: 'evening',
+          currentStreak: 12,
+          totalCompletions: 50,
+        },
+      ],
+    })
     await page.goto('/')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
@@ -108,9 +63,7 @@ test.describe('E2E 习惯打卡', () => {
     await checkInBtn.click()
     await page.waitForTimeout(800)
     const completedBtn = page.getByRole('button', { name: /已完成/ })
-    if ((await completedBtn.count()) > 0) {
-      await expect(completedBtn.first()).toBeVisible()
-    }
+    await expect(completedBtn.first()).toBeVisible({ timeout: 5000 })
   })
 
   test('新建习惯：点击"新建习惯"按钮显示表单', async ({ page }) => {
@@ -132,5 +85,18 @@ test.describe('E2E 习惯打卡', () => {
     await page.waitForTimeout(500)
     await expect(page.getByText('近7天')).toBeVisible()
     await expect(page.getByText('近30天')).toBeVisible()
+  })
+
+  test('创建习惯：填写名称 → 确定 → 列表显示新习惯', async ({ page }) => {
+    const habitNav = page.locator('.nav-item[title="习惯"]')
+    await habitNav.click()
+    await page.waitForTimeout(800)
+    await page.getByRole('button', { name: '新建习惯' }).click()
+    await page.waitForTimeout(500)
+    const nameInput = page.locator('input[placeholder*="例如"]')
+    await nameInput.fill('每日冥想')
+    await page.getByRole('button', { name: '确定' }).last().click()
+    await page.waitForTimeout(500)
+    await expect(page.getByText('每日冥想').first()).toBeVisible()
   })
 })

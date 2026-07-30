@@ -36,3 +36,4 @@ public class DataInitializer implements CommandLineRunner {
         log.info("默认管理员账号已创建: admin / admin123");
     }
 }
+

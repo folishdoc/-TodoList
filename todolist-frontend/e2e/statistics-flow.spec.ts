@@ -1,6 +1,25 @@
 import { test, expect } from '@playwright/test'
 import { setupApiMocks } from './fixtures/api-mocks'
 
+/** Generate trend data for the past week relative to today */
+function buildTrendData(): Array<{ date: string; created: number; completed: number }> {
+  const counts = [3, 5, 2, 4, 6, 3, 2]
+  const completedCounts = [1, 2, 3, 1, 2, 4, 1]
+  return counts.map((_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    return {
+      date: d.toISOString().slice(0, 10),
+      created: counts[i],
+      completed: completedCounts[i],
+    }
+  })
+}
+
+function formatShortDate(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
 const STATS = {
   overview: { totalTasks: 25, completedTasks: 10, pendingTasks: 15, completionRate: 40 },
   byPriority: [
@@ -12,15 +31,7 @@ const STATS = {
     { name: '工作', count: 15, color: '#409EFF' },
     { name: '生活', count: 10, color: '#67C23A' },
   ],
-  trend: [
-    { date: '2026-07-23', created: 3, completed: 1 },
-    { date: '2026-07-24', created: 5, completed: 2 },
-    { date: '2026-07-25', created: 2, completed: 3 },
-    { date: '2026-07-26', created: 4, completed: 1 },
-    { date: '2026-07-27', created: 6, completed: 2 },
-    { date: '2026-07-28', created: 3, completed: 4 },
-    { date: '2026-07-29', created: 2, completed: 1 },
-  ],
+  trend: buildTrendData(),
 }
 
 test.describe('E2E 数据统计', () => {
@@ -62,8 +73,11 @@ test.describe('E2E 数据统计', () => {
     await page.waitForTimeout(500)
     await expect(page.getByText(/近7天任务趋势/)).toBeVisible()
     // 验证日期标签渲染
-    await expect(page.getByText('7/23').first()).toBeVisible()
-    await expect(page.getByText('7/29').first()).toBeVisible()
+    const trend = buildTrendData()
+    const firstDate = formatShortDate(new Date(trend[0].date))
+    const lastDate = formatShortDate(new Date(trend[trend.length - 1].date))
+    await expect(page.getByText(firstDate).first()).toBeVisible()
+    await expect(page.getByText(lastDate).first()).toBeVisible()
     // 验证数字标签（+创建 / ✓完成）
     await expect(page.getByText('+3').first()).toBeVisible()
     await expect(page.getByText('✓1').first()).toBeVisible()

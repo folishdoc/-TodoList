@@ -1,27 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-
-/**
- * 通用 API mock — 返回空数据 + 几个测试任务。
- * CalendarView 通过 getTasks 拉取（Dashboard 内部），CalendarView 内
- * 直接用 allTasks 渲染，所以 mock /api/tasks 即可。
- */
-async function setupApiMocks(page: Page) {
-  await page.route('http://localhost:5180/api/**', async (route) => {
-    const url = new URL(route.request().url())
-    const path = url.pathname
-    const method = route.request().method()
-    const ok = (data: any) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ code: 200, message: 'success', data }),
-      })
-    if (path === '/api/tasks' && method === 'GET') {
-      return ok({ content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 })
-    }
-    return ok(null)
-  })
-}
+import { setupApiMocks } from './fixtures/api-mocks'
 
 async function navigateToCalendar(page: Page) {
   // Calendar 入口在左侧导航栏，title="日历"
@@ -139,9 +117,7 @@ test.describe('Calendar 视图 E2E', () => {
     await page.waitForTimeout(500)
     // 新建任务对话框标题
     const dialogTitle = page.getByText('新建任务')
-    if ((await dialogTitle.count()) > 0) {
-      await expect(dialogTitle.first()).toBeVisible()
-    }
+    await expect(dialogTitle.first()).toBeVisible({ timeout: 5000 })
   })
 
   test('切换到条形视图（Bar View）：显示 .bar-view 容器', async ({ page }) => {
@@ -149,12 +125,6 @@ test.describe('Calendar 视图 E2E', () => {
     await page.getByRole('radio', { name: /条形/ }).click({ force: true })
     await page.waitForTimeout(300)
     const barView = page.locator('.bar-view')
-    if ((await barView.count()) > 0) {
-      await expect(barView.first()).toBeVisible()
-    } else {
-      // 部分版本用不同 class 名
-      const altBarView = page.locator('.calendar-container').last()
-      await expect(altBarView).toBeVisible()
-    }
+    await expect(barView.first()).toBeVisible({ timeout: 5000 })
   })
 })

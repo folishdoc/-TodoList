@@ -5,8 +5,6 @@ const getOverviewMock = vi.fn()
 const getByPriorityMock = vi.fn()
 const getByListMock = vi.fn()
 const getTrendMock = vi.fn()
-const exportTasksCsvMock = vi.fn()
-const exportTasksJsonMock = vi.fn()
 
 vi.mock('element-plus', () => ({
   ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
@@ -17,11 +15,6 @@ vi.mock('../api/statistics', () => ({
   getByPriority: (...args: unknown[]) => getByPriorityMock(...args),
   getByList: (...args: unknown[]) => getByListMock(...args),
   getTrend: (...args: unknown[]) => getTrendMock(...args),
-}))
-
-vi.mock('../api/export', () => ({
-  exportTasksCsv: (...args: unknown[]) => exportTasksCsvMock(...args),
-  exportTasksJson: (...args: unknown[]) => exportTasksJsonMock(...args),
 }))
 
 import StatisticsView from './StatisticsView.vue'
@@ -192,70 +185,6 @@ describe('StatisticsView.vue', () => {
     await flushPromises()
     expect(consoleSpy).toHaveBeenCalled()
     expect((wrapper.vm as any).overview).toEqual({})
-    consoleSpy.mockRestore()
-  })
-
-  it('handleExportCsv creates download link and shows success', async () => {
-    const blob = new Blob(['test'], { type: 'text/csv' })
-    exportTasksCsvMock.mockResolvedValue(blob)
-    const createObjectURLSpy = vi.spyOn(window.URL, 'createObjectURL').mockReturnValue('blob:mock')
-    const revokeObjectURLSpy = vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {})
-    const clickSpy = vi.fn()
-    const originalCreateElement = document.createElement.bind(document)
-    const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tag) => {
-      const el = originalCreateElement(tag)
-      if (tag === 'a') {
-        el.click = clickSpy
-      }
-      return el
-    })
-    const wrapper = mountView()
-    await flushPromises()
-    await (wrapper.vm as any).handleExportCsv()
-    await flushPromises()
-    expect(exportTasksCsvMock).toHaveBeenCalled()
-    expect(createObjectURLSpy).toHaveBeenCalledWith(blob)
-    expect(clickSpy).toHaveBeenCalled()
-    expect(revokeObjectURLSpy).toHaveBeenCalled()
-    createObjectURLSpy.mockRestore()
-    revokeObjectURLSpy.mockRestore()
-    createElementSpy.mockRestore()
-  })
-
-  it('handleExportJson creates download link and shows success', async () => {
-    const blob = new Blob(['{}'], { type: 'application/json' })
-    exportTasksJsonMock.mockResolvedValue(blob)
-    const createObjectURLSpy = vi.spyOn(window.URL, 'createObjectURL').mockReturnValue('blob:mock')
-    const revokeObjectURLSpy = vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {})
-    const clickSpy = vi.fn()
-    const originalCreateElement = document.createElement.bind(document)
-    const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tag) => {
-      const el = originalCreateElement(tag)
-      if (tag === 'a') {
-        el.click = clickSpy
-      }
-      return el
-    })
-    const wrapper = mountView()
-    await flushPromises()
-    await (wrapper.vm as any).handleExportJson()
-    await flushPromises()
-    expect(exportTasksJsonMock).toHaveBeenCalled()
-    expect(createObjectURLSpy).toHaveBeenCalledWith(blob)
-    expect(clickSpy).toHaveBeenCalled()
-    createObjectURLSpy.mockRestore()
-    revokeObjectURLSpy.mockRestore()
-    createElementSpy.mockRestore()
-  })
-
-  it('handleExportCsv logs error on failure', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    exportTasksCsvMock.mockRejectedValue(new Error('Export failed'))
-    const wrapper = mountView()
-    await flushPromises()
-    await (wrapper.vm as any).handleExportCsv()
-    await flushPromises()
-    expect(consoleSpy).toHaveBeenCalled()
     consoleSpy.mockRestore()
   })
 

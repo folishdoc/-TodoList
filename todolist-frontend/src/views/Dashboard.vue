@@ -201,9 +201,9 @@
               <el-card v-loading="loading" class="task-card">
                 <div class="task-card-inner">
                   <el-empty v-if="tasks.length === 0" description="暂无任务" />
-                  <div v-else class="task-list">
+                    <div v-else class="task-list">
                     <div
-                      v-for="task in tasks"
+                      v-for="task in flattenedTree"
                       :key="task.id"
                       class="task-item"
                       :class="{
@@ -214,6 +214,16 @@
                       :style="{ paddingLeft: 20 + (task.level || 0) * 30 + 'px' }"
                       @click.stop="batchMode ? toggleTaskSelection(task.id) : handleEditTask(task)"
                     >
+                      <span
+                        v-if="taskParentIds.has(task.id)"
+                        class="collapse-toggle"
+                        @click.stop="toggleCollapse(task.id)"
+                      >
+                        <el-icon :size="14">
+                          <template v-if="collapsedIds.has(task.id)">&#x25B6;</template>
+                          <template v-else>&#x25BC;</template>
+                        </el-icon>
+                      </span>
                       <el-checkbox
                         v-if="batchMode"
                         :model-value="selectedTaskIds.has(task.id)"
@@ -350,32 +360,54 @@
                   </el-tag>
                 </template>
                 <div style="padding: 4px 0">
-                  <el-form label-width="70px" size="small">
-                    <el-form-item label="开始时间">
-                      <el-date-picker
-                        v-model="taskForm.startDate"
-                        type="datetime"
-                        placeholder="未设置"
-                        :format="datePickerFormat"
-                        value-format="YYYY-MM-DDTHH:mm:ss"
-                        style="width: 100%"
-                        :teleported="false"
-                        @change="autoSave"
-                      />
-                    </el-form-item>
-                    <el-form-item label="截止时间">
-                      <el-date-picker
-                        v-model="taskForm.dueDate"
-                        type="datetime"
-                        placeholder="未设置"
-                        :format="datePickerFormat"
-                        value-format="YYYY-MM-DDTHH:mm:ss"
-                        style="width: 100%"
-                        :teleported="false"
-                        @change="autoSave"
-                      />
-                    </el-form-item>
-                  </el-form>
+                  <!-- 循环任务：只显示周期基准，避免开始=截止的重复 -->
+                  <template v-if="editingTask?.repeatRule">
+                    <el-form label-width="70px" size="small">
+                      <el-form-item label="周期基准">
+                        <el-date-picker
+                          v-model="taskForm.dueDate"
+                          type="datetime"
+                          placeholder="未设置"
+                          :format="datePickerFormat"
+                          value-format="YYYY-MM-DDTHH:mm:ss"
+                          style="width: 100%"
+                          :teleported="false"
+                          @change="autoSave"
+                        />
+                        <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 2px">
+                          首次发生时间，下次循环以此为基准
+                        </div>
+                      </el-form-item>
+                    </el-form>
+                  </template>
+                  <template v-else>
+                    <el-form label-width="70px" size="small">
+                      <el-form-item label="开始时间">
+                        <el-date-picker
+                          v-model="taskForm.startDate"
+                          type="datetime"
+                          placeholder="未设置"
+                          :format="datePickerFormat"
+                          value-format="YYYY-MM-DDTHH:mm:ss"
+                          style="width: 100%"
+                          :teleported="false"
+                          @change="autoSave"
+                        />
+                      </el-form-item>
+                      <el-form-item label="截止时间">
+                        <el-date-picker
+                          v-model="taskForm.dueDate"
+                          type="datetime"
+                          placeholder="未设置"
+                          :format="datePickerFormat"
+                          value-format="YYYY-MM-DDTHH:mm:ss"
+                          style="width: 100%"
+                          :teleported="false"
+                          @change="autoSave"
+                        />
+                      </el-form-item>
+                    </el-form>
+                  </template>
                   <el-divider style="margin: 8px 0">循环</el-divider>
                   <div v-if="editingTask?.repeatRule">
                     <div style="margin-bottom: 8px; font-size: 13px; color: #e6a23c">
@@ -964,7 +996,8 @@ const { emitTaskChanged } = useTaskSync(() => loadTasks())
 const taskCrud = useTaskCrud()
 const {
   tasks, loading, total, currentPage, pageSize, searchKeyword,
-  taskTree, loadTasks, handleToggleTask, handleDeleteTask: handleDeleteTaskFromCmp, handlePostponeTask,
+  flattenedTree, currentListId, collapsedIds, taskParentIds,
+  loadTasks, handleToggleTask, handleDeleteTask: handleDeleteTaskFromCmp, handlePostponeTask, toggleCollapse,
 } = taskCrud
 // Wrapper: template calls handleDeleteTask(task), composable expects (task, showUndo, emitTaskChanged)
 const handleDeleteTask = (task: Task) => handleDeleteTaskFromCmp(task, showUndo, emitTaskChanged)
@@ -1047,6 +1080,11 @@ const pageTitle = computed(() => {
 const handleMenuSelect = (index: string) => {
   activeMenu.value = index
   currentPage.value = 1
+  if (index.startsWith('list-')) {
+    currentListId.value = parseInt(index.split('-')[1])
+  } else {
+    currentListId.value = null
+  }
   loadTasks()
 }
 
@@ -1325,6 +1363,21 @@ onUnmounted(() => {
 
 .task-item.subtask {
   background-color: #f8f9fa;
+}
+
+.collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #999;
+  transition: color 0.2s;
+}
+.collapse-toggle:hover {
+  color: #409eff;
 }
 
 .task-content {

@@ -1,87 +1,36 @@
-import { test, expect, type Page } from '@playwright/test'
-
-async function setupApiMocks(page: Page) {
-  let items: any[] = [
-    {
-      id: 1,
-      name: '生日',
-      date: '2025-08-15',
-      repeatType: 'YEARLY',
-      remindEnabled: true,
-      remindTime: '09:00',
-      tags: '家人',
-      notes: '',
-      daysUntil: 5,
-      nextDate: '2026-08-15',
-    },
-    {
-      id: 2,
-      name: '结婚纪念日',
-      date: '2020-06-01',
-      repeatType: 'YEARLY',
-      remindEnabled: true,
-      remindTime: '09:00',
-      tags: '家人',
-      notes: '',
-      daysUntil: 20,
-      nextDate: '2026-06-01',
-    },
-  ]
-  let nextId = 100
-
-  await page.route('http://localhost:5180/api/**', async (route) => {
-    const req = route.request()
-    const url = new URL(req.url())
-    const path = url.pathname
-    const method = req.method()
-    let body: any = null
-    try {
-      body = req.postDataJSON()
-    } catch {}
-
-    const ok = (data: any) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ code: 200, message: 'success', data }),
-      })
-
-    if (path === '/api/anniversaries' && method === 'GET') return ok(items)
-    if (path === '/api/anniversaries/pending-reminders' && method === 'GET') return ok([])
-    if (path === '/api/anniversaries' && method === 'POST') {
-      const t = { id: nextId++, daysUntil: 30, nextDate: body?.date || '', ...body }
-      items.push(t)
-      return ok(t)
-    }
-    const idMatch = path.match(/^\/api\/anniversaries\/(\d+)$/)
-    if (idMatch && method === 'GET') return ok(items.find((i: any) => i.id === Number(idMatch[1])))
-    if (idMatch && method === 'PUT') {
-      const id = Number(idMatch[1])
-      const idx = items.findIndex((i: any) => i.id === id)
-      if (idx >= 0) {
-        items[idx] = { ...items[idx], ...body }
-        return ok(items[idx])
-      }
-    }
-    if (idMatch && method === 'DELETE') {
-      const id = Number(idMatch[1])
-      items = items.filter((i: any) => i.id !== id)
-      return ok(null)
-    }
-    if (path === '/api/lists' && method === 'GET')
-      return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
-    if (path === '/api/tags' && method === 'GET') return ok([])
-    if (path === '/api/tasks' && method === 'GET')
-      return ok({ content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 })
-    if (path === '/api/habits' && method === 'GET') return ok([])
-
-    return ok(null)
-  })
-}
+import { test, expect } from '@playwright/test'
+import { setupApiMocks } from './fixtures/api-mocks'
 
 test.describe('E2E 纪念日 CRUD', () => {
   test.beforeEach(async ({ page }) => {
-    await setupApiMocks(page)
+    await setupApiMocks(page, {
+      anniversaries: [
+        {
+          id: 1,
+          name: '生日',
+          date: '2025-08-15',
+          repeatType: 'YEARLY',
+          remindEnabled: true,
+          remindTime: '09:00',
+          tags: '家人',
+          notes: '',
+          daysUntil: 5,
+          nextDate: '2026-08-15',
+        },
+        {
+          id: 2,
+          name: '结婚纪念日',
+          date: '2020-06-01',
+          repeatType: 'YEARLY',
+          remindEnabled: true,
+          remindTime: '09:00',
+          tags: '家人',
+          notes: '',
+          daysUntil: 20,
+          nextDate: '2026-06-01',
+        },
+      ],
+    })
     await page.goto('/')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(1500)
@@ -139,11 +88,27 @@ test.describe('E2E 纪念日 CRUD', () => {
     await nav.click()
     await page.waitForTimeout(800)
     const searchInput = page.locator('input[placeholder*="搜索"]')
-    if ((await searchInput.count()) > 0) {
-      await searchInput.first().fill('生日')
-      await page.waitForTimeout(300)
-      const value = await searchInput.first().inputValue()
-      expect(value).toBe('生日')
-    }
+    await searchInput.first().fill('生日')
+    await page.waitForTimeout(300)
+    const value = await searchInput.first().inputValue()
+    expect(value).toBe('生日')
+  })
+
+  test('创建纪念日：填写名称和日期 → 确定 → 列表显示新纪念日', async ({ page }) => {
+    const nav = page.locator('.nav-item[title="纪念日"]')
+    await nav.click()
+    await page.waitForTimeout(800)
+    await page.getByRole('button', { name: '新建纪念日' }).click()
+    await page.waitForTimeout(500)
+    const nameInput = page.locator('input[placeholder*="纪念日名称"]')
+    await nameInput.fill('相识纪念日')
+    const dateInput = page.locator('input[placeholder*="选择日期"]')
+    await dateInput.click()
+    await dateInput.fill('2026-12-25')
+    await dateInput.press('Enter')
+    await page.waitForTimeout(300)
+    await page.getByRole('button', { name: '确定' }).last().click()
+    await page.waitForTimeout(500)
+    await expect(page.getByText('相识纪念日').first()).toBeVisible()
   })
 })

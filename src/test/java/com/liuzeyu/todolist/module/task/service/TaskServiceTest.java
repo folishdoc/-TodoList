@@ -257,18 +257,6 @@ class TaskServiceTest extends BaseUnitTest {
     }
 
     @Test
-    @DisplayName("搜索任务 - 委托给 mapper")
-    void searchTasks_delegatesToRepository() {
-        when(taskMapper.searchTasks(eq(1L), eq("牛奶"), eq(0), eq(20))).thenReturn(List.of());
-        when(taskMapper.countSearchTasks(eq(1L), eq("牛奶"))).thenReturn(0L);
-
-        var result = taskService.searchTasks(1L, "牛奶", 0, 20);
-
-        assertThat(result.getContent()).isEmpty();
-        verify(taskMapper).searchTasks(eq(1L), eq("牛奶"), eq(0), eq(20));
-    }
-
-    @Test
     @DisplayName("按日期范围查询任务 - 委托给 mapper")
     void getTasksByDateRange_delegatesToRepository() {
         LocalDateTime start = LocalDateTime.of(2026, 6, 1, 0, 0);

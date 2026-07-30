@@ -234,6 +234,11 @@ export function useTaskEdit(
 
     isSaving.value = true
     try {
+      // 循环任务：同步 startDate = dueDate（周期基准一致）
+      if (editingTask.value.repeatRule && mainTaskData.startDate !== mainTaskData.dueDate) {
+        mainTaskData.startDate = mainTaskData.dueDate
+        taskForm.startDate = mainTaskData.dueDate
+      }
       await taskApi.updateTask(taskId, mainTaskData)
       await syncSubtasks(taskId, subtasksSnapshot, taskForm.subtasks, loadTasks, emitTaskChanged)
     } catch (error) {

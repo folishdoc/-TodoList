@@ -11,7 +11,6 @@ import com.liuzeyu.todolist.common.exception.GlobalExceptionHandler;
 import com.liuzeyu.todolist.common.util.JwtUtil;
 import com.liuzeyu.todolist.module.auth.service.AuthService;
 import com.liuzeyu.todolist.module.anniversary.service.AnniversaryService;
-import com.liuzeyu.todolist.module.export.service.ExportService;
 import com.liuzeyu.todolist.module.habit.service.HabitService;
 import com.liuzeyu.todolist.module.list.service.TaskListService;
 import com.liuzeyu.todolist.module.statistics.service.StatisticsService;
@@ -46,7 +45,6 @@ public abstract class BaseControllerTest {
      */
     @MockitoBean protected AnniversaryService anniversaryService;
     @MockitoBean protected BatchOperationService batchOperationService;
-    @MockitoBean protected ExportService exportService;
     @MockitoBean protected FileUploadService fileUploadService;
     @MockitoBean protected HabitService habitService;
     @MockitoBean protected RepeatTaskService repeatTaskService;

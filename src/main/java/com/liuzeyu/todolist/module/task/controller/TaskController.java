@@ -4,7 +4,6 @@ import com.liuzeyu.todolist.common.result.PageResult;
 import com.liuzeyu.todolist.common.result.Result;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
-import com.liuzeyu.todolist.module.task.dto.TaskWithSubtasks;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -175,23 +174,7 @@ public class TaskController {
         return Result.success(taskService.getUpcomingTasks(userId));
     }
 
-    /**
-     * 搜索任务
-     *
-     * @param userId  用户 ID
-     * @param keyword 关键词
-     * @param page    页码
-     * @param size    每页大小
-     * @return 分页结果
-     */
-    @GetMapping("/search")
-    @Operation(summary = "搜索任务")
-    public Result<PageResult<Task>> searchTasks(@AuthenticationPrincipal Long userId,
-                                                @RequestParam String keyword,
-                                                @RequestParam(defaultValue = "0") int page,
-                                                @RequestParam(defaultValue = "20") int size) {
-        return Result.success(taskService.searchTasks(userId, keyword, page, size));
-    }
+
 
     /**
      * 获取子任务列表
@@ -207,21 +190,7 @@ public class TaskController {
         return Result.success(taskService.getSubtasks(userId, id));
     }
     
-    /**
-     * 获取带子任务的任务列表（分页）
-     *
-     * @param userId 用户 ID
-     * @param page   页码
-     * @param size   每页大小
-     * @return 分页结果（含子任务）
-     */
-    @GetMapping("/with-subtasks")
-    @Operation(summary = "获取带子任务的任务列表")
-    public Result<PageResult<TaskWithSubtasks>> getTasksWithSubtasks(@AuthenticationPrincipal Long userId,
-                                                                      @RequestParam(defaultValue = "0") int page,
-                                                                      @RequestParam(defaultValue = "20") int size) {
-        return Result.success(taskService.getTasksWithSubtasks(userId, page, size));
-    }
+
 
     /**
      * 获取日期范围内的任务（日历视图用）

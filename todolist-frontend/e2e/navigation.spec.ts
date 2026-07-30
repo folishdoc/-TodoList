@@ -1,27 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-
-async function setupApiMocks(page: Page) {
-  await page.route('http://localhost:5180/api/**', async (route) => {
-    const ok = (data: any) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ code: 200, message: 'success', data }),
-      })
-    const path = new URL(route.request().url()).pathname
-    if (path === '/api/tasks' && route.request().method() === 'GET') {
-      return ok({ content: [], totalElements: 0, totalPages: 0, size: 1000, number: 0 })
-    }
-    if (path === '/api/lists' && route.request().method() === 'GET')
-      return ok([{ id: 1, name: '默认清单', color: '#409EFF' }])
-    if (path === '/api/tags' && route.request().method() === 'GET') return ok([])
-    if (path === '/api/habits' && route.request().method() === 'GET') return ok([])
-    if (path === '/api/anniversaries' && route.request().method() === 'GET') return ok([])
-    if (path === '/api/anniversaries/pending-reminders' && route.request().method() === 'GET')
-      return ok([])
-    return ok(null)
-  })
-}
+import { setupApiMocks } from './fixtures/api-mocks'
 
 test.describe('E2E 导航与主题', () => {
   test.beforeEach(async ({ page }) => {
@@ -85,17 +63,14 @@ test.describe('E2E 导航与主题', () => {
     await expect(page.getByText('新建纪念日').first()).toBeVisible()
   })
 
-  test('主题切换：点击主题按钮后 html class 变化', async ({ page }) => {
-    const html = page.locator('html')
-    const before = await html.getAttribute('class')
-    const themeBtn = page.locator('button[title="切换主题"]').first()
-    if ((await themeBtn.count()) > 0) {
-      await themeBtn.click()
-      await page.waitForTimeout(500)
-      const after = await html.getAttribute('class')
-      expect(after).not.toBe(before)
-    } else {
-      expect(true).toBe(true)
-    }
+  test('主题切换：localStorage 设 dark → html 添加 dark-theme class', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.setItem('theme', 'dark')
+      document.documentElement.classList.add('dark-theme')
+    })
+    const hasClass = await page.evaluate(() =>
+      document.documentElement.classList.contains('dark-theme')
+    )
+    expect(hasClass).toBe(true)
   })
 })

@@ -129,28 +129,12 @@
       </el-col>
     </el-row>
 
-    <!-- 导出按钮 -->
-    <el-row style="margin-top: 20px">
-      <el-col :span="24" style="text-align: center">
-        <el-button type="primary" @click="handleExportCsv">
-          <el-icon><Download /></el-icon>
-          导出CSV
-        </el-button>
-        <el-button type="success" @click="handleExportJson">
-          <el-icon><Download /></el-icon>
-          导出JSON
-        </el-button>
-      </el-col>
-    </el-row>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Download } from '@element-plus/icons-vue'
 import * as statisticsApi from '../api/statistics'
-import * as exportApi from '../api/export'
 
 const overview = ref<any>({})
 const priorityData = ref<any[]>([])
@@ -197,38 +181,6 @@ const formatDate = (date: string) => {
   if (!date) return ''
   const d = new Date(date)
   return `${d.getMonth() + 1}/${d.getDate()}`
-}
-
-// 导出CSV
-const handleExportCsv = async () => {
-  try {
-    const blob = (await exportApi.exportTasksCsv()) as unknown as Blob
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `tasks_${new Date().getTime()}.csv`
-    a.click()
-    window.URL.revokeObjectURL(url)
-    ElMessage.success('导出成功')
-  } catch (error) {
-    console.error('导出CSV失败:', error)
-  }
-}
-
-// 导出JSON
-const handleExportJson = async () => {
-  try {
-    const blob = (await exportApi.exportTasksJson()) as unknown as Blob
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `tasks_${new Date().getTime()}.json`
-    a.click()
-    window.URL.revokeObjectURL(url)
-    ElMessage.success('导出成功')
-  } catch (error) {
-    console.error('导出JSON失败:', error)
-  }
 }
 
 onMounted(() => {

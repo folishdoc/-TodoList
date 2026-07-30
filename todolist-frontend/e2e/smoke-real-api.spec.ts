@@ -30,6 +30,7 @@ function collectErrors(page: any): string[] {
   return errors
 }
 
+
 test.describe('Real API Smoke Tests', () => {
   test.describe.configure({ timeout: 60000 })
 

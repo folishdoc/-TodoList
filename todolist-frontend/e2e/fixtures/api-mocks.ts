@@ -55,6 +55,8 @@ export async function setupApiMocks(page: Page, config: MockConfig = {}) {
   let nextId = 100
   const subtasks: Record<number, any[]> = {}
   const taskTags: Record<number, any[]> = {}
+  /** 今日打卡记录，checkin 时写入 */
+  let todayCheckinRecords: any[] = []
 
   await page.route(`${API_BASE}/api/**`, async (route) => {
     const req = route.request()
@@ -89,6 +91,9 @@ export async function setupApiMocks(page: Page, config: MockConfig = {}) {
     // ── Tasks ──
     if (path === '/api/tasks' && method === 'GET') {
       return ok({ content: tasks, totalElements: tasks.length, totalPages: 1, size: 1000, number: 0 })
+    }
+    if (path === '/api/tasks/range' && method === 'GET') {
+      return ok(tasks)
     }
     if (path === '/api/tasks' && method === 'POST') {
       const t = { id: nextId++, status: 0, priority: 2, parentId: null, ...body, createdAt: new Date().toISOString() }
@@ -245,15 +250,36 @@ export async function setupApiMocks(page: Page, config: MockConfig = {}) {
     }
 
     // ── Habits checkin ──
-    if (path === '/api/habits/records/today' && method === 'GET') return ok([])
+    if (path === '/api/habits/records/today' && method === 'GET') {
+      return ok(todayCheckinRecords)
+    }
     const checkinMatch = path.match(/^\/api\/habits\/(\d+)\/checkin$/)
     if (checkinMatch && method === 'POST') {
       const id = Number(checkinMatch[1])
       const h = habits.find((h: any) => h.id === id)
-      if (h) { h.currentStreak++; h.totalCompletions++ }
+      if (h) {
+        const today = new Date().toISOString().slice(0, 10)
+        const exists = todayCheckinRecords.some((r: any) => r.habitId === id && r.checkDate === today)
+        if (!exists) {
+          todayCheckinRecords.push({
+            habitId: id,
+            checkDate: today,
+            completionValue: body?.completionValue ?? h.targetValue ?? 1,
+            note: body?.note ?? '',
+            isMakeup: body?.isMakeup ?? false,
+            createdAt: new Date().toISOString(),
+          })
+          h.currentStreak++
+          h.totalCompletions++
+        }
+        const record = todayCheckinRecords.find((r: any) => r.habitId === id && r.checkDate === today)
+        return ok(record || null)
+      }
       return ok(null)
     }
     if (checkinMatch && method === 'DELETE') {
+      const id = Number(checkinMatch[1])
+      todayCheckinRecords = todayCheckinRecords.filter((r: any) => r.habitId !== id)
       return ok(null)
     }
     const recordsMatch = path.match(/^\/api\/habits\/(\d+)\/records(\/range)?$/)
@@ -312,20 +338,7 @@ export async function setupApiMocks(page: Page, config: MockConfig = {}) {
     if (path === '/api/statistics/by-priority' && method === 'GET') return ok([])
     if (path === '/api/statistics/trend' && method === 'GET') return ok([])
 
-    // ── Export ──
-    // CSV 导出在统计页面内嵌，但 export 端点需要在单元/导航测试中 mock
-    if (path === '/api/export/tasks/csv' && method === 'GET') {
-      return blobOk('id,title,status\n1,test,0', 'text/csv')
-    }
-    if (path === '/api/export/tasks/json' && method === 'GET') {
-      return blobOk(JSON.stringify([{ id: 1, title: 'test', status: 0 }]), 'application/json')
-    }
-
-    // ── 兜底：未知路由返回 404 ──
-    return route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ code: 404, message: 'mock not found', data: null }),
-    })
+    // ── 兜底：未知路由返回 200/null（与各文件自定义 mock 行为一致） ──
+    return ok(null)
   })
 }

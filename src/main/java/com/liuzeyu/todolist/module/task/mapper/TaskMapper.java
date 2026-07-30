@@ -121,16 +121,6 @@ public interface TaskMapper {
     List<Task> findByUserIdAndStatus(@Param("userId") Long userId, @Param("status") Integer status);
 
     /**
-     * 根据清单 ID 查询任务
-     *
-     * @param userId 用户 ID
-     * @param listId 清单 ID
-     * @return 任务列表
-     */
-    @Select("SELECT * FROM tasks WHERE user_id = #{userId} AND list_id = #{listId}")
-    List<Task> findByUserIdAndListId(@Param("userId") Long userId, @Param("listId") Long listId);
-
-    /**
      * 根据父任务 ID 查询直接子任务
      *
      * @param userId   用户 ID
@@ -139,15 +129,6 @@ public interface TaskMapper {
      */
     @Select("SELECT * FROM tasks WHERE user_id = #{userId} AND parent_id = #{parentId}")
     List<Task> findByUserIdAndParentId(@Param("userId") Long userId, @Param("parentId") Long parentId);
-
-    /**
-     * 根据多个父任务 ID 批量查询子任务（避免 N+1）
-     *
-     * @param userId    用户 ID
-     * @param parentIds 父任务 ID 列表
-     * @return 子任务列表
-     */
-    List<Task> findByUserIdAndParentIdIn(@Param("userId") Long userId, @Param("parentIds") List<Long> parentIds);
 
     // ── 自定义查询 (XML 实现) ──
 
@@ -169,26 +150,6 @@ public interface TaskMapper {
      * @return 未来任务列表
      */
     List<Task> findUpcomingTasks(@Param("userId") Long userId, @Param("date") LocalDateTime date);
-
-    /**
-     * 搜索任务（标题/描述模糊匹配）
-     *
-     * @param userId  用户 ID
-     * @param keyword 关键词
-     * @param offset  偏移量
-     * @param limit   每页大小
-     * @return 匹配的任务列表
-     */
-    List<Task> searchTasks(@Param("userId") Long userId, @Param("keyword") String keyword, @Param("offset") int offset, @Param("limit") int limit);
-
-    /**
-     * 统计搜索匹配的任务总数
-     *
-     * @param userId  用户 ID
-     * @param keyword 关键词
-     * @return 匹配数
-     */
-    long countSearchTasks(@Param("userId") Long userId, @Param("keyword") String keyword);
 
     /**
      * 查询日期范围内的任务（日历视图用）

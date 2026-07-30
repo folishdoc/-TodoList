@@ -45,7 +45,7 @@ describe('composables/useTaskTimeMode.ts', () => {
   })
 
   describe('switchToRepeat', () => {
-    it('清空 startDate、保留 dueDate', async () => {
+    it('清空 startDate、周期基准继承 startDate（而非截止时间）', async () => {
       const taskRef = ref<any>({ id: 1, repeatRule: null })
       const { mode, switchToRepeat } = useTaskTimeMode(taskRef)
       const ctx = makeCtx()
@@ -53,7 +53,7 @@ describe('composables/useTaskTimeMode.ts', () => {
       await switchToRepeat(ctx)
 
       expect(ctx.taskForm.startDate).toBe('')
-      expect(ctx.taskForm.dueDate).toBe('2026-06-15T18:00:00')
+      expect(ctx.taskForm.dueDate).toBe('2026-06-10T09:00:00')
       expect(mode.value).toBe('repeat')
       expect(ctx.showRepeatForm.value).toBe(false)
       expect(ctx.repeatForm.type).toBe('')

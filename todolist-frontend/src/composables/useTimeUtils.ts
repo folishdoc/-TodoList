@@ -170,9 +170,14 @@ export function getTimeSummary(taskForm: Record<string, any> | undefined, editin
 
   if (!hasStart && !hasDue && !hasRepeat) return '时间'
 
+  // 循环任务且起止日期相同时，只显示一个日期
   const parts: string[] = []
-  if (hasStart) parts.push(formatDateShort(taskForm!.startDate))
-  if (hasDue) parts.push(formatDateShort(taskForm!.dueDate))
+  if (hasStart && hasDue && taskForm!.startDate === taskForm!.dueDate && hasRepeat) {
+    parts.push(formatDateShort(taskForm!.dueDate))
+  } else {
+    if (hasStart) parts.push(formatDateShort(taskForm!.startDate))
+    if (hasDue) parts.push(formatDateShort(taskForm!.dueDate))
+  }
 
   let summary = parts.join(' ~ ')
 

@@ -38,8 +38,9 @@ export function useTaskTimeMode(taskRef: Ref<any | null>) {
     taskRef.value.repeatRule = null
   }
 
-  /** 切换到循环模式：清空开始时间，重置循环表单，取消已有循环 */
+  /** 切换到循环模式：从开始时间继承周期基准，重置循环表单，取消已有循环 */
   const switchToRepeat = async (ctx: TaskTimeModeContext) => {
+    ctx.taskForm.dueDate = ctx.taskForm.startDate || ''
     ctx.taskForm.startDate = ''
     ctx.showRepeatForm.value = false
     ctx.repeatForm.type = ''

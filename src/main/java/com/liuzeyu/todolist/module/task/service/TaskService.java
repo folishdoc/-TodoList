@@ -5,7 +5,6 @@ import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.common.result.PageResult;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
-import com.liuzeyu.todolist.module.task.dto.TaskWithSubtasks;
 import com.liuzeyu.todolist.module.task.entity.Task;
 import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 任务服务 — 核心业务逻辑
@@ -264,21 +262,7 @@ public class TaskService {
         return taskMapper.findUpcomingTasks(userId, now);
     }
 
-    /**
-     * 搜索任务（标题/描述模糊匹配）
-     *
-     * @param userId  用户 ID
-     * @param keyword 关键词
-     * @param page    页码
-     * @param size    每页大小
-     * @return 分页结果
-     */
-    public PageResult<Task> searchTasks(Long userId, String keyword, int page, int size) {
-        int offset = page * size;
-        List<Task> content = taskMapper.searchTasks(userId, keyword, offset, size);
-        long total = taskMapper.countSearchTasks(userId, keyword);
-        return new PageResult<>(content, total, page, size);
-    }
+
 
     /**
      * 获取子任务列表（只获取直接子任务）
@@ -291,20 +275,7 @@ public class TaskService {
         return taskMapper.findByUserIdAndParentId(userId, parentId);
     }
     
-    /**
-     * 递归收集所有层级的子任务
-     *
-     * @param userId   用户 ID
-     * @param parentId 父任务 ID
-     * @param result   结果列表（累加）
-     */
-    private void collectAllSubtasks(Long userId, Long parentId, List<Task> result) {
-        List<Task> directSubtasks = taskMapper.findByUserIdAndParentId(userId, parentId);
-        for (Task subtask : directSubtasks) {
-            result.add(subtask);
-            collectAllSubtasks(userId, subtask.getId(), result);
-        }
-    }
+
     
     /**
      * 获取日期范围内的任务（日历视图用）
@@ -318,37 +289,5 @@ public class TaskService {
         return taskMapper.findByDateRange(userId, rangeStart, rangeEnd);
     }
 
-    /**
-     * 获取带子任务的任务列表（分页）
-     * <p>
-     * 批量查询所有直接子任务（避免 N+1 问题），
-     * 将每个 Task 包装为 TaskWithSubtasks 返回，前端自行构建层级。
-     *
-     * @param userId 用户 ID
-     * @param page   页码
-     * @param size   每页大小
-     * @return 分页结果（含子任务）
-     */
-    public PageResult<TaskWithSubtasks> getTasksWithSubtasks(Long userId, int page, int size) {
-        int offset = page * size;
-        List<Task> tasks = taskMapper.findByUserId(userId, offset, size);
-        long total = taskMapper.countByUserId(userId);
-        
-        // 批量获取所有子任务（避免 N+1）
-        List<Long> taskIds = tasks.stream().map(Task::getId).collect(Collectors.toList());
-        List<Task> allSubtasks = taskMapper.findByUserIdAndParentIdIn(userId, taskIds);
-        java.util.Map<Long, List<Task>> subtasksByParentId = allSubtasks.stream()
-            .collect(Collectors.groupingBy(Task::getParentId));
-        
-        // 将所有任务包装成 TaskWithSubtasks
-        List<TaskWithSubtasks> tasksWithSubtasks = tasks.stream()
-            .map(task -> {
-                TaskWithSubtasks wrapper = new TaskWithSubtasks(task);
-                wrapper.setSubtasks(subtasksByParentId.getOrDefault(task.getId(), java.util.Collections.emptyList()));
-                return wrapper;
-            })
-            .collect(Collectors.toList());
-        
-        return new PageResult<>(tasksWithSubtasks, total, page, size);
-    }
+
 }

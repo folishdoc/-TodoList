@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
+import { setupApiMocks } from './fixtures/api-mocks'
 
 /**
  * Verify that completed tasks (status=1) are hidden from all calendar views.
@@ -20,32 +21,9 @@ const mockTasks = [
   { id: 104, title: 'Completed-Task-Y', status: 1, priority: 3, dueDate: todayISO(2), startDate: todayISO(2), parentId: null, listId: 1 },
 ]
 
-async function setupApiMocks(page: Page) {
-  await page.route('http://localhost:5180/api/**', async (route) => {
-    const url = new URL(route.request().url())
-    const path = url.pathname
-    const method = route.request().method()
-    const ok = (data: any) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ code: 200, message: 'success', data }),
-      })
-
-    if (path === '/api/tasks' && method === 'GET') {
-      return ok({ content: mockTasks, totalElements: mockTasks.length, totalPages: 1, size: 1000, number: 0 })
-    }
-    if (path === '/api/tasks/range' && method === 'GET') {
-      return ok(mockTasks)
-    }
-    if (path === '/api/lists' && method === 'GET') return ok([{ id: 1, name: '默认清单' }])
-    return ok(null)
-  })
-}
-
 test.describe('Hide completed tasks from calendar', () => {
   test.beforeEach(async ({ page }) => {
-    await setupApiMocks(page)
+    await setupApiMocks(page, { tasks: mockTasks })
     await page.goto('/')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(500)
