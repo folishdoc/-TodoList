@@ -7,9 +7,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.liuzeyu.todolist.common.constant.TaskStatusEnum;
 import com.liuzeyu.todolist.module.task.dto.RepeatRule;
 import com.liuzeyu.todolist.module.task.entity.Task;
+import com.liuzeyu.todolist.module.task.event.TaskCompletedEvent;
 import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 重复任务服务 — 定时生成与手动触发
@@ -24,7 +27,7 @@ import java.util.List;
  * 每天凌晨 0 点（@Scheduled(cron = "0 0 0 * * ?")）自动扫描所有已完成且有重复规则的任务，
  * 根据 RepeatRule 计算下一个截止日期并生成新任务。
  * 也提供手动触发（generateRepeatTasks）和规则管理（setRepeatRule / cancelRepeatRule）功能。
- * lastGenerateDate 防止同一天重复生成。
+ * 去重策略：生产环境用 Redis SETNX（RepeatTaskDedupLock，跨实例/跨重启），桌面版降级为 JVM 内存变量 lastGenerateDate。
  */
 @Slf4j
 @Service
@@ -33,11 +36,13 @@ public class RepeatTaskService {
     private final TaskMapper taskMapper;
     private final TaskService taskService;
     private final ObjectMapper objectMapper;
+    private final Optional<RepeatTaskDedupLock> dedupLockOptional;
     private LocalDate lastGenerateDate = null;
 
-    public RepeatTaskService(TaskMapper taskMapper, TaskService taskService) {
+    public RepeatTaskService(TaskMapper taskMapper, TaskService taskService, Optional<RepeatTaskDedupLock> dedupLockOptional) {
         this.taskMapper = taskMapper;
         this.taskService = taskService;
+        this.dedupLockOptional = dedupLockOptional;
         this.objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -47,13 +52,20 @@ public class RepeatTaskService {
      * 每天凌晨检查并生成重复任务（处理所有用户）
      * <p>
      * 扫描所有已完成且有 repeatRule 的任务，根据规则生成新任务。
-     * 使用 lastGenerateDate 去重，避免同一天多次执行。
+     * 去重策略：生产环境用 Redis 锁，桌面版用 lastGenerateDate 变量，避免同一天多次执行。
      */
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void scheduledGenerateRepeatTasks() {
         LocalDate today = LocalDate.now();
-        if (today.equals(lastGenerateDate)) {
+        if (dedupLockOptional.isPresent()) {
+            // 生产环境：Redis 跨实例去重
+            if (!dedupLockOptional.get().tryAcquire(today)) {
+                log.info("今天已生成过重复任务（Redis 去重），跳过");
+                return;
+            }
+        } else if (today.equals(lastGenerateDate)) {
+            // 桌面版降级：JVM 内存变量去重
             log.info("今天已生成过重复任务，跳过");
             return;
         }
@@ -72,9 +84,12 @@ public class RepeatTaskService {
                     RepeatRule rule = objectMapper.readValue(task.getRepeatRule(), RepeatRule.class);
 
                     if (shouldGenerateNewTask(task, rule, now)) {
-                        Task newTask = createRepeatedTask(task, rule);
+                        Task newTask = createRepeatedTask(task, rule, now);
                         taskMapper.insert(newTask);
                         generatedCount++;
+                        // 接力：清除原任务 repeatRule，避免重复生成
+                        task.setRepeatRule(null);
+                        taskMapper.update(task);
 
                         log.info("生成重复任务: {} -> {}", task.getTitle(), newTask.getTitle());
                     }
@@ -112,9 +127,12 @@ public class RepeatTaskService {
                     RepeatRule rule = objectMapper.readValue(task.getRepeatRule(), RepeatRule.class);
 
                     if (shouldGenerateNewTask(task, rule, now)) {
-                        Task newTask = createRepeatedTask(task, rule);
+                        Task newTask = createRepeatedTask(task, rule, now);
                         taskMapper.insert(newTask);
                         generatedCount++;
+                        // 接力：清除原任务 repeatRule，避免重复生成
+                        task.setRepeatRule(null);
+                        taskMapper.update(task);
 
                         log.info("生成重复任务: {} -> {}", task.getTitle(), newTask.getTitle());
                     }
@@ -178,9 +196,10 @@ public class RepeatTaskService {
      *
      * @param originalTask 原始任务
      * @param rule         重复规则
+     * @param now          当前时间
      * @return 新任务（未持久化）
      */
-    private Task createRepeatedTask(Task originalTask, RepeatRule rule) {
+    private Task createRepeatedTask(Task originalTask, RepeatRule rule, LocalDateTime now) {
         Task newTask = new Task();
         newTask.setUserId(originalTask.getUserId());
         newTask.setListId(originalTask.getListId());
@@ -192,12 +211,12 @@ public class RepeatTaskService {
         newTask.setRepeatRule(originalTask.getRepeatRule());
         
         // 计算新的截止日期
-        LocalDateTime newDueDate = calculateNextDueDate(originalTask.getDueDate(), rule);
+        LocalDateTime newDueDate = calculateNextDueDate(originalTask.getDueDate(), rule, now);
         newTask.setDueDate(newDueDate);
         
         // 同步计算新的提醒时间
         if (originalTask.getReminderTime() != null) {
-            LocalDateTime newReminderTime = calculateNextDueDate(originalTask.getReminderTime(), rule);
+            LocalDateTime newReminderTime = calculateNextDueDate(originalTask.getReminderTime(), rule, now);
             newTask.setReminderTime(newReminderTime);
         }
         
@@ -205,24 +224,44 @@ public class RepeatTaskService {
     }
 
     /**
+     * 在当前日期上增加一个重复周期
+     *
+     * @param date 当前日期
+     * @param rule 重复规则
+     * @return 增加一个周期后的日期
+     */
+    private LocalDateTime addPeriod(LocalDateTime date, RepeatRule rule) {
+        int interval = rule.getInterval() != null ? rule.getInterval() : 1;
+        return switch (rule.getType()) {
+            case "DAILY" -> date.plusDays(interval);
+            case "WEEKLY" -> date.plusWeeks(interval);
+            case "MONTHLY" -> date.plusMonths(interval);
+            case "YEARLY" -> date.plusYears(interval);
+            default -> date.plusDays(interval);
+        };
+    }
+
+    /**
      * 计算下一个截止日期
+     * <p>
+     * 如果推算出的日期已过期（早于 now），继续增加周期直到追上当前时间，
+     * 避免过期任务完成后新任务仍然过期。
      *
      * @param currentDueDate 当前截止日期
      * @param rule           重复规则
+     * @param now            当前时间
      * @return 下一个截止日期
      */
-    private LocalDateTime calculateNextDueDate(LocalDateTime currentDueDate, RepeatRule rule) {
+    private LocalDateTime calculateNextDueDate(LocalDateTime currentDueDate, RepeatRule rule, LocalDateTime now) {
         if (currentDueDate == null) {
-            return LocalDateTime.now().plusDays(1);
+            return now.plusDays(1);
         }
-        
-        return switch (rule.getType()) {
-            case "DAILY" -> currentDueDate.plusDays(rule.getInterval() != null ? rule.getInterval() : 1);
-            case "WEEKLY" -> currentDueDate.plusWeeks(rule.getInterval() != null ? rule.getInterval() : 1);
-            case "MONTHLY" -> currentDueDate.plusMonths(rule.getInterval() != null ? rule.getInterval() : 1);
-            case "YEARLY" -> currentDueDate.plusYears(rule.getInterval() != null ? rule.getInterval() : 1);
-            default -> currentDueDate.plusDays(1);
-        };
+
+        LocalDateTime next = addPeriod(currentDueDate, rule);
+        while (next.isBefore(now)) {
+            next = addPeriod(next, rule);
+        }
+        return next;
     }
 
     /**
@@ -260,5 +299,37 @@ public class RepeatTaskService {
         taskMapper.update(task);
 
         log.info("取消重复规则: taskId={}", taskId);
+    }
+
+    /**
+     * 任务完成事件监听 — 完成时立即生成下一条（接力模型），
+     * 无需等待每天 0 点的定时任务。通过事件解耦，避免与 TaskService 循环依赖。
+     */
+    @EventListener
+    @Transactional
+    public void onTaskCompleted(TaskCompletedEvent event) {
+        generateNextForTask(event.getTask());
+    }
+
+    /**
+     * 为已完成的循环任务生成下一条（接力模型）：生成带规则的新任务，清除原任务 repeatRule。
+     */
+    @Transactional
+    public void generateNextForTask(Task originalTask) {
+        if (originalTask.getRepeatRule() == null || originalTask.getRepeatRule().isEmpty()) return;
+        if (originalTask.getStatus() != TaskStatusEnum.COMPLETE.getCode()) return;
+        try {
+            RepeatRule rule = objectMapper.readValue(originalTask.getRepeatRule(), RepeatRule.class);
+            LocalDateTime now = LocalDateTime.now();
+            if (!shouldGenerateNewTask(originalTask, rule, now)) return;
+            Task newTask = createRepeatedTask(originalTask, rule, now);
+            taskMapper.insert(newTask);
+            // 接力：规则传递给新任务，原任务清除 repeatRule 避免定时任务重复生成
+            originalTask.setRepeatRule(null);
+            taskMapper.update(originalTask);
+            log.info("循环任务接力: {} -> 新任务 {}", originalTask.getTitle(), newTask.getTitle());
+        } catch (Exception e) {
+            log.error("生成下一条循环任务失败: taskId={}", originalTask.getId(), e);
+        }
     }
 }

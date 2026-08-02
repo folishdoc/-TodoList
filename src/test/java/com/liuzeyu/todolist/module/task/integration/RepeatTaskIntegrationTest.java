@@ -134,7 +134,7 @@ class RepeatTaskIntegrationTest extends BaseIntegrationTest {
     void weeklyRepeatGeneratesInstanceWithWeeklyOffset() throws Exception {
         String unique = UUID.randomUUID().toString().substring(0, 8);
 
-        LocalDateTime originalDue = LocalDateTime.of(2026, 6, 1, 10, 0);
+        LocalDateTime originalDue = LocalDateTime.now().plusDays(7);
         Task task = new Task();
         task.setUserId(1L);
         task.setTitle("周重复-" + unique);

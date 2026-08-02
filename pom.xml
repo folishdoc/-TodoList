@@ -98,6 +98,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Redis（生产环境缓存/会话/限流；桌面版通过 @Profile("prod") 不激活，Lettuce 懒连接不触发） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- MySQL Driver 在 runtime scope 中已包含，测试也可用 -->
 
         <!-- Jackson JSR310 -->

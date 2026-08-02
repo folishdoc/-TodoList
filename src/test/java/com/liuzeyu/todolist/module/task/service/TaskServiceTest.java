@@ -4,12 +4,15 @@ import com.liuzeyu.todolist.common.exception.BusinessException;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
 import com.liuzeyu.todolist.module.task.entity.Task;
+import com.liuzeyu.todolist.module.task.event.TaskCompletedEvent;
 import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import com.liuzeyu.todolist.support.BaseUnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +27,9 @@ class TaskServiceTest extends BaseUnitTest {
 
     @Mock
     private TaskMapper taskMapper;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private TaskService taskService;
@@ -217,6 +223,10 @@ class TaskServiceTest extends BaseUnitTest {
 
         assertThat(result.getStatus()).isEqualTo(1);
         assertThat(result.getCompletedAt()).isNotNull();
+        // 发布完成事件，触发循环任务接力生成
+        ArgumentCaptor<TaskCompletedEvent> eventCaptor = ArgumentCaptor.forClass(TaskCompletedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getTask()).isSameAs(existing);
     }
 
     @Test

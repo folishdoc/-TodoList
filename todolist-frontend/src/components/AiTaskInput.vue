@@ -82,6 +82,14 @@
           <span class="field-label">循环</span>
           <span class="field-value">{{ repeatLabel }}</span>
         </div>
+        <div class="preview-field" v-if="parsedResult.subtasks && parsedResult.subtasks.length > 0">
+          <span class="field-label">子任务</span>
+          <div class="field-value">
+            <div v-for="(subtask, index) in parsedResult.subtasks" :key="index">
+              {{ index + 1 }}. {{ subtask.title }}
+            </div>
+          </div>
+        </div>
       </div>
       <div class="ai-input-actions">
         <el-button @click="step = 'input'">重新输入</el-button>

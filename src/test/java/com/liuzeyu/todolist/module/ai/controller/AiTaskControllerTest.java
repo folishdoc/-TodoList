@@ -4,11 +4,14 @@ import com.liuzeyu.todolist.module.ai.dto.ParsedTask;
 import com.liuzeyu.todolist.support.BaseControllerTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.MediaType;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,9 +29,10 @@ class AiTaskControllerTest extends BaseControllerTest {
                 null,
                 "购物",
                 List.of("日常"),
+                null,
                 null
         );
-        when(taskAiService.parseTask(anyString())).thenReturn(parsed);
+        when(taskAiService.parseTask(anyString(), anyString(), anyString())).thenReturn(parsed);
 
         String body = """
                 {
@@ -59,9 +63,10 @@ class AiTaskControllerTest extends BaseControllerTest {
                 null,
                 "健康",
                 List.of("日常"),
-                rule
+                rule,
+                null
         );
-        when(taskAiService.parseTask(anyString())).thenReturn(parsed);
+        when(taskAiService.parseTask(anyString(), anyString(), anyString())).thenReturn(parsed);
 
         String body = """
                 {
@@ -81,7 +86,7 @@ class AiTaskControllerTest extends BaseControllerTest {
     @Test
     @DisplayName("POST /api/ai/parse-task - AI 异常返回 503")
     void parseTask_aiError_returns503() throws Exception {
-        when(taskAiService.parseTask(anyString())).thenThrow(new RuntimeException("API key invalid"));
+        when(taskAiService.parseTask(anyString(), anyString(), anyString())).thenThrow(new RuntimeException("API key invalid"));
 
         String body = """
                 {
@@ -108,5 +113,29 @@ class AiTaskControllerTest extends BaseControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/ai/parse-task - 注入当前日期时间上下文供相对时间推算")
+    void parseTask_injectsCurrentDateTime() throws Exception {
+        ParsedTask parsed = new ParsedTask("测试", null, 2, null, null, null, null, null, null);
+        when(taskAiService.parseTask(anyString(), anyString(), anyString())).thenReturn(parsed);
+
+        String body = """
+                { "input": "明天买牛奶" }
+                """;
+        mockMvc.perform(authPost("/api/ai/parse-task")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+
+        ArgumentCaptor<String> dateTimeCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> weekDayCaptor = ArgumentCaptor.forClass(String.class);
+        verify(taskAiService).parseTask(anyString(), dateTimeCaptor.capture(), weekDayCaptor.capture());
+        assertTrue(dateTimeCaptor.getValue().matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"),
+                "currentDateTime 应为 ISO 格式: " + dateTimeCaptor.getValue());
+        assertTrue(weekDayCaptor.getValue().matches("[一二三四五六日]"),
+                "weekDay 应为单个中文星期: " + weekDayCaptor.getValue());
     }
 }

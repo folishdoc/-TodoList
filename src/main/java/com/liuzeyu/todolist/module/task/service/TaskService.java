@@ -6,9 +6,11 @@ import com.liuzeyu.todolist.common.result.PageResult;
 import com.liuzeyu.todolist.module.task.dto.TaskRequest;
 import com.liuzeyu.todolist.module.task.dto.TaskTimeRequest;
 import com.liuzeyu.todolist.module.task.entity.Task;
+import com.liuzeyu.todolist.module.task.event.TaskCompletedEvent;
 import com.liuzeyu.todolist.module.task.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -29,6 +31,7 @@ import java.util.Map;
 public class TaskService {
 
     private final TaskMapper taskMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 校验日期范围：结束时间不能早于开始时间
@@ -217,6 +220,7 @@ public class TaskService {
         task.setStatus(TaskStatusEnum.COMPLETE.getCode());
         task.setCompletedAt(LocalDateTime.now());
         taskMapper.update(task);
+        eventPublisher.publishEvent(new TaskCompletedEvent(this, task));
         return task;
     }
 

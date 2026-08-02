@@ -31,7 +31,10 @@ public record ParsedTask(
         List<String> tags,
 
         @Description("循环规则，非循环任务为 null")
-        AiRepeatRule repeatRule
+        AiRepeatRule repeatRule,
+
+        @Description("子任务列表：当用户输入为分条（如编号列表）或大型可拆解任务时，将主任务作为父，拆出的条目/步骤作为 subtasks；单个简单任务为 null")
+        List<ParsedTask> subtasks
 ) {
     /**
      * AI 解析输出的循环规则。endDate 用 String（ISO 格式）而非 LocalDateTime，

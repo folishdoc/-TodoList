@@ -832,6 +832,7 @@ import {
   Switch as SwitchIcon,
 } from '@element-plus/icons-vue'
 import * as anniversaryApi from '../api/anniversary'
+import { createTask } from '../api/task'
 import { getPriorityType, getPriorityText } from '../composables/usePriority'
 import { useTaskSync } from '../composables/useTaskSync'
 import { useTaskCrud } from '../composables/useTaskCrud'
@@ -929,7 +930,75 @@ const getSelectedListName = () => getSelectedListNameFromCmp(taskLists.value)
 // ── AI 智能录入 ──
 const aiTaskInputRef = ref<InstanceType<typeof AiTaskInput> | null>(null)
 
+/**
+ * 批量创建父任务 + 子任务（AI 拆分场景，不经对话框直接创建）。
+ * 子任务继承父任务的清单、优先级、时间（子任务未单独指定时）。
+ */
+async function createAiTaskWithSubtasks(data: ParsedTask) {
+  // 匹配清单
+  let listId: number | null = null
+  if (data.listName) {
+    const matchedList = taskLists.value.find((l) => l.name === data.listName)
+    if (matchedList) listId = matchedList.id
+  }
+  // 匹配标签（按名称，匹配不到忽略）
+  let tagIds: number[] = []
+  if (data.tags && data.tags.length > 0) {
+    await loadAllTags()
+    tagIds = data.tags
+      .map((name) => allTags.value.find((t) => t.name === name)?.id)
+      .filter((id): id is number => id != null)
+  }
+  const parentData: Record<string, any> = {
+    title: data.title,
+    description: data.description || '',
+    priority: data.priority || 0,
+    startDate: data.startDate || null,
+    dueDate: data.dueDate || null,
+    listId,
+    status: 0,
+  }
+  try {
+    const res = await createTask(parentData)
+    const parentId = res.data?.id
+    if (!parentId) throw new Error('父任务创建未返回 id')
+    // 标签绑定到父任务
+    for (const tagId of tagIds) {
+      try {
+        await tagApi.addTagToTask(parentId, tagId)
+      } catch (e) {
+        console.warn('添加标签失败', e)
+      }
+    }
+    // 创建子任务（继承父的清单/优先级/时间）
+    for (const sub of data.subtasks!) {
+      await createTask({
+        title: sub.title,
+        description: sub.description || '',
+        priority: sub.priority || data.priority || 0,
+        startDate: sub.startDate || data.startDate || null,
+        dueDate: sub.dueDate || data.dueDate || null,
+        listId,
+        parentId,
+        status: 0,
+      })
+    }
+    ElMessage.success(`已创建父任务及 ${data.subtasks!.length} 个子任务`)
+    await loadTasks()
+    emitTaskChanged()
+  } catch (e: any) {
+    console.error('批量创建任务失败:', e)
+    ElMessage.error(e?.message || '批量创建任务失败')
+  }
+}
+
 async function handleAiConfirm(data: ParsedTask) {
+  // 有子任务时：直接批量创建父子任务（不经对话框）
+  if (data.subtasks && data.subtasks.length > 0) {
+    await createAiTaskWithSubtasks(data)
+    return
+  }
+  // 无子任务：填充新建对话框供用户确认后提交
   resetTaskForm()
   // 先打开对话框（内部会重置循环表单 + normal 模式），再填充字段
   openCreateTaskDialog()

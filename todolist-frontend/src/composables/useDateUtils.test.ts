@@ -22,8 +22,8 @@ describe('composables/useDateUtils.ts', () => {
       expect(isOverdue({ status: 0, dueDate: '2026-06-10' })).toBe(true)
     })
 
-    it('returns true for today (date-only, <= today)', () => {
-      expect(isOverdue({ status: 0, dueDate: '2026-06-15' })).toBe(true)
+    it('returns false for today (date-only, not overdue)', () => {
+      expect(isOverdue({ status: 0, dueDate: '2026-06-15' })).toBe(false)
     })
 
     it('returns false for future date', () => {

@@ -25,6 +25,8 @@ export interface ParsedTask {
   listName: string
   tags: string[]
   repeatRule?: AiRepeatRule | null
+  /** 子任务列表：分条/大型任务拆分时，主任务为父，拆出的条目/步骤为 subtasks；单个简单任务为 null */
+  subtasks?: ParsedTask[] | null
 }
 
 /**
